@@ -1,0 +1,6 @@
+com\ureclive\urec_live_backend\MachineRepository.class
+com\ureclive\urec_live_backend\config\CorsConfig.class
+com\ureclive\urec_live_backend\UrecLiveBackendApplication.class
+com\ureclive\urec_live_backend\MachineController.class
+com\ureclive\urec_live_backend\DataInitializer.class
+com\ureclive\urec_live_backend\Machine.class
