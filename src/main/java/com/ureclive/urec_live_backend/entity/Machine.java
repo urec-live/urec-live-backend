@@ -1,4 +1,4 @@
-package com.ureclive.urec_live_backend;
+package com.ureclive.urec_live_backend.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +11,7 @@ public class Machine {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String code;     // Unique machine code for QR scanning
     private String name;
     private String status;   // Available, In Use, Reserved
     private String exercise; // NEW → allows filtering by exercise
@@ -28,11 +29,20 @@ public class Machine {
         this.exercise = exercise;
     }
 
+    public Machine(String code, String name, String status, String exercise) {
+        this.code = code;
+        this.name = name;
+        this.status = status;
+        this.exercise = exercise;
+    }
+
     public Long getId() { return id; }
+    public String getCode() { return code; }
     public String getName() { return name; }
     public String getStatus() { return status; }
     public String getExercise() { return exercise; }
 
+    public void setCode(String code) { this.code = code; }
     public void setName(String name) { this.name = name; }
     public void setStatus(String status) { this.status = status; }
     public void setExercise(String exercise) { this.exercise = exercise; }
