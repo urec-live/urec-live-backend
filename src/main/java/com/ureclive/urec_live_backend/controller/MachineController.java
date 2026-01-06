@@ -3,6 +3,7 @@ package com.ureclive.urec_live_backend.controller;
 import com.ureclive.urec_live_backend.entity.Machine;
 import com.ureclive.urec_live_backend.repository.MachineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.lang.NonNull;
 import org.slf4j.Logger;
@@ -19,10 +20,12 @@ public class MachineController {
 
     private static final Logger logger = LoggerFactory.getLogger(MachineController.class);
     private final MachineRepository machineRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Autowired
-    public MachineController(MachineRepository machineRepository) {
+    public MachineController(MachineRepository machineRepository, SimpMessagingTemplate messagingTemplate) {
         this.machineRepository = machineRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     // ✅ Get all machines
@@ -76,6 +79,11 @@ public class MachineController {
         machine.setStatus(status);
         Machine updated = machineRepository.save(machine);
         logger.info("[PUT /api/machines/{}/status] Updated machine {} from '{}' to '{}'", id, machine.getName(), oldStatus, status);
+        
+        // Broadcast update to all WebSocket clients
+        messagingTemplate.convertAndSend("/topic/machines", updated);
+        logger.info("[WebSocket] Broadcasted machine update for ID: {}", id);
+        
         return updated;
     }
 
@@ -112,6 +120,11 @@ public class MachineController {
         machine.setStatus(status);
         Machine updated = machineRepository.save(machine);
         logger.info("[PUT /api/machines/code/{}/status] Updated machine {} from '{}' to '{}'", code, machine.getName(), oldStatus, status);
+        
+        // Broadcast update to all WebSocket clients
+        messagingTemplate.convertAndSend("/topic/machines", updated);
+        logger.info("[WebSocket] Broadcasted machine update for code: {}", code);
+        
         return updated;
     }
 }
