@@ -20,9 +20,13 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // Clear existing data
-        equipmentRepository.deleteAll();
-        exerciseRepository.deleteAll();
+        // Only initialize if database is empty
+        if (exerciseRepository.count() > 0 || equipmentRepository.count() > 0) {
+            System.out.println("⏭️  Database already initialized. Skipping data loading.");
+            return;
+        }
+        
+        System.out.println("🔄 Initializing database with gym data...");
         
         // 🏋️ CREATE EXERCISES
         

@@ -1,5 +1,6 @@
 package com.ureclive.urec_live_backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
@@ -20,6 +21,7 @@ public class Exercise {
     @Column(length = 500)
     private String gifUrl;
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "exercises")
     private Set<Equipment> equipment = new HashSet<>();
 

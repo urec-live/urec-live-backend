@@ -48,6 +48,58 @@ public class MachineController {
         return dtos;
     }
 
+    // ✅ Get all unique muscle groups
+    @GetMapping("/muscle-groups")
+    public List<String> getMuscleGroups() {
+        logger.info("[GET /api/machines/muscle-groups] Fetching all unique muscle groups");
+        List<String> muscleGroups = exerciseRepository.findAll().stream()
+            .map(Exercise::getMuscleGroup)
+            .distinct()
+            .sorted()
+            .collect(Collectors.toList());
+        logger.info("[GET /api/machines/muscle-groups] Returned {} muscle groups", muscleGroups.size());
+        return muscleGroups;
+    }
+
+    // ✅ Get exercises by muscle group
+    @GetMapping("/exercises/muscle/{muscleGroup}")
+    public List<Exercise> getExercisesByMuscleGroup(@PathVariable String muscleGroup) {
+        logger.info("[GET /api/machines/exercises/muscle/{}] Fetching exercises for muscle group: {}", muscleGroup, muscleGroup);
+        List<Exercise> exercises = exerciseRepository.findAll().stream()
+            .filter(e -> e.getMuscleGroup().equalsIgnoreCase(muscleGroup))
+            .collect(Collectors.toList());
+        logger.info("[GET /api/machines/exercises/muscle/{}] Returned {} exercises", muscleGroup, exercises.size());
+        return exercises;
+    }
+
+    // ✅ Get exercises for a specific equipment by ID
+    @GetMapping("/{id}/exercises")
+    public List<Exercise> getExercisesByEquipmentId(@PathVariable Long id) {
+        logger.info("[GET /api/machines/{}/exercises] Fetching exercises for equipment ID: {}", id, id);
+        Optional<Equipment> equipment = equipmentRepository.findById(id);
+        Equipment eq = equipment.orElseThrow(() -> {
+            logger.error("[GET /api/machines/{}/exercises] Equipment not found with ID: {}", id, id);
+            return new RuntimeException("Equipment not found with ID: " + id);
+        });
+        List<Exercise> exercises = new java.util.ArrayList<>(eq.getExercises());
+        logger.info("[GET /api/machines/{}/exercises] Returned {} exercises", id, exercises.size());
+        return exercises;
+    }
+
+    // ✅ Get exercises for a specific equipment by code
+    @GetMapping("/code/{code}/exercises")
+    public List<Exercise> getExercisesByEquipmentCode(@PathVariable String code) {
+        logger.info("[GET /api/machines/code/{}/exercises] Fetching exercises for equipment code: {}", code, code);
+        Optional<Equipment> equipment = equipmentRepository.findByCode(code);
+        Equipment eq = equipment.orElseThrow(() -> {
+            logger.error("[GET /api/machines/code/{}/exercises] Equipment not found with code: {}", code, code);
+            return new RuntimeException("Equipment not found with code: " + code);
+        });
+        List<Exercise> exercises = new java.util.ArrayList<>(eq.getExercises());
+        logger.info("[GET /api/machines/code/{}/exercises] Returned {} exercises", code, exercises.size());
+        return exercises;
+    }
+
     // ✅ Get machines by exercise (e.g., Bench Press)
     @GetMapping("/exercise/{exercise}")
     public List<MachineDTO> getMachinesByExercise(@PathVariable String exercise) {
