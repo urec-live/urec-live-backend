@@ -22,4 +22,9 @@ public interface EquipmentSessionRepository extends JpaRepository<EquipmentSessi
             Equipment equipment,
             EquipmentSessionStatus status
     );
+
+    Optional<EquipmentSession> findTopByUserAndStatusOrderByStartedAtDesc(
+            User user,
+            EquipmentSessionStatus status
+    );
 }
