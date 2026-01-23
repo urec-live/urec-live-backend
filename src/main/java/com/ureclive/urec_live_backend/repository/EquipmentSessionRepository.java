@@ -7,6 +7,8 @@ import com.ureclive.urec_live_backend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -27,4 +29,8 @@ public interface EquipmentSessionRepository extends JpaRepository<EquipmentSessi
             User user,
             EquipmentSessionStatus status
     );
+
+    List<EquipmentSession> findByUserAndStartedAtAfter(User user, Instant startedAt);
+
+    List<EquipmentSession> findByStartedAtAfter(Instant startedAt);
 }
