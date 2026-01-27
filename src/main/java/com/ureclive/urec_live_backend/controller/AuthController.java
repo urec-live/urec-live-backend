@@ -1,9 +1,11 @@
 package com.ureclive.urec_live_backend.controller;
 
 import com.ureclive.urec_live_backend.dto.AuthResponse;
+import com.ureclive.urec_live_backend.dto.ForgotPasswordRequest;
 import com.ureclive.urec_live_backend.dto.LoginRequest;
 import com.ureclive.urec_live_backend.dto.RefreshTokenRequest;
 import com.ureclive.urec_live_backend.dto.RegisterRequest;
+import com.ureclive.urec_live_backend.dto.ResetPasswordRequest;
 import com.ureclive.urec_live_backend.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -45,6 +47,26 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            authService.requestPasswordReset(request.getEmail());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.ok().build();
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
+        try {
+            authService.resetPassword(request.getToken(), request.getNewPassword());
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
 

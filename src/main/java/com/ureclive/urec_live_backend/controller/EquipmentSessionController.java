@@ -7,13 +7,18 @@ import com.ureclive.urec_live_backend.entity.User;
 import com.ureclive.urec_live_backend.repository.EquipmentRepository;
 import com.ureclive.urec_live_backend.repository.UserRepository;
 import com.ureclive.urec_live_backend.service.EquipmentSessionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/equipment-sessions")
 public class EquipmentSessionController {
+
+    private static final Logger logger = LoggerFactory.getLogger(EquipmentSessionController.class);
 
     private final EquipmentSessionService equipmentSessionService;
     private final EquipmentRepository equipmentRepository;
@@ -31,11 +36,12 @@ public class EquipmentSessionController {
 
     @PostMapping("/start/{equipmentId}")
     public ResponseEntity<EquipmentSession> start(
-            @PathVariable Long equipmentId,
+            @PathVariable @NonNull Long equipmentId,
             @RequestParam(required = false) String metadata,
             Authentication authentication
     ) {
         User user = getUserFromAuth(authentication);
+        logger.info("[api] start session user={} equipmentId={} metadata={}", user.getId(), equipmentId, metadata);
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Equipment not found: " + equipmentId));
 
@@ -50,6 +56,7 @@ public class EquipmentSessionController {
             Authentication authentication
     ) {
         User user = getUserFromAuth(authentication);
+        logger.info("[api] start session user={} code={} metadata={}", user.getId(), code, metadata);
         Equipment equipment = equipmentRepository.findByCode(code)
                 .orElseThrow(() -> new IllegalArgumentException("Equipment not found with code: " + code));
 
@@ -59,11 +66,12 @@ public class EquipmentSessionController {
 
     @PostMapping("/end/{equipmentId}")
     public ResponseEntity<EquipmentSession> end(
-            @PathVariable Long equipmentId,
+            @PathVariable @NonNull Long equipmentId,
             @RequestParam(required = false) String metadata,
             Authentication authentication
     ) {
         User user = getUserFromAuth(authentication);
+        logger.info("[api] end session user={} equipmentId={} metadata={}", user.getId(), equipmentId, metadata);
         Equipment equipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Equipment not found: " + equipmentId));
 
@@ -78,6 +86,7 @@ public class EquipmentSessionController {
             Authentication authentication
     ) {
         User user = getUserFromAuth(authentication);
+        logger.info("[api] end session user={} code={} metadata={}", user.getId(), code, metadata);
         Equipment equipment = equipmentRepository.findByCode(code)
                 .orElseThrow(() -> new IllegalArgumentException("Equipment not found with code: " + code));
 
@@ -92,6 +101,20 @@ public class EquipmentSessionController {
         return equipmentSessionService.getMyActiveSession(user)
                 .map(session -> ResponseEntity.ok(toDto(session)))
                 .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @PostMapping("/heartbeat/{equipmentId}")
+    public ResponseEntity<EquipmentSession> heartbeat(
+            @PathVariable @NonNull Long equipmentId,
+            Authentication authentication
+    ) {
+        User user = getUserFromAuth(authentication);
+        logger.info("[api] heartbeat user={} equipmentId={}", user.getId(), equipmentId);
+        Equipment equipment = equipmentRepository.findById(equipmentId)
+                .orElseThrow(() -> new IllegalArgumentException("Equipment not found: " + equipmentId));
+
+        EquipmentSession session = equipmentSessionService.heartbeat(user, equipment);
+        return ResponseEntity.ok(session);
     }
 
     private EquipmentSessionDto toDto(EquipmentSession session) {

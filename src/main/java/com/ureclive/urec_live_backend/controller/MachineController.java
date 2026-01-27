@@ -74,7 +74,7 @@ public class MachineController {
 
     // ✅ Get exercises for a specific equipment by ID
     @GetMapping("/{id}/exercises")
-    public List<Exercise> getExercisesByEquipmentId(@PathVariable Long id) {
+    public List<Exercise> getExercisesByEquipmentId(@PathVariable @NonNull Long id) {
         logger.info("[GET /api/machines/{}/exercises] Fetching exercises for equipment ID: {}", id, id);
         Optional<Equipment> equipment = equipmentRepository.findById(id);
         Equipment eq = equipment.orElseThrow(() -> {

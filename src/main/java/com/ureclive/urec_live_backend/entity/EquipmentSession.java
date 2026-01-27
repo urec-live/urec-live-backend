@@ -14,6 +14,22 @@ import java.time.Instant;
         @Index(
             name = "idx_equipment_sessions_user_started",
             columnList = "user_id,started_at"
+        ),
+        @Index(
+            name = "idx_equipment_sessions_status_started",
+            columnList = "status,started_at"
+        ),
+        @Index(
+            name = "idx_equipment_sessions_equipment_ended",
+            columnList = "equipment_id,ended_at,status"
+        ),
+        @Index(
+            name = "idx_equipment_sessions_status_heartbeat",
+            columnList = "status,last_heartbeat_at"
+        ),
+        @Index(
+            name = "idx_equipment_sessions_status_warning",
+            columnList = "status,last_timeout_warning_at"
         )
     }
 )
@@ -32,6 +48,12 @@ public class EquipmentSession {
 
     @Column(name = "ended_at")
     private Instant endedAt;
+
+    @Column(name = "last_heartbeat_at")
+    private Instant lastHeartbeatAt;
+
+    @Column(name = "last_timeout_warning_at")
+    private Instant lastTimeoutWarningAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "end_reason", length = 20)
@@ -76,6 +98,22 @@ public class EquipmentSession {
 
     public void setEndedAt(Instant endedAt) {
         this.endedAt = endedAt;
+    }
+
+    public Instant getLastHeartbeatAt() {
+        return lastHeartbeatAt;
+    }
+
+    public void setLastHeartbeatAt(Instant lastHeartbeatAt) {
+        this.lastHeartbeatAt = lastHeartbeatAt;
+    }
+
+    public Instant getLastTimeoutWarningAt() {
+        return lastTimeoutWarningAt;
+    }
+
+    public void setLastTimeoutWarningAt(Instant lastTimeoutWarningAt) {
+        this.lastTimeoutWarningAt = lastTimeoutWarningAt;
     }
 
     public EquipmentSessionEndReason getEndReason() {

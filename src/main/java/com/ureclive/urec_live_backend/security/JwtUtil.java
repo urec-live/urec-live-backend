@@ -3,7 +3,6 @@ package com.ureclive.urec_live_backend.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -48,7 +47,7 @@ public class JwtUtil {
             .subject(subject)
             .issuedAt(now)
             .expiration(expiryDate)
-            .signWith(key, SignatureAlgorithm.HS512)
+            .signWith(key, Jwts.SIG.HS512)
             .compact();
     }
 
@@ -68,7 +67,7 @@ public class JwtUtil {
     private Claims extractAllClaims(String token) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         return Jwts.parser()
-            .setSigningKey(key)
+            .verifyWith(key)
             .build()
             .parseSignedClaims(token)
             .getPayload();
@@ -91,7 +90,7 @@ public class JwtUtil {
         try {
             SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
             Jwts.parser()
-                .setSigningKey(key)
+                .verifyWith(key)
                 .build()
                 .parseSignedClaims(token);
             return !isTokenExpired(token);

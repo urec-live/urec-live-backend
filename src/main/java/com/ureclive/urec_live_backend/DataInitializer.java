@@ -60,36 +60,36 @@ public class DataInitializer implements CommandLineRunner {
         
         // ARMS - BICEPS
         Exercise bicepCurl = createExercise("Bicep Curl", "Biceps", "https://via.placeholder.com/200x200?text=Bicep+Curl");
-        Exercise hammerCurl = createExercise("Hammer Curl", "Biceps", "https://via.placeholder.com/200x200?text=Hammer+Curl");
+        createExercise("Hammer Curl", "Biceps", "https://via.placeholder.com/200x200?text=Hammer+Curl");
         Exercise preacherCurl = createExercise("Preacher Curl", "Biceps", "https://via.placeholder.com/200x200?text=Preacher+Curl");
         Exercise cableCurl = createExercise("Cable Curl", "Biceps", "https://via.placeholder.com/200x200?text=Cable+Curl");
-        Exercise concentrationCurl = createExercise("Concentration Curl", "Biceps", "https://via.placeholder.com/200x200?text=Concentration");
+        createExercise("Concentration Curl", "Biceps", "https://via.placeholder.com/200x200?text=Concentration");
         
         // ARMS - TRICEPS
         Exercise tricepPushdown = createExercise("Tricep Pushdown", "Triceps", "https://via.placeholder.com/200x200?text=Pushdown");
         Exercise overheadTricepExtension = createExercise("Overhead Tricep Extension", "Triceps", "https://via.placeholder.com/200x200?text=Overhead+Extension");
         Exercise tricepDips = createExercise("Tricep Dips", "Triceps", "https://via.placeholder.com/200x200?text=Tricep+Dips");
-        Exercise skullCrusher = createExercise("Skull Crusher", "Triceps", "https://via.placeholder.com/200x200?text=Skull+Crusher");
-        Exercise closeGripBench = createExercise("Close Grip Bench", "Triceps", "https://via.placeholder.com/200x200?text=Close+Grip");
+        createExercise("Skull Crusher", "Triceps", "https://via.placeholder.com/200x200?text=Skull+Crusher");
+        createExercise("Close Grip Bench", "Triceps", "https://via.placeholder.com/200x200?text=Close+Grip");
         
         // LEGS - QUADS
         Exercise squat = createExercise("Squat", "Quads", "https://via.placeholder.com/200x200?text=Squat");
         Exercise legPress = createExercise("Leg Press", "Quads", "https://via.placeholder.com/200x200?text=Leg+Press");
         Exercise legExtension = createExercise("Leg Extension", "Quads", "https://via.placeholder.com/200x200?text=Leg+Extension");
         Exercise hackSquat = createExercise("Hack Squat", "Quads", "https://via.placeholder.com/200x200?text=Hack+Squat");
-        Exercise lunges = createExercise("Lunges", "Quads", "https://via.placeholder.com/200x200?text=Lunges");
-        Exercise bulgarianSplitSquat = createExercise("Bulgarian Split Squat", "Quads", "https://via.placeholder.com/200x200?text=Bulgarian");
+        createExercise("Lunges", "Quads", "https://via.placeholder.com/200x200?text=Lunges");
+        createExercise("Bulgarian Split Squat", "Quads", "https://via.placeholder.com/200x200?text=Bulgarian");
         
         // LEGS - HAMSTRINGS
         Exercise legCurl = createExercise("Leg Curl", "Hamstrings", "https://via.placeholder.com/200x200?text=Leg+Curl");
-        Exercise romanianDeadlift = createExercise("Romanian Deadlift", "Hamstrings", "https://via.placeholder.com/200x200?text=RDL");
+        createExercise("Romanian Deadlift", "Hamstrings", "https://via.placeholder.com/200x200?text=RDL");
         Exercise seatedLegCurl = createExercise("Seated Leg Curl", "Hamstrings", "https://via.placeholder.com/200x200?text=Seated+Curl");
         Exercise lyingLegCurl = createExercise("Lying Leg Curl", "Hamstrings", "https://via.placeholder.com/200x200?text=Lying+Curl");
         
         // LEGS - GLUTES
         Exercise hipThrust = createExercise("Hip Thrust", "Glutes", "https://via.placeholder.com/200x200?text=Hip+Thrust");
         Exercise gluteBridge = createExercise("Glute Bridge", "Glutes", "https://via.placeholder.com/200x200?text=Glute+Bridge");
-        Exercise cableKickback = createExercise("Cable Kickback", "Glutes", "https://via.placeholder.com/200x200?text=Kickback");
+        createExercise("Cable Kickback", "Glutes", "https://via.placeholder.com/200x200?text=Kickback");
         Exercise gluteKickbackMachine = createExercise("Glute Kickback Machine", "Glutes", "https://via.placeholder.com/200x200?text=Kickback+Machine");
         
         // LEGS - CALVES
@@ -113,7 +113,7 @@ public class DataInitializer implements CommandLineRunner {
         Exercise rowing = createExercise("Rowing", "Cardio", "https://via.placeholder.com/200x200?text=Rowing");
         Exercise stairClimber = createExercise("Stair Climber", "Cardio", "https://via.placeholder.com/200x200?text=Stair+Climber");
         Exercise elliptical = createExercise("Elliptical", "Cardio", "https://via.placeholder.com/200x200?text=Elliptical");
-        Exercise jumpRope = createExercise("Jump Rope", "Cardio", "https://via.placeholder.com/200x200?text=Jump+Rope");
+        createExercise("Jump Rope", "Cardio", "https://via.placeholder.com/200x200?text=Jump+Rope");
         
         // 💪 CREATE EQUIPMENT AND LINK TO EXERCISES
         
