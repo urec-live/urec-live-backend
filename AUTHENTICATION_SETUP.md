@@ -37,7 +37,39 @@ jwt.expiration=86400000
 jwt.refreshExpiration=604800000
 ```
 
-### 3. Build and Run
+### 3. Email (Password Reset) Setup
+
+To send password reset emails, configure SMTP via environment variables (recommended) or directly in `application.properties`.
+
+Example for Gmail (requires an App Password):
+
+```properties
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your_gmail@gmail.com
+MAIL_PASSWORD=your_app_password
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=true
+MAIL_FROM=your_gmail@gmail.com
+APP_PASSWORD_RESET_BASE_URL=http://localhost:8081/reset-password
+```
+
+Example for SendGrid:
+
+```properties
+MAIL_HOST=smtp.sendgrid.net
+MAIL_PORT=587
+MAIL_USERNAME=apikey
+MAIL_PASSWORD=your_sendgrid_api_key
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS=true
+MAIL_FROM=your_from_address
+APP_PASSWORD_RESET_BASE_URL=http://localhost:8081/reset-password
+```
+
+If SMTP is not configured, the backend logs the reset link to the console and no email is sent.
+
+### 4. Build and Run
 
 ```bash
 # Build the project
