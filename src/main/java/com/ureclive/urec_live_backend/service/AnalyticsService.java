@@ -68,9 +68,9 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
-    public SessionUsageSummary getOverallUsageSummary(Duration window) {
+    public SessionUsageSummary getOverallUsageSummary(Duration window, Long gymId) {
         Instant since = Instant.now().minus(window);
-        List<EquipmentSession> sessions = equipmentSessionRepository.findByStartedAtAfter(since);
+        List<EquipmentSession> sessions = equipmentSessionRepository.findByLocationIdAndStartedAtAfter(gymId, since);
         return buildSummary(since, sessions);
     }
 
@@ -266,10 +266,11 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
-    public List<EquipmentUtilizationSummary> getUtilizationByEquipment(Duration window, ZoneId zoneId) {
+    public List<EquipmentUtilizationSummary> getUtilizationByEquipment(Duration window, ZoneId zoneId, Long gymId) {
         Instant windowEnd = Instant.now();
         Instant windowStart = windowEnd.minus(window);
-        List<EquipmentSession> sessions = equipmentSessionRepository.findSessionsOverlappingWindow(windowStart,
+        List<EquipmentSession> sessions = equipmentSessionRepository.findSessionsOverlappingWindowByLocation(gymId,
+                windowStart,
                 windowEnd);
         List<Equipment> equipmentList = equipmentRepository.findAll();
 
@@ -736,5 +737,59 @@ public class AnalyticsService {
                 busyEstimates.size(),
                 maxWaitName,
                 finalMaxWait);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EquipmentWaitTimeEstimate> getBottlenecks(Duration window) {
+        List<Equipment> allEquipment = equipmentRepository.findAll();
+        return allEquipment.stream()
+                .map(eq -> getWaitTimeEstimate(eq, window))
+                .filter(est -> est.getAverageDurationSeconds() != null)
+                .sorted((a, b) -> b.getAverageDurationSeconds().compareTo(a.getAverageDurationSeconds())) // Longest
+                                                                                                          // sessions
+                                                                                                          // first
+                .limit(10)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Integer, Double> getHourlyTrend(Duration window) {
+        Instant since = Instant.now().minus(window);
+        List<EquipmentSession> sessions = equipmentSessionRepository.findByStartedAtAfter(since);
+
+        // Map of Hour (0-23) -> List of Utilization percentages for days
+        // Simplified: Count active sessions at each hour mark across the window
+        Map<Integer, Integer> hourHits = new HashMap<>(); // Hour -> Sum of Active Sessions
+        Map<Integer, Integer> hourSamples = new HashMap<>(); // Hour -> Number of days sampled
+
+        // We will sample every hour in the window
+        Instant cursor = since;
+        Instant now = Instant.now();
+
+        while (cursor.isBefore(now)) {
+            int hour = cursor.atZone(ZoneId.systemDefault()).getHour();
+            long activeCount = 0;
+
+            // Count active sessions at this specific instant
+            Instant sampleTime = cursor;
+            activeCount = sessions.stream()
+                    .filter(s -> s.getStartedAt().isBefore(sampleTime) &&
+                            (s.getEndedAt() == null || s.getEndedAt().isAfter(sampleTime)))
+                    .count();
+
+            hourHits.put(hour, hourHits.getOrDefault(hour, 0) + (int) activeCount);
+            hourSamples.put(hour, hourSamples.getOrDefault(hour, 0) + 1);
+
+            cursor = cursor.plus(1, ChronoUnit.HOURS);
+        }
+
+        Map<Integer, Double> hourlyAvg = new HashMap<>();
+        for (int h = 0; h < 24; h++) {
+            int total = hourHits.getOrDefault(h, 0);
+            int samples = Math.max(1, hourSamples.getOrDefault(h, 1));
+            hourlyAvg.put(h, (double) total / samples);
+        }
+
+        return hourlyAvg;
     }
 }

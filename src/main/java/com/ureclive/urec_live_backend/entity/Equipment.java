@@ -12,26 +12,27 @@ public class Equipment {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String code;  // Unique code for QR scanning
+    private String code; // Unique code for QR scanning
 
     @Column(nullable = false)
     private String name;
 
     @Column(nullable = false)
-    private String status;  // Available, In Use, Reserved
+    private String status; // Available, In Use, Reserved
 
     @Column(length = 500)
     private String imageUrl;
 
     @ManyToMany
-    @JoinTable(
-        name = "equipment_exercise",
-        joinColumns = @JoinColumn(name = "equipment_id"),
-        inverseJoinColumns = @JoinColumn(name = "exercise_id")
-    )
+    @JoinTable(name = "equipment_exercise", joinColumns = @JoinColumn(name = "equipment_id"), inverseJoinColumns = @JoinColumn(name = "exercise_id"))
     private Set<Exercise> exercises = new HashSet<>();
 
-    public Equipment() {}
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "location_id")
+    private GymLocation location;
+
+    public Equipment() {
+    }
 
     public Equipment(String code, String name, String status, String imageUrl) {
         this.code = code;
@@ -40,24 +41,62 @@ public class Equipment {
         this.imageUrl = imageUrl;
     }
 
+    public GymLocation getLocation() {
+        return location;
+    }
+
+    public void setLocation(GymLocation location) {
+        this.location = location;
+    }
+
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getCode() {
+        return code;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public void setCode(String code) {
+        this.code = code;
+    }
 
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getName() {
+        return name;
+    }
 
-    public Set<Exercise> getExercises() { return exercises; }
-    public void setExercises(Set<Exercise> exercises) { this.exercises = exercises; }
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public Set<Exercise> getExercises() {
+        return exercises;
+    }
+
+    public void setExercises(Set<Exercise> exercises) {
+        this.exercises = exercises;
+    }
 
     public void addExercise(Exercise exercise) {
         this.exercises.add(exercise);

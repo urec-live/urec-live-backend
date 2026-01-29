@@ -18,15 +18,21 @@ public class EquipmentController {
 
     private final EquipmentRepository equipmentRepository;
     private final EquipmentSessionRepository sessionRepository;
+    private final com.ureclive.urec_live_backend.service.EquipmentService equipmentService;
 
-    public EquipmentController(EquipmentRepository equipmentRepository, EquipmentSessionRepository sessionRepository) {
+    public EquipmentController(EquipmentRepository equipmentRepository, EquipmentSessionRepository sessionRepository,
+            com.ureclive.urec_live_backend.service.EquipmentService equipmentService) {
         this.equipmentRepository = equipmentRepository;
         this.sessionRepository = sessionRepository;
+        this.equipmentService = equipmentService;
     }
 
     @GetMapping("/all")
-    public List<EquipmentStatusDTO> getAllEquipmentStatus() {
-        List<Equipment> equipmentList = equipmentRepository.findAll();
+    public List<EquipmentStatusDTO> getAllEquipmentStatus(
+            @org.springframework.web.bind.annotation.RequestHeader(value = "X-Gym-Id", defaultValue = "1") Long gymId) {
+        // Default to Gym 1 (migrated storage) if no header.
+
+        List<Equipment> equipmentList = equipmentRepository.findByLocationId(gymId);
         return equipmentList.stream()
                 .map(equipment -> {
                     String dbStatus = equipment.getStatus();
@@ -61,5 +67,11 @@ public class EquipmentController {
         equipmentRepository.save(equipment);
 
         return org.springframework.http.ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{id}/recommendations")
+    public org.springframework.http.ResponseEntity<List<com.ureclive.urec_live_backend.dto.EquipmentWaitTimeEstimate>> getRecommendations(
+            @org.springframework.web.bind.annotation.PathVariable long id) {
+        return org.springframework.http.ResponseEntity.ok(equipmentService.getRecommendations(id));
     }
 }

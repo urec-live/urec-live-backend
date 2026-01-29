@@ -74,9 +74,10 @@ public class AnalyticsController {
 
         @GetMapping("/usage/overall")
         public ResponseEntity<SessionUsageSummary> overallUsage(
-                        @RequestParam(defaultValue = "7") int days) {
+                        @RequestParam(defaultValue = "7") int days,
+                        @org.springframework.web.bind.annotation.RequestHeader(value = "X-Gym-Id", defaultValue = "1") Long gymId) {
                 Duration window = Duration.ofDays(Math.max(1, days));
-                return ResponseEntity.ok(analyticsService.getOverallUsageSummary(window));
+                return ResponseEntity.ok(analyticsService.getOverallUsageSummary(window, gymId));
         }
 
         @GetMapping("/system")
@@ -95,9 +96,11 @@ public class AnalyticsController {
 
         @GetMapping("/utilization")
         public ResponseEntity<List<EquipmentUtilizationSummary>> utilization(
-                        @RequestParam(defaultValue = "24") int hours) {
+                        @RequestParam(defaultValue = "24") int hours,
+                        @org.springframework.web.bind.annotation.RequestHeader(value = "X-Gym-Id", defaultValue = "1") Long gymId) {
                 Duration window = Duration.ofHours(Math.max(1, hours));
-                return ResponseEntity.ok(analyticsService.getUtilizationByEquipment(window, ZoneId.systemDefault()));
+                return ResponseEntity
+                                .ok(analyticsService.getUtilizationByEquipment(window, ZoneId.systemDefault(), gymId));
         }
 
         @GetMapping("/utilization/rolling")
@@ -105,6 +108,20 @@ public class AnalyticsController {
                         @RequestParam(defaultValue = "60") int minutes) {
                 Duration window = Duration.ofMinutes(Math.max(1, minutes));
                 return ResponseEntity.ok(analyticsService.getRollingUtilization(window));
+        }
+
+        @GetMapping("/dashboard/bottlenecks")
+        public ResponseEntity<List<EquipmentWaitTimeEstimate>> getBottlenecks(
+                        @RequestParam(defaultValue = "7") int days) {
+                Duration window = Duration.ofDays(Math.max(1, days));
+                return ResponseEntity.ok(analyticsService.getBottlenecks(window));
+        }
+
+        @GetMapping("/dashboard/utilization-trends")
+        public ResponseEntity<java.util.Map<Integer, Double>> getUtilizationTrends(
+                        @RequestParam(defaultValue = "7") int days) {
+                Duration window = Duration.ofDays(Math.max(1, days));
+                return ResponseEntity.ok(analyticsService.getHourlyTrend(window));
         }
 
         @GetMapping("/wait-time/{code}")

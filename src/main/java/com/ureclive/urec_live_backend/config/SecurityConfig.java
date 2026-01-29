@@ -60,17 +60,22 @@ public class SecurityConfig {
                         }))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/auth/register",
-                                "/api/auth/login",
-                                "/api/auth/refresh",
-                                "/api/auth/forgot-password",
-                                "/api/auth/reset-password",
-                                "/api/auth/test")
-                        .permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
                         // Valid explicitly: Machines are public for Guests (no token)
-                        .requestMatchers("/api/machines/**").permitAll()
-                        .requestMatchers("/api/equipment/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/machines/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/equipment/**").permitAll()
+
+                        // Admin only endpoints
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/machines/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/machines/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/machines/**")
+                        .hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/equipment/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/equipment/**").hasRole("ADMIN")
+                        .requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/equipment/**")
+                        .hasRole("ADMIN")
+
                         // Validation: WebSockets needed for live updates for everyone
                         .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated());

@@ -16,84 +16,97 @@ import java.util.Optional;
 @Repository
 public interface EquipmentSessionRepository extends JpaRepository<EquipmentSession, Long> {
 
-    Optional<EquipmentSession> findByEquipmentAndStatus(
-            Equipment equipment,
-            EquipmentSessionStatus status);
+        Optional<EquipmentSession> findByEquipmentAndStatus(
+                        Equipment equipment,
+                        EquipmentSessionStatus status);
 
-    @Query("SELECT s FROM EquipmentSession s WHERE s.equipment.id = :equipmentId AND s.status = :status")
-    Optional<EquipmentSession> findByEquipmentIdAndStatus(
-            @Param("equipmentId") Long equipmentId,
-            @Param("status") EquipmentSessionStatus status);
+        @Query("SELECT s FROM EquipmentSession s WHERE s.equipment.id = :equipmentId AND s.status = :status")
+        Optional<EquipmentSession> findByEquipmentIdAndStatus(
+                        @Param("equipmentId") Long equipmentId,
+                        @Param("status") EquipmentSessionStatus status);
 
-    Optional<EquipmentSession> findByUserAndEquipmentAndStatus(
-            User user,
-            Equipment equipment,
-            EquipmentSessionStatus status);
+        Optional<EquipmentSession> findByUserAndEquipmentAndStatus(
+                        User user,
+                        Equipment equipment,
+                        EquipmentSessionStatus status);
 
-    Optional<EquipmentSession> findTopByUserAndStatusOrderByStartedAtDesc(
-            User user,
-            EquipmentSessionStatus status);
+        Optional<EquipmentSession> findTopByUserAndStatusOrderByStartedAtDesc(
+                        User user,
+                        EquipmentSessionStatus status);
 
-    List<EquipmentSession> findByStatusAndStartedAtBefore(
-            EquipmentSessionStatus status,
-            Instant startedAt);
+        List<EquipmentSession> findByStatusAndStartedAtBefore(
+                        EquipmentSessionStatus status,
+                        Instant startedAt);
 
-    @Query("""
-            select s from EquipmentSession s
-            where s.status = :status
-              and (
-                (s.lastHeartbeatAt is null and s.startedAt < :cutoff)
-                or (s.lastHeartbeatAt is not null and s.lastHeartbeatAt < :cutoff)
-              )
-            """)
-    List<EquipmentSession> findStaleSessions(
-            @Param("status") EquipmentSessionStatus status,
-            @Param("cutoff") Instant cutoff);
+        @Query("""
+                        select s from EquipmentSession s
+                        where s.status = :status
+                          and (
+                            (s.lastHeartbeatAt is null and s.startedAt < :cutoff)
+                            or (s.lastHeartbeatAt is not null and s.lastHeartbeatAt < :cutoff)
+                          )
+                        """)
+        List<EquipmentSession> findStaleSessions(
+                        @Param("status") EquipmentSessionStatus status,
+                        @Param("cutoff") Instant cutoff);
 
-    @Query("""
-            select s from EquipmentSession s
-            where s.status = :status
-              and coalesce(s.lastHeartbeatAt, s.startedAt) < :warnCutoff
-              and (s.lastTimeoutWarningAt is null or s.lastTimeoutWarningAt < coalesce(s.lastHeartbeatAt, s.startedAt))
-            """)
-    List<EquipmentSession> findSessionsNeedingTimeoutWarning(
-            @Param("status") EquipmentSessionStatus status,
-            @Param("warnCutoff") Instant warnCutoff);
+        @Query("""
+                        select s from EquipmentSession s
+                        where s.status = :status
+                          and coalesce(s.lastHeartbeatAt, s.startedAt) < :warnCutoff
+                          and (s.lastTimeoutWarningAt is null or s.lastTimeoutWarningAt < coalesce(s.lastHeartbeatAt, s.startedAt))
+                        """)
+        List<EquipmentSession> findSessionsNeedingTimeoutWarning(
+                        @Param("status") EquipmentSessionStatus status,
+                        @Param("warnCutoff") Instant warnCutoff);
 
-    List<EquipmentSession> findByUserAndStartedAtAfter(User user, Instant startedAt);
+        List<EquipmentSession> findByUserAndStartedAtAfter(User user, Instant startedAt);
 
-    List<EquipmentSession> findByStartedAtAfter(Instant startedAt);
+        List<EquipmentSession> findByStartedAtAfter(Instant startedAt);
 
-    @Query("""
-            select s from EquipmentSession s
-            where s.startedAt < :windowEnd
-              and (s.endedAt is null or s.endedAt > :windowStart)
-            """)
-    List<EquipmentSession> findSessionsOverlappingWindow(
-            @Param("windowStart") Instant windowStart,
-            @Param("windowEnd") Instant windowEnd);
+        List<EquipmentSession> findByLocationIdAndStartedAtAfter(Long locationId, Instant startedAt);
 
-    List<EquipmentSession> findByEquipmentAndStatusInAndEndedAtAfter(
-            Equipment equipment,
-            List<EquipmentSessionStatus> statuses,
-            Instant endedAt);
+        @Query("""
+                        select s from EquipmentSession s
+                        where s.location.id = :locationId
+                          and s.startedAt < :windowEnd
+                          and (s.endedAt is null or s.endedAt > :windowStart)
+                        """)
+        List<EquipmentSession> findSessionsOverlappingWindowByLocation(
+                        @Param("locationId") Long locationId,
+                        @Param("windowStart") Instant windowStart,
+                        @Param("windowEnd") Instant windowEnd);
 
-    long countByStatusAndEndedAtIsNotNull(EquipmentSessionStatus status);
+        @Query("""
+                        select s from EquipmentSession s
+                        where s.startedAt < :windowEnd
+                          and (s.endedAt is null or s.endedAt > :windowStart)
+                        """)
+        List<EquipmentSession> findSessionsOverlappingWindow(
+                        @Param("windowStart") Instant windowStart,
+                        @Param("windowEnd") Instant windowEnd);
 
-    long countByStatus(EquipmentSessionStatus status);
+        List<EquipmentSession> findByEquipmentAndStatusInAndEndedAtAfter(
+                        Equipment equipment,
+                        List<EquipmentSessionStatus> statuses,
+                        Instant endedAt);
 
-    long countByStatusInAndEndedAtIsNull(List<EquipmentSessionStatus> statuses);
+        long countByStatusAndEndedAtIsNotNull(EquipmentSessionStatus status);
 
-    long countByStatusInAndEndReasonIsNull(List<EquipmentSessionStatus> statuses);
+        long countByStatus(EquipmentSessionStatus status);
 
-    @Query("""
-            select s.id from EquipmentSession s
-            left join EquipmentEvent e on e.session = s
-            where s.startedAt >= :since
-            group by s.id
-            having count(e) = 0
-            """)
-    List<Long> findSessionIdsMissingEvents(@Param("since") Instant since);
+        long countByStatusInAndEndedAtIsNull(List<EquipmentSessionStatus> statuses);
 
-    void deleteByUser(User user);
+        long countByStatusInAndEndReasonIsNull(List<EquipmentSessionStatus> statuses);
+
+        @Query("""
+                        select s.id from EquipmentSession s
+                        left join EquipmentEvent e on e.session = s
+                        where s.startedAt >= :since
+                        group by s.id
+                        having count(e) = 0
+                        """)
+        List<Long> findSessionIdsMissingEvents(@Param("since") Instant since);
+
+        void deleteByUser(User user);
 }

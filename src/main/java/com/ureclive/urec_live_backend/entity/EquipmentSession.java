@@ -4,35 +4,14 @@ import jakarta.persistence.*;
 import java.time.Instant;
 
 @Entity
-@Table(
-    name = "equipment_sessions",
-    indexes = {
-        @Index(
-            name = "idx_equipment_sessions_equipment_status",
-            columnList = "equipment_id,status"
-        ),
-        @Index(
-            name = "idx_equipment_sessions_user_started",
-            columnList = "user_id,started_at"
-        ),
-        @Index(
-            name = "idx_equipment_sessions_status_started",
-            columnList = "status,started_at"
-        ),
-        @Index(
-            name = "idx_equipment_sessions_equipment_ended",
-            columnList = "equipment_id,ended_at,status"
-        ),
-        @Index(
-            name = "idx_equipment_sessions_status_heartbeat",
-            columnList = "status,last_heartbeat_at"
-        ),
-        @Index(
-            name = "idx_equipment_sessions_status_warning",
-            columnList = "status,last_timeout_warning_at"
-        )
-    }
-)
+@Table(name = "equipment_sessions", indexes = {
+        @Index(name = "idx_equipment_sessions_equipment_status", columnList = "equipment_id,status"),
+        @Index(name = "idx_equipment_sessions_user_started", columnList = "user_id,started_at"),
+        @Index(name = "idx_equipment_sessions_status_started", columnList = "status,started_at"),
+        @Index(name = "idx_equipment_sessions_equipment_ended", columnList = "equipment_id,ended_at,status"),
+        @Index(name = "idx_equipment_sessions_status_heartbeat", columnList = "status,last_heartbeat_at"),
+        @Index(name = "idx_equipment_sessions_status_warning", columnList = "status,last_timeout_warning_at")
+})
 public class EquipmentSession {
 
     @Id
@@ -68,7 +47,12 @@ public class EquipmentSession {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    public EquipmentSession() {}
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "location_id")
+    private GymLocation location;
+
+    public EquipmentSession() {
+    }
 
     // ---- getters & setters ----
 
@@ -138,5 +122,13 @@ public class EquipmentSession {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public GymLocation getLocation() {
+        return location;
+    }
+
+    public void setLocation(GymLocation location) {
+        this.location = location;
     }
 }

@@ -36,6 +36,10 @@ public class User {
     @Column(name = "push_notifications_enabled")
     private Boolean pushNotificationsEnabled = true;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "home_gym_id")
+    private GymLocation homeGym;
+
     public User() {
     }
 
@@ -43,6 +47,14 @@ public class User {
         this.username = username;
         this.email = email;
         this.password = password;
+    }
+
+    public GymLocation getHomeGym() {
+        return homeGym;
+    }
+
+    public void setHomeGym(GymLocation homeGym) {
+        this.homeGym = homeGym;
     }
 
     public Long getId() {

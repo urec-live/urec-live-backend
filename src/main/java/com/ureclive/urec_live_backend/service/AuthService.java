@@ -63,47 +63,52 @@ public class AuthService {
         }
 
         User user = new User(
-            registerRequest.getUsername(),
-            registerRequest.getEmail(),
-            passwordEncoder.encode(registerRequest.getPassword())
-        );
+                registerRequest.getUsername(),
+                registerRequest.getEmail(),
+                passwordEncoder.encode(registerRequest.getPassword()));
 
         // Assign default role
         Role userRole = roleRepository.findByName("USER")
-            .orElseGet(() -> roleRepository.save(new Role("USER")));
+                .orElseGet(() -> roleRepository.save(new Role("USER")));
         user.addRole(userRole);
 
         userRepository.save(user);
 
         UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
-            .username(user.getUsername())
-            .password(user.getPassword())
-            .authorities(() -> "ROLE_USER")
-            .build();
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .authorities(() -> "ROLE_USER")
+                .build();
 
         String accessToken = jwtUtil.generateToken(userDetails);
         String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
-        return new AuthResponse(accessToken, refreshToken, user.getUsername(), user.getEmail());
+        java.util.List<String> roles = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(java.util.stream.Collectors.toList());
+
+        return new AuthResponse(accessToken, refreshToken, user.getUsername(), user.getEmail(), roles);
     }
 
     public AuthResponse login(LoginRequest loginRequest) {
         try {
             Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                    loginRequest.getUsername(),
-                    loginRequest.getPassword()
-                )
-            );
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(),
+                            loginRequest.getPassword()));
 
             User user = userRepository.findByUsername(loginRequest.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new RuntimeException("User not found"));
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String accessToken = jwtUtil.generateToken(userDetails);
             String refreshToken = jwtUtil.generateRefreshToken(userDetails);
 
-            return new AuthResponse(accessToken, refreshToken, user.getUsername(), user.getEmail());
+            java.util.List<String> roles = user.getRoles().stream()
+                    .map(Role::getName)
+                    .collect(java.util.stream.Collectors.toList());
+
+            return new AuthResponse(accessToken, refreshToken, user.getUsername(), user.getEmail(), roles);
         } catch (AuthenticationException e) {
             throw new BadCredentialsException("Invalid username or password");
         }
@@ -116,18 +121,22 @@ public class AuthService {
 
         String username = jwtUtil.extractUsername(refreshToken);
         User user = userRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
-            .username(user.getUsername())
-            .password(user.getPassword())
-            .authorities(() -> "ROLE_USER")
-            .build();
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .authorities(() -> "ROLE_USER")
+                .build();
 
         String newAccessToken = jwtUtil.generateToken(userDetails);
         String newRefreshToken = jwtUtil.generateRefreshToken(userDetails);
 
-        return new AuthResponse(newAccessToken, newRefreshToken, user.getUsername(), user.getEmail());
+        java.util.List<String> roles = user.getRoles().stream()
+                .map(Role::getName)
+                .collect(java.util.stream.Collectors.toList());
+
+        return new AuthResponse(newAccessToken, newRefreshToken, user.getUsername(), user.getEmail(), roles);
     }
 
     public void requestPasswordReset(String email) {
