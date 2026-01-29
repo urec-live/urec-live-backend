@@ -66,6 +66,12 @@ public class AnalyticsController {
                 return ResponseEntity.ok(analyticsService.getUserAnalyticsSummary(user, window));
         }
 
+        @GetMapping("/my-stats")
+        public ResponseEntity<com.ureclive.urec_live_backend.dto.UserStatsDto> myStats(Authentication authentication) {
+                User user = getUserFromAuth(authentication);
+                return ResponseEntity.ok(analyticsService.getUserStats(user));
+        }
+
         @GetMapping("/usage/overall")
         public ResponseEntity<SessionUsageSummary> overallUsage(
                         @RequestParam(defaultValue = "7") int days) {

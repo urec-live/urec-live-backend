@@ -608,6 +608,90 @@ public class AnalyticsService {
     }
 
     @Transactional(readOnly = true)
+    public com.ureclive.urec_live_backend.dto.UserStatsDto getUserStats(User user) {
+        // 1. Calculate Streak
+        // Find all sessions for user, sorted descending by start time
+        List<EquipmentSession> allSessions = equipmentSessionRepository.findByUserAndStartedAtAfter(user,
+                Instant.EPOCH);
+        // We'll process them in-memory for simplicity as streak logic can be complex in
+        // SQL
+        // Group by LocalDate (system default zone)
+        Set<java.time.LocalDate> activeDays = new java.util.HashSet<>();
+        ZoneId zone = ZoneId.systemDefault();
+
+        for (EquipmentSession s : allSessions) {
+            activeDays.add(s.getStartedAt().atZone(zone).toLocalDate());
+        }
+
+        int currentStreak = 0;
+        java.time.LocalDate cursor = java.time.LocalDate.now(zone);
+
+        // If no workout today, check yesterday to see if streak is still alive
+        if (!activeDays.contains(cursor)) {
+            if (activeDays.contains(cursor.minusDays(1))) {
+                // Streak is alive, but continues from yesterday
+                cursor = cursor.minusDays(1);
+            } else {
+                // Streak broken or 0
+                // But wait, if they worked out 0 times, streak is 0.
+                // If they worked out 2 days ago, streak is 0.
+                // So we start checking from yesterday only if today is missing.
+                currentStreak = 0;
+            }
+        }
+
+        while (activeDays.contains(cursor)) {
+            currentStreak++;
+            cursor = cursor.minusDays(1);
+        }
+
+        // 2. Calculate Weekly Stats (This Week)
+        // "This Week" = From last Monday (or Sunday) to now. Let's say Rolling 7 Days
+        // for simplicity?
+        // Or "Current Calendar Week"?
+        // Let's stick to "Rolling 7 Days" as it's often more encouraging.
+        Instant sevenDaysAgo = Instant.now().minus(7, ChronoUnit.DAYS);
+        List<EquipmentSession> recentSessions = equipmentSessionRepository.findByUserAndStartedAtAfter(user,
+                sevenDaysAgo);
+
+        int totalWorkouts = recentSessions.size();
+        double totalSeconds = 0;
+        Map<String, Integer> split = new HashMap<>();
+
+        for (EquipmentSession s : recentSessions) {
+            if (s.getEndedAt() != null) {
+                totalSeconds += Duration.between(s.getStartedAt(), s.getEndedAt()).getSeconds();
+            }
+
+            // Check muscle group
+            Equipment eq = s.getEquipment();
+            if (eq != null) {
+                // We need to fetch exercises. equipment.getExercises() might be lazy, but
+                // inside @Transactional it's fine.
+                // However, an equipment can have multiple exercises. We'll simply count all
+                // unique muscle groups for that machine.
+                // Or picking the first one. Let's aggregate all.
+                for (com.ureclive.urec_live_backend.entity.Exercise ex : eq.getExercises()) {
+                    String group = ex.getMuscleGroup();
+                    if (group != null && !group.isEmpty()) {
+                        split.put(group, split.getOrDefault(group, 0) + 1);
+                    }
+                }
+            }
+        }
+
+        double totalHours = totalSeconds / 3600.0;
+        // Round to 1 decimal
+        totalHours = Math.round(totalHours * 10.0) / 10.0;
+
+        return new com.ureclive.urec_live_backend.dto.UserStatsDto(
+                currentStreak,
+                totalWorkouts,
+                totalHours,
+                split);
+    }
+
+    @Transactional(readOnly = true)
     public com.ureclive.urec_live_backend.dto.WaitTimeSummaryDTO getWaitTimeSummary(Duration historyWindow) {
         List<Equipment> allEquipment = equipmentRepository.findAll();
         List<EquipmentWaitTimeEstimate> busyEstimates = new ArrayList<>();
