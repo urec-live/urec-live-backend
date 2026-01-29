@@ -9,6 +9,9 @@ import java.time.Instant;
 import java.util.List;
 
 @Repository
-public interface EquipmentEventRepository extends JpaRepository<EquipmentEvent, Long>, JpaSpecificationExecutor<EquipmentEvent> {
+public interface EquipmentEventRepository
+        extends JpaRepository<EquipmentEvent, Long>, JpaSpecificationExecutor<EquipmentEvent> {
     List<EquipmentEvent> findByOccurredAtAfter(Instant occurredAt);
+
+    void deleteByUser(com.ureclive.urec_live_backend.entity.User user);
 }

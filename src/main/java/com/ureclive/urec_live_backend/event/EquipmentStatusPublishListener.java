@@ -19,8 +19,7 @@ public class EquipmentStatusPublishListener {
 
     public EquipmentStatusPublishListener(
             SimpMessagingTemplate messagingTemplate,
-            MeterRegistry meterRegistry
-    ) {
+            MeterRegistry meterRegistry) {
         this.messagingTemplate = messagingTemplate;
         this.meterRegistry = meterRegistry;
     }
@@ -35,7 +34,8 @@ public class EquipmentStatusPublishListener {
             meterRegistry.counter("urec.ws.publish", "result", "success").increment();
         } catch (Exception ex) {
             meterRegistry.counter("urec.ws.publish", "result", "failure").increment();
-            logger.error("[WS] failed to publish equipment-status: {} -> {}", payload.getEquipmentId(), payload.getStatus(), ex);
+            logger.error("[WS] failed to publish equipment-status: {} -> {}", payload.getEquipmentId(),
+                    payload.getStatus(), ex);
             throw ex;
         }
     }

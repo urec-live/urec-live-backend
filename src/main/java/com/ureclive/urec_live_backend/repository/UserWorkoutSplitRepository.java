@@ -10,4 +10,6 @@ import java.util.Optional;
 @Repository
 public interface UserWorkoutSplitRepository extends JpaRepository<UserWorkoutSplit, Long> {
     Optional<UserWorkoutSplit> findByUser(User user);
+
+    void deleteByUser(User user);
 }

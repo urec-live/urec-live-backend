@@ -28,13 +28,38 @@ public class EquipmentController {
     public List<EquipmentStatusDTO> getAllEquipmentStatus() {
         List<Equipment> equipmentList = equipmentRepository.findAll();
         return equipmentList.stream()
-                .map(equipment -> new EquipmentStatusDTO(
-                        equipment.getId(),
-                        equipment.getCode(),
-                        equipment.getName(),
-                        sessionRepository.findByEquipmentAndStatus(equipment, EquipmentSessionStatus.ACTIVE)
-                                .isPresent() ? "IN_USE" : "AVAILABLE"
-                ))
+                .map(equipment -> {
+                    String dbStatus = equipment.getStatus();
+                    if (!"AVAILABLE".equalsIgnoreCase(dbStatus)) {
+                        return new EquipmentStatusDTO(equipment.getId(), equipment.getCode(), equipment.getName(),
+                                dbStatus);
+                    }
+                    boolean inUse = sessionRepository
+                            .findByEquipmentIdAndStatus(equipment.getId(), EquipmentSessionStatus.ACTIVE)
+                            .isPresent();
+                    return new EquipmentStatusDTO(
+                            equipment.getId(),
+                            equipment.getCode(),
+                            equipment.getName(),
+                            inUse ? "IN_USE" : "AVAILABLE");
+                })
                 .collect(Collectors.toList());
+    }
+
+    @org.springframework.web.bind.annotation.PatchMapping("/{id}/status")
+    public org.springframework.http.ResponseEntity<Void> updateEquipmentStatus(
+            @org.springframework.web.bind.annotation.PathVariable long id,
+            @org.springframework.web.bind.annotation.RequestBody java.util.Map<String, String> payload) {
+        String newStatus = payload.get("status");
+        if (newStatus == null || newStatus.isBlank()) {
+            return org.springframework.http.ResponseEntity.badRequest().build();
+        }
+
+        Equipment equipment = equipmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Equipment not found"));
+        equipment.setStatus(newStatus);
+        equipmentRepository.save(equipment);
+
+        return org.springframework.http.ResponseEntity.ok().build();
     }
 }

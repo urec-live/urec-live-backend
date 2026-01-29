@@ -52,8 +52,7 @@ public class AnalyticsService {
             EquipmentRepository equipmentRepository,
             EquipmentEventRepository equipmentEventRepository,
             @Value("${analytics.wait-time.min-history:5}") int minHistoryForWaitTime,
-            @Value("${session.timeout.minutes:120}") long sessionTimeoutMinutes
-    ) {
+            @Value("${session.timeout.minutes:120}") long sessionTimeoutMinutes) {
         this.equipmentSessionRepository = equipmentSessionRepository;
         this.equipmentRepository = equipmentRepository;
         this.equipmentEventRepository = equipmentEventRepository;
@@ -64,8 +63,7 @@ public class AnalyticsService {
     @Transactional(readOnly = true)
     public SessionUsageSummary getUserUsageSummary(User user, Duration window) {
         Instant since = Instant.now().minus(window);
-        List<EquipmentSession> sessions =
-                equipmentSessionRepository.findByUserAndStartedAtAfter(user, since);
+        List<EquipmentSession> sessions = equipmentSessionRepository.findByUserAndStartedAtAfter(user, since);
         return buildSummary(since, sessions);
     }
 
@@ -79,8 +77,7 @@ public class AnalyticsService {
     @Transactional(readOnly = true)
     public UserAnalyticsSummary getUserAnalyticsSummary(User user, Duration window) {
         Instant since = Instant.now().minus(window);
-        List<EquipmentSession> sessions =
-                equipmentSessionRepository.findByUserAndStartedAtAfter(user, since);
+        List<EquipmentSession> sessions = equipmentSessionRepository.findByUserAndStartedAtAfter(user, since);
         return buildAnalyticsSummary(since, sessions);
     }
 
@@ -102,8 +99,7 @@ public class AnalyticsService {
                 summary.getMostUsedEquipmentId(),
                 summary.getMostUsedEquipmentName(),
                 summary.getMostUsedEquipmentCount(),
-                summary.getTimeoutRate()
-        );
+                summary.getTimeoutRate());
     }
 
     @Transactional(readOnly = true)
@@ -116,8 +112,7 @@ public class AnalyticsService {
 
         List<EquipmentSessionStatus> endedStatuses = Arrays.asList(
                 EquipmentSessionStatus.ENDED,
-                EquipmentSessionStatus.TIMED_OUT
-        );
+                EquipmentSessionStatus.TIMED_OUT);
 
         int activeWithEndedAt = (int) equipmentSessionRepository
                 .countByStatusAndEndedAtIsNotNull(EquipmentSessionStatus.ACTIVE);
@@ -127,8 +122,8 @@ public class AnalyticsService {
                 .countByStatusInAndEndReasonIsNull(endedStatuses);
 
         Instant cutoff = now.minus(Duration.ofMinutes(sessionTimeoutMinutes));
-        List<EquipmentSession> staleActiveSessions =
-                equipmentSessionRepository.findByStatusAndStartedAtBefore(EquipmentSessionStatus.ACTIVE, cutoff);
+        List<EquipmentSession> staleActiveSessions = equipmentSessionRepository
+                .findByStatusAndStartedAtBefore(EquipmentSessionStatus.ACTIVE, cutoff);
         List<Long> staleSessionIds = staleActiveSessions.stream()
                 .map(EquipmentSession::getId)
                 .filter(id -> id != null)
@@ -200,9 +195,9 @@ public class AnalyticsService {
                 if (lastEvent == null
                         || event.getOccurredAt().isAfter(lastEvent.getOccurredAt())
                         || (event.getOccurredAt().equals(lastEvent.getOccurredAt())
-                            && event.getId() != null
-                            && lastEvent.getId() != null
-                            && event.getId() > lastEvent.getId())) {
+                                && event.getId() != null
+                                && lastEvent.getId() != null
+                                && event.getId() > lastEvent.getId())) {
                     lastEvent = event;
                 }
             }
@@ -237,7 +232,8 @@ public class AnalyticsService {
                     invalid = true;
                 } else if (status == EquipmentSessionStatus.ENDED && lastType != EquipmentEventType.SESSION_ENDED) {
                     invalid = true;
-                } else if (status == EquipmentSessionStatus.TIMED_OUT && lastType != EquipmentEventType.SESSION_TIMED_OUT) {
+                } else if (status == EquipmentSessionStatus.TIMED_OUT
+                        && lastType != EquipmentEventType.SESSION_TIMED_OUT) {
                     invalid = true;
                 }
 
@@ -266,16 +262,15 @@ public class AnalyticsService {
                 invalidTerminalEvents,
                 invalidTerminalSamples,
                 outOfOrderEvents,
-                outOfOrderSamples
-        );
+                outOfOrderSamples);
     }
 
     @Transactional(readOnly = true)
     public List<EquipmentUtilizationSummary> getUtilizationByEquipment(Duration window, ZoneId zoneId) {
         Instant windowEnd = Instant.now();
         Instant windowStart = windowEnd.minus(window);
-        List<EquipmentSession> sessions =
-                equipmentSessionRepository.findSessionsOverlappingWindow(windowStart, windowEnd);
+        List<EquipmentSession> sessions = equipmentSessionRepository.findSessionsOverlappingWindow(windowStart,
+                windowEnd);
         List<Equipment> equipmentList = equipmentRepository.findAll();
 
         Map<Long, List<EquipmentSession>> sessionsByEquipment = new HashMap<>();
@@ -305,8 +300,7 @@ public class AnalyticsService {
 
         List<EquipmentUtilizationSummary> summaries = new ArrayList<>();
         for (Equipment equipment : equipmentList) {
-            List<EquipmentSession> equipmentSessions =
-                    sessionsByEquipment.getOrDefault(equipment.getId(), List.of());
+            List<EquipmentSession> equipmentSessions = sessionsByEquipment.getOrDefault(equipment.getId(), List.of());
 
             List<EquipmentUtilizationPoint> points = new ArrayList<>();
             for (Instant hourStart : bucketStarts) {
@@ -332,8 +326,7 @@ public class AnalyticsService {
                     equipment.getId(),
                     equipment.getCode(),
                     equipment.getName(),
-                    points
-            ));
+                    points));
         }
 
         return summaries;
@@ -343,8 +336,8 @@ public class AnalyticsService {
     public List<EquipmentUtilizationSnapshot> getRollingUtilization(Duration window) {
         Instant windowEnd = Instant.now();
         Instant windowStart = windowEnd.minus(window);
-        List<EquipmentSession> sessions =
-                equipmentSessionRepository.findSessionsOverlappingWindow(windowStart, windowEnd);
+        List<EquipmentSession> sessions = equipmentSessionRepository.findSessionsOverlappingWindow(windowStart,
+                windowEnd);
         List<Equipment> equipmentList = equipmentRepository.findAll();
 
         Map<Long, List<EquipmentSession>> sessionsByEquipment = new HashMap<>();
@@ -362,8 +355,7 @@ public class AnalyticsService {
         List<EquipmentUtilizationSnapshot> snapshots = new ArrayList<>();
 
         for (Equipment equipment : equipmentList) {
-            List<EquipmentSession> equipmentSessions =
-                    sessionsByEquipment.getOrDefault(equipment.getId(), List.of());
+            List<EquipmentSession> equipmentSessions = sessionsByEquipment.getOrDefault(equipment.getId(), List.of());
 
             long overlapSeconds = 0;
             for (EquipmentSession session : equipmentSessions) {
@@ -384,8 +376,7 @@ public class AnalyticsService {
                     equipment.getName(),
                     windowStart,
                     windowEnd,
-                    utilization
-            ));
+                    utilization));
         }
 
         return snapshots;
@@ -407,8 +398,8 @@ public class AnalyticsService {
             activeElapsedSeconds = Duration.between(activeStartedAt, now).getSeconds();
         }
 
-        List<EquipmentSessionStatus> completedStatuses =
-                Arrays.asList(EquipmentSessionStatus.ENDED, EquipmentSessionStatus.TIMED_OUT);
+        List<EquipmentSessionStatus> completedStatuses = Arrays.asList(EquipmentSessionStatus.ENDED,
+                EquipmentSessionStatus.TIMED_OUT);
         Instant since = now.minus(historyWindow);
         List<EquipmentSession> historySessions = equipmentSessionRepository
                 .findByEquipmentAndStatusInAndEndedAtAfter(equipment, completedStatuses, since);
@@ -446,8 +437,7 @@ public class AnalyticsService {
                 estimatedWaitSeconds,
                 averageDurationSeconds,
                 activeElapsedSeconds,
-                activeStartedAt
-        );
+                activeStartedAt);
     }
 
     @Transactional(readOnly = true)
@@ -458,8 +448,7 @@ public class AnalyticsService {
             EquipmentEventType eventType,
             Instant since,
             Instant until,
-            @NonNull Pageable pageable
-    ) {
+            @NonNull Pageable pageable) {
         Specification<EquipmentEvent> spec = Specification.where(null);
         if (equipmentId != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("equipment").get("id"), equipmentId));
@@ -489,8 +478,7 @@ public class AnalyticsService {
                 event.getSession().getId(),
                 event.getUser().getId(),
                 event.getOccurredAt(),
-                event.getMetadata()
-        ));
+                event.getMetadata()));
     }
 
     private Instant maxInstant(Instant a, Instant b, Instant c) {
@@ -536,8 +524,7 @@ public class AnalyticsService {
                 completedSessions,
                 averageDurationSeconds,
                 peakStartHour,
-                peakSessionCount
-        );
+                peakSessionCount);
     }
 
     private UserAnalyticsSummary buildAnalyticsSummary(Instant since, List<EquipmentSession> sessions) {
@@ -571,8 +558,7 @@ public class AnalyticsService {
             if (equipment != null && equipment.getId() != null) {
                 equipmentCounts.put(
                         equipment.getId(),
-                        equipmentCounts.getOrDefault(equipment.getId(), 0) + 1
-                );
+                        equipmentCounts.getOrDefault(equipment.getId(), 0) + 1);
                 equipmentNames.putIfAbsent(equipment.getId(), equipment.getName());
             }
 
@@ -618,7 +604,53 @@ public class AnalyticsService {
                 mostUsedEquipmentId,
                 mostUsedEquipmentName,
                 mostUsedEquipmentCount,
-                timeoutRate
-        );
+                timeoutRate);
+    }
+
+    @Transactional(readOnly = true)
+    public com.ureclive.urec_live_backend.dto.WaitTimeSummaryDTO getWaitTimeSummary(Duration historyWindow) {
+        List<Equipment> allEquipment = equipmentRepository.findAll();
+        List<EquipmentWaitTimeEstimate> busyEstimates = new ArrayList<>();
+
+        for (Equipment eq : allEquipment) {
+            EquipmentWaitTimeEstimate est = getWaitTimeEstimate(eq, historyWindow);
+            if (est.isInUse()) {
+                busyEstimates.add(est);
+            }
+        }
+
+        if (busyEstimates.isEmpty()) {
+            return new com.ureclive.urec_live_backend.dto.WaitTimeSummaryDTO(0.0, 0, null, 0L);
+        }
+
+        double totalWaitSeconds = 0;
+        int validEstimatesCount = 0;
+        long maxWait = -1;
+        String maxWaitName = null;
+
+        for (EquipmentWaitTimeEstimate est : busyEstimates) {
+            Long wait = est.getEstimatedWaitSeconds();
+            if (wait != null) {
+                totalWaitSeconds += wait;
+                validEstimatesCount++;
+                if (wait > maxWait) {
+                    maxWait = wait;
+                    maxWaitName = est.getName();
+                }
+            }
+        }
+
+        Double avgWaitMinutes = null;
+        if (validEstimatesCount > 0) {
+            avgWaitMinutes = (totalWaitSeconds / validEstimatesCount) / 60.0;
+        }
+
+        Long finalMaxWait = maxWait == -1 ? null : maxWait;
+
+        return new com.ureclive.urec_live_backend.dto.WaitTimeSummaryDTO(
+                avgWaitMinutes,
+                busyEstimates.size(),
+                maxWaitName,
+                finalMaxWait);
     }
 }

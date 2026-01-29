@@ -10,5 +10,8 @@ import java.util.List;
 
 @Repository
 public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, Long> {
-    List<WorkoutSession> findByUserAndWorkoutDateBetweenOrderByWorkoutDateDesc(User user, LocalDate start, LocalDate end);
+    List<WorkoutSession> findByUserAndWorkoutDateBetweenOrderByWorkoutDateDesc(User user, LocalDate start,
+            LocalDate end);
+
+    void deleteByUser(User user);
 }

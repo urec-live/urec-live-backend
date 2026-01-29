@@ -18,24 +18,25 @@ public interface EquipmentSessionRepository extends JpaRepository<EquipmentSessi
 
     Optional<EquipmentSession> findByEquipmentAndStatus(
             Equipment equipment,
-            EquipmentSessionStatus status
-    );
+            EquipmentSessionStatus status);
+
+    @Query("SELECT s FROM EquipmentSession s WHERE s.equipment.id = :equipmentId AND s.status = :status")
+    Optional<EquipmentSession> findByEquipmentIdAndStatus(
+            @Param("equipmentId") Long equipmentId,
+            @Param("status") EquipmentSessionStatus status);
 
     Optional<EquipmentSession> findByUserAndEquipmentAndStatus(
             User user,
             Equipment equipment,
-            EquipmentSessionStatus status
-    );
+            EquipmentSessionStatus status);
 
     Optional<EquipmentSession> findTopByUserAndStatusOrderByStartedAtDesc(
             User user,
-            EquipmentSessionStatus status
-    );
+            EquipmentSessionStatus status);
 
     List<EquipmentSession> findByStatusAndStartedAtBefore(
             EquipmentSessionStatus status,
-            Instant startedAt
-    );
+            Instant startedAt);
 
     @Query("""
             select s from EquipmentSession s
@@ -47,8 +48,7 @@ public interface EquipmentSessionRepository extends JpaRepository<EquipmentSessi
             """)
     List<EquipmentSession> findStaleSessions(
             @Param("status") EquipmentSessionStatus status,
-            @Param("cutoff") Instant cutoff
-    );
+            @Param("cutoff") Instant cutoff);
 
     @Query("""
             select s from EquipmentSession s
@@ -58,8 +58,7 @@ public interface EquipmentSessionRepository extends JpaRepository<EquipmentSessi
             """)
     List<EquipmentSession> findSessionsNeedingTimeoutWarning(
             @Param("status") EquipmentSessionStatus status,
-            @Param("warnCutoff") Instant warnCutoff
-    );
+            @Param("warnCutoff") Instant warnCutoff);
 
     List<EquipmentSession> findByUserAndStartedAtAfter(User user, Instant startedAt);
 
@@ -72,14 +71,12 @@ public interface EquipmentSessionRepository extends JpaRepository<EquipmentSessi
             """)
     List<EquipmentSession> findSessionsOverlappingWindow(
             @Param("windowStart") Instant windowStart,
-            @Param("windowEnd") Instant windowEnd
-    );
+            @Param("windowEnd") Instant windowEnd);
 
     List<EquipmentSession> findByEquipmentAndStatusInAndEndedAtAfter(
             Equipment equipment,
             List<EquipmentSessionStatus> statuses,
-            Instant endedAt
-    );
+            Instant endedAt);
 
     long countByStatusAndEndedAtIsNotNull(EquipmentSessionStatus status);
 
@@ -97,4 +94,6 @@ public interface EquipmentSessionRepository extends JpaRepository<EquipmentSessi
             having count(e) = 0
             """)
     List<Long> findSessionIdsMissingEvents(@Param("since") Instant since);
+
+    void deleteByUser(User user);
 }

@@ -17,8 +17,14 @@ import java.util.Objects;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import org.springframework.boot.test.mock.mockito.MockBean;
+import com.ureclive.urec_live_backend.service.EmailService;
+
 @SpringBootTest
 class AuthPasswordResetTest {
+
+    @MockBean
+    private EmailService emailService;
 
     @Autowired
     private AuthService authService;
@@ -36,8 +42,7 @@ class AuthPasswordResetTest {
         User user = userRepository.save(new User(
                 "reset_user_" + suffix,
                 "reset_" + suffix + "@example.com",
-                passwordEncoder.encode("password")
-        ));
+                passwordEncoder.encode("password")));
 
         authService.requestPasswordReset(user.getEmail());
 
@@ -54,8 +59,7 @@ class AuthPasswordResetTest {
         User user = userRepository.save(new User(
                 "reset_valid_user_" + suffix,
                 "reset_valid_" + suffix + "@example.com",
-                passwordEncoder.encode("old_password")
-        ));
+                passwordEncoder.encode("old_password")));
 
         String rawToken = "token_" + suffix;
         user.setPasswordResetTokenHash(sha256Hex(rawToken));
@@ -78,8 +82,7 @@ class AuthPasswordResetTest {
         User user = userRepository.save(new User(
                 "reset_expired_user_" + suffix,
                 "reset_expired_" + suffix + "@example.com",
-                passwordEncoder.encode("old_password")
-        ));
+                passwordEncoder.encode("old_password")));
 
         String rawToken = "expired_" + suffix;
         user.setPasswordResetTokenHash(sha256Hex(rawToken));

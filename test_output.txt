@@ -1,0 +1,527 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------< com.ureclive:urec-live-backend >-------------------
+[INFO] Building urec-live-backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ urec-live-backend ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ urec-live-backend ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ urec-live-backend ---
+[INFO] Copying 1 resource from src\test\resources to target\test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ urec-live-backend ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.2.5:test (default-test) @ urec-live-backend ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.ureclive.urec_live_backend.AccountDeletionTest
+10:33:43.892 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.ureclive.urec_live_backend.AccountDeletionTest]: AccountDeletionTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+10:33:43.975 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.ureclive.urec_live_backend.UrecLiveBackendApplication for test class com.ureclive.urec_live_backend.AccountDeletionTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+2026-01-28T10:33:44.272-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] c.u.u.AccountDeletionTest                : Starting AccountDeletionTest using Java 21.0.9 with PID 25728 (started by aakas in C:\Users\aakas\Documents\UREC\urec-live-backend)
+2026-01-28T10:33:44.273-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] c.u.u.AccountDeletionTest                : The following 1 profile is active: "test"
+2026-01-28T10:33:45.071-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-28T10:33:45.133-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 56 ms. Found 9 JPA repository interfaces.
+2026-01-28T10:33:45.790-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-01-28T10:33:45.859-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.5.2.Final
+2026-01-28T10:33:45.897-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-01-28T10:33:46.197-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-28T10:33:46.223-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-28T10:33:46.348-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:testdb user=SA
+2026-01-28T10:33:46.349-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-28T10:33:46.366-05:00  WARN 25728 --- [URECLiveBackendToTest] [           main] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-01-28T10:33:47.136-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+Hibernate: drop table if exists equipment cascade 
+Hibernate: drop table if exists equipment_events cascade 
+Hibernate: drop table if exists equipment_exercise cascade 
+Hibernate: drop table if exists equipment_sessions cascade 
+Hibernate: drop table if exists exercise cascade 
+Hibernate: drop table if exists push_tokens cascade 
+Hibernate: drop table if exists roles cascade 
+Hibernate: drop table if exists user_roles cascade 
+Hibernate: drop table if exists user_workout_splits cascade 
+Hibernate: drop table if exists users cascade 
+Hibernate: drop table if exists workout_sessions cascade 
+Hibernate: create table equipment (id bigint generated by default as identity, image_url varchar(500), code varchar(255) not null unique, name varchar(255) not null, status varchar(255) not null, primary key (id))
+Hibernate: create table equipment_events (equipment_id bigint not null, id bigint generated by default as identity, occurred_at timestamp(6) with time zone not null, session_id bigint not null, user_id bigint not null, metadata varchar(255), event_type enum ('SESSION_ENDED','SESSION_STARTED','SESSION_TIMED_OUT') not null, primary key (id))
+Hibernate: create table equipment_exercise (equipment_id bigint not null, exercise_id bigint not null, primary key (equipment_id, exercise_id))
+Hibernate: create table equipment_sessions (ended_at timestamp(6) with time zone, equipment_id bigint not null, id bigint generated by default as identity, last_heartbeat_at timestamp(6) with time zone, last_timeout_warning_at timestamp(6) with time zone, started_at timestamp(6) with time zone not null, user_id bigint not null, end_reason enum ('TIMEOUT','USER_ENDED'), status enum ('ACTIVE','ENDED','TIMED_OUT') not null, primary key (id))
+Hibernate: create table exercise (id bigint generated by default as identity, gif_url varchar(500), muscle_group varchar(255) not null, name varchar(255) not null unique, primary key (id))
+Hibernate: create table push_tokens (created_at timestamp(6) with time zone not null, id bigint generated by default as identity, last_seen_at timestamp(6) with time zone, updated_at timestamp(6) with time zone not null, user_id bigint not null, platform varchar(20), device_name varchar(80), token varchar(200) not null unique, primary key (id))
+Hibernate: create table roles (id bigint generated by default as identity, name varchar(255) not null unique, primary key (id))
+Hibernate: create table user_roles (role_id bigint not null, user_id bigint not null, primary key (role_id, user_id))
+Hibernate: create table user_workout_splits (id bigint generated by default as identity, updated_at timestamp(6) with time zone not null, user_id bigint not null unique, manual_split_json text not null, mode enum ('AUTO','MANUAL') not null, primary key (id))
+Hibernate: create table users (enabled boolean not null, id bigint generated by default as identity, password_reset_token_expires_at timestamp(6) with time zone, password_reset_token_hash varchar(64), email varchar(255) not null unique, password varchar(255) not null, username varchar(255) not null unique, primary key (id))
+Hibernate: create table workout_sessions (workout_date date not null, end_time timestamp(6) with time zone not null, id bigint generated by default as identity, start_time timestamp(6) with time zone not null, user_id bigint not null, exercise_name varchar(255) not null, machine_id varchar(255) not null, muscle_group varchar(255) not null, primary key (id))
+Hibernate: create index idx_equipment_events_equipment_time on equipment_events (equipment_id, occurred_at)
+Hibernate: create index idx_equipment_events_session_time on equipment_events (session_id, occurred_at)
+Hibernate: create index idx_equipment_sessions_equipment_status on equipment_sessions (equipment_id, status)
+Hibernate: create index idx_equipment_sessions_user_started on equipment_sessions (user_id, started_at)
+Hibernate: create index idx_equipment_sessions_status_started on equipment_sessions (status, started_at)
+Hibernate: create index idx_equipment_sessions_equipment_ended on equipment_sessions (equipment_id, ended_at, status)
+Hibernate: create index idx_equipment_sessions_status_heartbeat on equipment_sessions (status, last_heartbeat_at)
+Hibernate: create index idx_equipment_sessions_status_warning on equipment_sessions (status, last_timeout_warning_at)
+Hibernate: create index idx_push_tokens_user on push_tokens (user_id)
+Hibernate: alter table if exists equipment_events add constraint FKl84nstat39aqrhbyqfhdrnl4e foreign key (equipment_id) references equipment
+Hibernate: alter table if exists equipment_events add constraint FKl6eihbhl48xdlhlhtsw95ad6q foreign key (session_id) references equipment_sessions
+Hibernate: alter table if exists equipment_events add constraint FKcdiiupas07ol6vk16pen8i6tc foreign key (user_id) references users
+Hibernate: alter table if exists equipment_exercise add constraint FKa8mhwfekj1t51qv8l1sxmox0j foreign key (exercise_id) references exercise
+Hibernate: alter table if exists equipment_exercise add constraint FK99tpo1v0g25lgf13lws5rme5r foreign key (equipment_id) references equipment
+Hibernate: alter table if exists equipment_sessions add constraint FK36liqhvjkdoarof6injv480vn foreign key (equipment_id) references equipment
+Hibernate: alter table if exists equipment_sessions add constraint FKqlsp8yi4fnl7bxoht1c2bseb4 foreign key (user_id) references users
+Hibernate: alter table if exists push_tokens add constraint FKgisqbur2nbpemhidpyqv501nd foreign key (user_id) references users
+Hibernate: alter table if exists user_roles add constraint FKh8ciramu9cc9q3qcqiv4ue8a6 foreign key (role_id) references roles
+Hibernate: alter table if exists user_roles add constraint FKhfh9dx7w3ubf1co1vdev94g3f foreign key (user_id) references users
+Hibernate: alter table if exists user_workout_splits add constraint FKf17xh6a5e8md77ft6uo514r9m foreign key (user_id) references users
+Hibernate: alter table if exists workout_sessions add constraint FKfwqciawyjntpphp080wpa37ge foreign key (user_id) references users
+2026-01-28T10:33:47.197-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-01-28T10:33:47.640-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-01-28T10:33:48.300-05:00  WARN 25728 --- [URECLiveBackendToTest] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-01-28T10:33:48.367-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] eAuthenticationProviderManagerConfigurer : Global AuthenticationManager configured with AuthenticationProvider bean with name authenticationProvider
+2026-01-28T10:33:48.368-05:00  WARN 25728 --- [URECLiveBackendToTest] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used for username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider.
+2026-01-28T10:33:49.149-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-01-28T10:33:49.720-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-01-28T10:33:49.720-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5def137c]]
+2026-01-28T10:33:49.721-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-01-28T10:33:49.729-05:00  INFO 25728 --- [URECLiveBackendToTest] [           main] c.u.u.AccountDeletionTest                : Started AccountDeletionTest in 5.658 seconds (process running for 6.377)
+Hibernate: select count(*) from exercise e1_0
+Hibernate: select es1_0.id,es1_0.end_reason,es1_0.ended_at,es1_0.equipment_id,es1_0.last_heartbeat_at,es1_0.last_timeout_warning_at,es1_0.started_at,es1_0.status,es1_0.user_id from equipment_sessions es1_0 where es1_0.status=? and coalesce(es1_0.last_heartbeat_at,es1_0.started_at)<? and (es1_0.last_timeout_warning_at is null or es1_0.last_timeout_warning_at<coalesce(es1_0.last_heartbeat_at,es1_0.started_at))
+Hibernate: select es1_0.id,es1_0.end_reason,es1_0.ended_at,es1_0.equipment_id,es1_0.last_heartbeat_at,es1_0.last_timeout_warning_at,es1_0.started_at,es1_0.status,es1_0.user_id from equipment_sessions es1_0 where es1_0.status=? and ((es1_0.last_heartbeat_at is null and es1_0.started_at<?) or (es1_0.last_heartbeat_at is not null and es1_0.last_heartbeat_at<?))
+Hibernate: select count(*) from equipment e1_0
+? Initializing database with gym data...
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into exercise (gif_url,muscle_group,name,id) values (?,?,?,default)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: insert into equipment_exercise (equipment_id,exercise_id) values (?,?)
+Hibernate: select count(*) from exercise e1_0
+Hibernate: select count(*) from equipment e1_0
+? Loaded 63 exercises and 95 equipment items into database.
+Hibernate: insert into users (email,enabled,password,password_reset_token_expires_at,password_reset_token_hash,username,id) values (?,?,?,?,?,?,default)
+Hibernate: insert into equipment (code,image_url,name,status,id) values (?,?,?,?,default)
+Hibernate: insert into equipment_sessions (end_reason,ended_at,equipment_id,last_heartbeat_at,last_timeout_warning_at,started_at,status,user_id,id) values (?,?,?,?,?,?,?,?,default)
+Hibernate: insert into equipment_events (equipment_id,event_type,metadata,occurred_at,session_id,user_id,id) values (?,?,?,?,?,?,default)
+Hibernate: insert into workout_sessions (end_time,exercise_name,machine_id,muscle_group,start_time,user_id,workout_date,id) values (?,?,?,?,?,?,?,default)
+Hibernate: insert into user_workout_splits (manual_split_json,mode,updated_at,user_id,id) values (?,?,?,?,default)
+Hibernate: insert into push_tokens (created_at,device_name,last_seen_at,platform,token,updated_at,user_id,id) values (?,?,?,?,?,?,?,default)
+Attempting to delete user with ID: 1
+Hibernate: select es1_0.id,es1_0.end_reason,es1_0.ended_at,es1_0.equipment_id,es1_0.last_heartbeat_at,es1_0.last_timeout_warning_at,es1_0.started_at,es1_0.status,es1_0.user_id from equipment_sessions es1_0 where es1_0.user_id=?
+Hibernate: select uws1_0.id,uws1_0.manual_split_json,uws1_0.mode,uws1_0.updated_at,uws1_0.user_id from user_workout_splits uws1_0 where uws1_0.user_id=?
+Hibernate: select pt1_0.id,pt1_0.created_at,pt1_0.device_name,pt1_0.last_seen_at,pt1_0.platform,pt1_0.token,pt1_0.updated_at,pt1_0.user_id from push_tokens pt1_0 where pt1_0.user_id=?
+Hibernate: select ws1_0.id,ws1_0.end_time,ws1_0.exercise_name,ws1_0.machine_id,ws1_0.muscle_group,ws1_0.start_time,ws1_0.user_id,ws1_0.workout_date from workout_sessions ws1_0 where ws1_0.user_id=?
+Hibernate: select ee1_0.id,ee1_0.equipment_id,ee1_0.event_type,ee1_0.metadata,ee1_0.occurred_at,ee1_0.session_id,ee1_0.user_id from equipment_events ee1_0 where ee1_0.user_id=?
+Hibernate: update equipment_events set equipment_id=?,event_type=?,metadata=?,occurred_at=?,session_id=?,user_id=? where id=?
+2026-01-28T10:33:50.489-05:00  WARN 25728 --- [URECLiveBackendToTest] [           main] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23502, SQLState: 23502
+2026-01-28T10:33:50.489-05:00 ERROR 25728 --- [URECLiveBackendToTest] [           main] o.h.engine.jdbc.spi.SqlExceptionHelper   : NULL not allowed for column "SESSION_ID"; SQL statement:
+update equipment_events set equipment_id=?,event_type=?,metadata=?,occurred_at=?,session_id=?,user_id=? where id=? [23502-224]
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 6.742 s <<< FAILURE! -- in com.ureclive.urec_live_backend.AccountDeletionTest
+[ERROR] com.ureclive.urec_live_backend.AccountDeletionTest.deleteUser_ShouldRemoveAllDependencies_AndSucceed -- Time elapsed: 0.449 s <<< ERROR!
+org.springframework.dao.DataIntegrityViolationException: 
+could not execute statement [NULL not allowed for column "SESSION_ID"; SQL statement:
+update equipment_events set equipment_id=?,event_type=?,metadata=?,occurred_at=?,session_id=?,user_id=? where id=? [23502-224]] [update equipment_events set equipment_id=?,event_type=?,metadata=?,occurred_at=?,session_id=?,user_id=? where id=?]; SQL [update equipment_events set equipment_id=?,event_type=?,metadata=?,occurred_at=?,session_id=?,user_id=? where id=?]; constraint [null]
+	at org.springframework.orm.jpa.vendor.HibernateJpaDialect.convertHibernateAccessException(HibernateJpaDialect.java:290)
+	at org.springframework.orm.jpa.vendor.HibernateJpaDialect.translateExceptionIfPossible(HibernateJpaDialect.java:241)
+	at org.springframework.orm.jpa.AbstractEntityManagerFactoryBean.translateExceptionIfPossible(AbstractEntityManagerFactoryBean.java:550)
+	at org.springframework.dao.support.ChainedPersistenceExceptionTranslator.translateExceptionIfPossible(ChainedPersistenceExceptionTranslator.java:61)
+	at org.springframework.dao.support.DataAccessUtils.translateIfNecessary(DataAccessUtils.java:335)
+	at org.springframework.dao.support.PersistenceExceptionTranslationInterceptor.invoke(PersistenceExceptionTranslationInterceptor.java:160)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+	at org.springframework.data.jpa.repository.support.CrudMethodMetadataPostProcessor$CrudMethodMetadataPopulatingMethodInterceptor.invoke(CrudMethodMetadataPostProcessor.java:136)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+	at org.springframework.aop.interceptor.ExposeInvocationInterceptor.invoke(ExposeInvocationInterceptor.java:97)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:223)
+	at jdk.proxy2/jdk.proxy2.$Proxy169.findByUserAndEquipmentAndStatus(Unknown Source)
+	at com.ureclive.urec_live_backend.AccountDeletionTest.deleteUser_ShouldRemoveAllDependencies_AndSucceed(AccountDeletionTest.java:114)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+Caused by: org.hibernate.exception.ConstraintViolationException: could not execute statement [NULL not allowed for column "SESSION_ID"; SQL statement:
+update equipment_events set equipment_id=?,event_type=?,metadata=?,occurred_at=?,session_id=?,user_id=? where id=? [23502-224]] [update equipment_events set equipment_id=?,event_type=?,metadata=?,occurred_at=?,session_id=?,user_id=? where id=?]
+	at org.hibernate.exception.internal.SQLExceptionTypeDelegate.convert(SQLExceptionTypeDelegate.java:62)
+	at org.hibernate.exception.internal.StandardSQLExceptionConverter.convert(StandardSQLExceptionConverter.java:58)
+	at org.hibernate.engine.jdbc.spi.SqlExceptionHelper.convert(SqlExceptionHelper.java:108)
+	at org.hibernate.engine.jdbc.internal.ResultSetReturnImpl.executeUpdate(ResultSetReturnImpl.java:197)
+	at org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor.performNonBatchedMutation(AbstractMutationExecutor.java:134)
+	at org.hibernate.engine.jdbc.mutation.internal.MutationExecutorSingleNonBatched.performNonBatchedOperations(MutationExecutorSingleNonBatched.java:55)
+	at org.hibernate.engine.jdbc.mutation.internal.AbstractMutationExecutor.execute(AbstractMutationExecutor.java:55)
+	at org.hibernate.persister.entity.mutation.UpdateCoordinatorStandard.doStaticUpdate(UpdateCoordinatorStandard.java:781)
+	at org.hibernate.persister.entity.mutation.UpdateCoordinatorStandard.performUpdate(UpdateCoordinatorStandard.java:328)
+	at org.hibernate.persister.entity.mutation.UpdateCoordinatorStandard.update(UpdateCoordinatorStandard.java:245)
+	at org.hibernate.action.internal.EntityUpdateAction.execute(EntityUpdateAction.java:169)
+	at org.hibernate.engine.spi.ActionQueue.executeActions(ActionQueue.java:632)
+	at org.hibernate.engine.spi.ActionQueue.executeActions(ActionQueue.java:499)
+	at org.hibernate.event.internal.AbstractFlushingEventListener.performExecutions(AbstractFlushingEventListener.java:371)
+	at org.hibernate.event.internal.DefaultAutoFlushEventListener.onAutoFlush(DefaultAutoFlushEventListener.java:66)
+	at org.hibernate.event.service.internal.EventListenerGroupImpl.fireEventOnEachListener(EventListenerGroupImpl.java:127)
+	at org.hibernate.internal.SessionImpl.autoFlushIfRequired(SessionImpl.java:1375)
+	at org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan.lambda$new$2(ConcreteSqmSelectQueryPlan.java:138)
+	at org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan.withCacheableSqmInterpretation(ConcreteSqmSelectQueryPlan.java:382)
+	at org.hibernate.query.sqm.internal.ConcreteSqmSelectQueryPlan.performList(ConcreteSqmSelectQueryPlan.java:302)
+	at org.hibernate.query.sqm.internal.QuerySqmImpl.doList(QuerySqmImpl.java:526)
+	at org.hibernate.query.spi.AbstractSelectionQuery.list(AbstractSelectionQuery.java:423)
+	at org.hibernate.query.spi.AbstractSelectionQuery.getSingleResult(AbstractSelectionQuery.java:555)
+	at org.springframework.data.jpa.repository.query.JpaQueryExecution$SingleEntityExecution.doExecute(JpaQueryExecution.java:223)
+	at org.springframework.data.jpa.repository.query.JpaQueryExecution.execute(JpaQueryExecution.java:92)
+	at org.springframework.data.jpa.repository.query.AbstractJpaQuery.doExecute(AbstractJpaQuery.java:152)
+	at org.springframework.data.jpa.repository.query.AbstractJpaQuery.execute(AbstractJpaQuery.java:140)
+	at org.springframework.data.repository.core.support.RepositoryMethodInvoker.doInvoke(RepositoryMethodInvoker.java:170)
+	at org.springframework.data.repository.core.support.RepositoryMethodInvoker.invoke(RepositoryMethodInvoker.java:158)
+	at org.springframework.data.repository.core.support.QueryExecutorMethodInterceptor.doInvoke(QueryExecutorMethodInterceptor.java:169)
+	at org.springframework.data.repository.core.support.QueryExecutorMethodInterceptor.invoke(QueryExecutorMethodInterceptor.java:148)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+	at org.springframework.data.projection.DefaultMethodInvokingMethodInterceptor.invoke(DefaultMethodInvokingMethodInterceptor.java:70)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:379)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+	at org.springframework.dao.support.PersistenceExceptionTranslationInterceptor.invoke(PersistenceExceptionTranslationInterceptor.java:138)
+	... 11 more
+Caused by: org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException: NULL not allowed for column "SESSION_ID"; SQL statement:
+update equipment_events set equipment_id=?,event_type=?,metadata=?,occurred_at=?,session_id=?,user_id=? where id=? [23502-224]
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:520)
+	at org.h2.message.DbException.getJdbcSQLException(DbException.java:489)
+	at org.h2.message.DbException.get(DbException.java:223)
+	at org.h2.message.DbException.get(DbException.java:199)
+	at org.h2.table.Column.validateConvertUpdateSequence(Column.java:365)
+	at org.h2.table.Table.convertUpdateRow(Table.java:978)
+	at org.h2.command.dml.SetClauseList.prepareUpdate(SetClauseList.java:149)
+	at org.h2.command.dml.Update.update(Update.java:82)
+	at org.h2.command.dml.DataChangeStatement.update(DataChangeStatement.java:74)
+	at org.h2.command.CommandContainer.update(CommandContainer.java:169)
+	at org.h2.command.Command.executeUpdate(Command.java:256)
+	at org.h2.jdbc.JdbcPreparedStatement.executeUpdateInternal(JdbcPreparedStatement.java:216)
+	at org.h2.jdbc.JdbcPreparedStatement.executeUpdate(JdbcPreparedStatement.java:174)
+	at com.zaxxer.hikari.pool.ProxyPreparedStatement.executeUpdate(ProxyPreparedStatement.java:61)
+	at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.executeUpdate(HikariProxyPreparedStatement.java)
+	at org.hibernate.engine.jdbc.internal.ResultSetReturnImpl.executeUpdate(ResultSetReturnImpl.java:194)
+	... 45 more
+
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Errors: 
+[ERROR]   AccountDeletionTest.deleteUser_ShouldRemoveAllDependencies_AndSucceed:114 » DataIntegrityViolation could not execute statement [NULL not allowed for column "SESSION_ID"; SQL statement:
+update equipment_events set equipment_id=?,event_type=?,metadata=?,occurred_at=?,session_id=?,user_id=? where id=? [23502-224]] [update equipment_events set equipment_id=?,event_type=?,metadata=?,occurred_at=?,session_id=?,user_id=? where id=?]; SQL [update equipment_events set equipment_id=?,event_type=?,metadata=?,occurred_at=?,session_id=?,user_id=? where id=?]; constraint [null]
+[INFO] 
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  8.732 s
+[INFO] Finished at: 2026-01-28T10:33:50-05:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project urec-live-backend: 
+[ERROR] 
+[ERROR] Please refer to C:\Users\aakas\Documents\UREC\urec-live-backend\target\surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

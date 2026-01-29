@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@SuppressWarnings("null")
 public class PushNotificationService {
     private static final Logger logger = LoggerFactory.getLogger(PushNotificationService.class);
 
@@ -40,6 +41,11 @@ public class PushNotificationService {
             return;
         }
         if (user == null) {
+            return;
+        }
+
+        if (Boolean.FALSE.equals(user.getPushNotificationsEnabled())) {
+            logger.info("[push] user {} has disabled notifications, skipping", user.getId());
             return;
         }
 

@@ -26,18 +26,18 @@ public class User {
     @Column(name = "password_reset_token_expires_at")
     private java.time.Instant passwordResetTokenExpiresAt;
 
-    @ManyToMany(fetch = jakarta.persistence.FetchType.EAGER, cascade = CascadeType.ALL)
-    @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+    @ManyToMany(fetch = jakarta.persistence.FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
 
     @Column(nullable = false)
     private Boolean enabled = true;
 
-    public User() {}
+    @Column(name = "push_notifications_enabled")
+    private Boolean pushNotificationsEnabled = true;
+
+    public User() {
+    }
 
     public User(String username, String email, String password) {
         this.username = username;
@@ -111,5 +111,13 @@ public class User {
 
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Boolean getPushNotificationsEnabled() {
+        return pushNotificationsEnabled == null ? true : pushNotificationsEnabled;
+    }
+
+    public void setPushNotificationsEnabled(Boolean pushNotificationsEnabled) {
+        this.pushNotificationsEnabled = pushNotificationsEnabled;
     }
 }

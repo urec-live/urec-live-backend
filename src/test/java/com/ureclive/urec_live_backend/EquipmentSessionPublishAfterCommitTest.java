@@ -18,6 +18,7 @@ import java.util.Objects;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 @SpringBootTest
+@SuppressWarnings("null")
 class EquipmentSessionPublishAfterCommitTest {
 
     @Autowired
@@ -39,11 +40,9 @@ class EquipmentSessionPublishAfterCommitTest {
     void publishIsSkippedWhenTransactionRollsBack() {
         String suffix = String.valueOf(System.currentTimeMillis());
         User user = userRepository.save(
-                new User("rollback_user_" + suffix, "rollback_user_" + suffix + "@example.com", "password")
-        );
+                new User("rollback_user_" + suffix, "rollback_user_" + suffix + "@example.com", "password"));
         Equipment equipment = equipmentRepository.save(
-                new Equipment("ROLLBACK01_" + suffix, "Rollback Machine", "AVAILABLE", null)
-        );
+                new Equipment("ROLLBACK01_" + suffix, "Rollback Machine", "AVAILABLE", null));
 
         TransactionTemplate template = new TransactionTemplate(Objects.requireNonNull(transactionManager));
         template.execute(status -> {

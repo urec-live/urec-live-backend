@@ -42,8 +42,7 @@ public class EquipmentSessionService {
             MeterRegistry meterRegistry,
             PushNotificationService pushNotificationService,
             @Value("${session.timeout.minutes:15}") long sessionTimeoutMinutes,
-            @Value("${session.timeout.warning-minutes:2}") long sessionTimeoutWarningMinutes
-    ) {
+            @Value("${session.timeout.warning-minutes:2}") long sessionTimeoutWarningMinutes) {
         this.sessionRepository = sessionRepository;
         this.eventRepository = eventRepository;
         this.equipmentRepository = equipmentRepository;
@@ -58,27 +57,29 @@ public class EquipmentSessionService {
 
     @Transactional
     public EquipmentSession startSession(User user, Equipment equipment, String metadata) {
-        logger.info("[session] start requested user={} equipment={} metadata={}", user.getId(), equipment.getId(), metadata);
+        logger.info("[session] start requested user={} equipment={} metadata={}", user.getId(), equipment.getId(),
+                metadata);
         Equipment lockedEquipment = equipmentRepository.findByIdForUpdate(equipment.getId())
                 .orElseThrow(() -> new IllegalStateException("Equipment not found id=" + equipment.getId()));
 
         // Prevent a user from starting multiple sessions
-        Optional<EquipmentSession> activeForUser =
-                sessionRepository.findTopByUserAndStatusOrderByStartedAtDesc(user, EquipmentSessionStatus.ACTIVE);
+        Optional<EquipmentSession> activeForUser = sessionRepository.findTopByUserAndStatusOrderByStartedAtDesc(user,
+                EquipmentSessionStatus.ACTIVE);
         if (activeForUser.isPresent()) {
             EquipmentSession existing = activeForUser.get();
             if (existing.getEquipment() != null && existing.getEquipment().getId().equals(lockedEquipment.getId())) {
                 return existing;
             }
-            logger.warn("event=conflict_rejected reason=user_active_session userId={} equipmentId={} activeSessionId={}",
+            logger.warn(
+                    "event=conflict_rejected reason=user_active_session userId={} equipmentId={} activeSessionId={}",
                     user.getId(), lockedEquipment.getId(), existing.getId());
             meterRegistry.counter("urec.sessions.conflict", "reason", "user_active_session").increment();
             throw new IllegalStateException("User already has an active session id=" + existing.getId());
         }
 
         // Prevent double-booking the same equipment
-        Optional<EquipmentSession> activeForEquipment =
-                sessionRepository.findByEquipmentAndStatus(lockedEquipment, EquipmentSessionStatus.ACTIVE);
+        Optional<EquipmentSession> activeForEquipment = sessionRepository.findByEquipmentAndStatus(lockedEquipment,
+                EquipmentSessionStatus.ACTIVE);
         if (activeForEquipment.isPresent()) {
             EquipmentSession existing = activeForEquipment.get();
             if (existing.getUser() != null && existing.getUser().getId().equals(user.getId())) {
@@ -115,7 +116,8 @@ public class EquipmentSessionService {
         // Broadcast live status update
         publishStatus(lockedEquipment.getId(), "IN_USE", session.getId(), user.getId(), now);
         meterRegistry.counter("urec.sessions.lifecycle", "event", "start").increment();
-        logger.info("[session] started session={} user={} equipment={}", session.getId(), user.getId(), lockedEquipment.getId());
+        logger.info("[session] started session={} user={} equipment={}", session.getId(), user.getId(),
+                lockedEquipment.getId());
         logger.info("event=session_start sessionId={} userId={} equipmentId={} occurredAt={} metadata={}",
                 session.getId(), user.getId(), lockedEquipment.getId(), now, metadata);
 
@@ -124,7 +126,8 @@ public class EquipmentSessionService {
 
     @Transactional
     public EquipmentSession endSession(User user, Equipment equipment, String metadata) {
-        logger.info("[session] end requested user={} equipment={} metadata={}", user.getId(), equipment.getId(), metadata);
+        logger.info("[session] end requested user={} equipment={} metadata={}", user.getId(), equipment.getId(),
+                metadata);
         EquipmentSession session = sessionRepository.findByEquipmentAndStatus(equipment, EquipmentSessionStatus.ACTIVE)
                 .orElseThrow(() -> new IllegalStateException("No active session found for this equipment"));
 
@@ -157,7 +160,8 @@ public class EquipmentSessionService {
         // Broadcast live status update
         publishStatus(equipment.getId(), "AVAILABLE", null, null, now);
         meterRegistry.counter("urec.sessions.lifecycle", "event", "end").increment();
-        logger.info("[session] ended session={} user={} equipment={} reason={}", session.getId(), user.getId(), equipment.getId(), session.getEndReason());
+        logger.info("[session] ended session={} user={} equipment={} reason={}", session.getId(), user.getId(),
+                equipment.getId(), session.getEndReason());
         logger.info("event=session_end sessionId={} userId={} equipmentId={} occurredAt={} reason={} metadata={}",
                 session.getId(), user.getId(), equipment.getId(), now, session.getEndReason(), metadata);
 
@@ -194,15 +198,15 @@ public class EquipmentSessionService {
         if (sessionTimeoutWarningMinutes > 0 && sessionTimeoutWarningMinutes < sessionTimeoutMinutes) {
             Instant warnCutoff = Instant.now()
                     .minus(Duration.ofMinutes(sessionTimeoutMinutes - sessionTimeoutWarningMinutes));
-            List<EquipmentSession> warnSessions =
-                    sessionRepository.findSessionsNeedingTimeoutWarning(EquipmentSessionStatus.ACTIVE, warnCutoff);
+            List<EquipmentSession> warnSessions = sessionRepository
+                    .findSessionsNeedingTimeoutWarning(EquipmentSessionStatus.ACTIVE, warnCutoff);
             for (EquipmentSession session : warnSessions) {
                 sendTimeoutWarning(session, Instant.now());
             }
         }
 
-        List<EquipmentSession> staleSessions =
-                sessionRepository.findStaleSessions(EquipmentSessionStatus.ACTIVE, cutoff);
+        List<EquipmentSession> staleSessions = sessionRepository.findStaleSessions(EquipmentSessionStatus.ACTIVE,
+                cutoff);
 
         if (staleSessions.isEmpty()) {
             return;
@@ -234,7 +238,8 @@ public class EquipmentSessionService {
 
             publishStatus(equipment.getId(), "AVAILABLE", null, null, now);
             meterRegistry.counter("urec.sessions.lifecycle", "event", "timeout").increment();
-            logger.info("[session] timed out session={} user={} equipment={}", session.getId(), user.getId(), equipment.getId());
+            logger.info("[session] timed out session={} user={} equipment={}", session.getId(), user.getId(),
+                    equipment.getId());
             logger.info("event=session_timeout sessionId={} userId={} equipmentId={} occurredAt={} reason=TIMEOUT",
                     session.getId(), user.getId(), equipment.getId(), now);
 
@@ -245,9 +250,7 @@ public class EquipmentSessionService {
                     java.util.Map.of(
                             "type", "SESSION_TIMED_OUT",
                             "sessionId", session.getId(),
-                            "equipmentId", equipment.getId()
-                    )
-            );
+                            "equipmentId", equipment.getId()));
         }
     }
 
@@ -263,7 +266,8 @@ public class EquipmentSessionService {
 
         publishStatus(equipment.getId(), "TIMEOUT_WARNING", session.getId(), user.getId(), now);
         meterRegistry.counter("urec.sessions.lifecycle", "event", "timeout_warning").increment();
-        logger.info("event=session_timeout_warning sessionId={} userId={} equipmentId={} occurredAt={} minutesRemaining={}",
+        logger.info(
+                "event=session_timeout_warning sessionId={} userId={} equipmentId={} occurredAt={} minutesRemaining={}",
                 session.getId(), user.getId(), equipment.getId(), now, sessionTimeoutWarningMinutes);
 
         pushNotificationService.sendToUser(
@@ -273,9 +277,7 @@ public class EquipmentSessionService {
                 java.util.Map.of(
                         "type", "TIMEOUT_WARNING",
                         "sessionId", session.getId(),
-                        "equipmentId", equipment.getId()
-                )
-        );
+                        "equipmentId", equipment.getId()));
     }
 
     private void publishStatus(Long equipmentId, String status, Long sessionId, Long userId, Instant occurredAt) {
@@ -284,8 +286,7 @@ public class EquipmentSessionService {
                 status,
                 sessionId,
                 userId,
-                occurredAt
-        );
+                occurredAt);
         logger.info("event=ws_publish_queued equipmentId={} status={}", equipmentId, status);
         eventPublisher.publishEvent(new EquipmentStatusPublishEvent(payload));
     }
