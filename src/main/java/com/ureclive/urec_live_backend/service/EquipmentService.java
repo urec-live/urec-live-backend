@@ -23,7 +23,7 @@ public class EquipmentService {
     }
 
     @Transactional(readOnly = true)
-    public List<EquipmentWaitTimeEstimate> getRecommendations(Long equipmentId) {
+    public List<EquipmentWaitTimeEstimate> getRecommendations(long equipmentId) {
         Equipment currentEquipment = equipmentRepository.findById(equipmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Equipment not found"));
 
