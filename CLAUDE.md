@@ -74,7 +74,7 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 
 ### Priority 1: Admin Dashboard API Endpoints (CRITICAL — blocks beta launch)
 
-The admin dashboard is a separate Next.js web app, but it needs backend endpoints. Build these:
+The admin dashboard is a separate Angular 17+ web app, but it needs backend endpoints. Build these:
 
 **Equipment Management (Admin only)**
 - `POST /api/admin/equipment` — Create new equipment record
