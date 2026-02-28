@@ -5,6 +5,7 @@ import com.ureclive.urec_live_backend.entity.WorkoutSession;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -27,4 +28,8 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
 
     @Query("SELECT COALESCE(SUM(ws.durationSeconds), 0) FROM WorkoutSession ws WHERE ws.user = :user")
     long sumDurationByUser(@Param("user") User user);
+
+    @Modifying
+    @Query("UPDATE WorkoutSession ws SET ws.exercise = null WHERE ws.exercise.id = :exerciseId")
+    void clearExerciseReference(@Param("exerciseId") Long exerciseId);
 }
