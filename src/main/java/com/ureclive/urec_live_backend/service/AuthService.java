@@ -8,6 +8,7 @@ import com.ureclive.urec_live_backend.entity.User;
 import com.ureclive.urec_live_backend.repository.RoleRepository;
 import com.ureclive.urec_live_backend.repository.UserRepository;
 import com.ureclive.urec_live_backend.security.JwtUtil;
+import com.ureclive.urec_live_backend.service.ActivityLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -39,6 +40,9 @@ public class AuthService {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private ActivityLogService activityLogService;
+
     public AuthResponse register(RegisterRequest registerRequest) {
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
             throw new RuntimeException("Username is already taken!");
@@ -60,6 +64,7 @@ public class AuthService {
         user.addRole(userRole);
 
         userRepository.save(user);
+        activityLogService.log("REGISTRATION", user.getUsername(), "New user registered", null);
 
         UserDetails userDetails = org.springframework.security.core.userdetails.User.builder()
             .username(user.getUsername())
