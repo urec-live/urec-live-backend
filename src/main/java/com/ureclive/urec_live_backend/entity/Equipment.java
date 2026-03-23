@@ -11,7 +11,7 @@ public class Equipment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String code;  // Unique code for QR scanning
 
     @Column(nullable = false)
@@ -22,6 +22,9 @@ public class Equipment {
 
     @Column(length = 500)
     private String imageUrl;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean deleted = false;
 
     @ManyToMany
     @JoinTable(
@@ -68,4 +71,7 @@ public class Equipment {
         this.exercises.remove(exercise);
         exercise.getEquipment().remove(this);
     }
+
+    public boolean isDeleted() { return deleted; }
+    public void setDeleted(boolean deleted) { this.deleted = deleted; }
 }

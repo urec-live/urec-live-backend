@@ -40,7 +40,7 @@ public class MachineController {
     @GetMapping
     public List<MachineDTO> getAllMachines() {
         logger.info("[GET /api/machines] Fetching all machines");
-        List<Equipment> equipment = equipmentRepository.findAll();
+        List<Equipment> equipment = equipmentRepository.findAllByDeletedFalse();
         List<MachineDTO> dtos = equipment.stream()
             .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
             .collect(Collectors.toList());
