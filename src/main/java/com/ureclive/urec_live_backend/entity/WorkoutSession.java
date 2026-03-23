@@ -2,6 +2,8 @@ package com.ureclive.urec_live_backend.entity;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "workout_sessions")
@@ -26,7 +28,7 @@ public class WorkoutSession {
     @Column(nullable = false)
     private String muscleGroup;
 
-    @Column(nullable = false)
+    @Column(name = "started_at")
     private Instant startedAt;
 
     private Instant endedAt;
@@ -35,6 +37,10 @@ public class WorkoutSession {
 
     @Column(length = 1000)
     private String notes;
+
+    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OrderBy("setNumber ASC")
+    private List<WorkoutSet> sets = new ArrayList<>();
 
     public WorkoutSession() {}
 
@@ -64,4 +70,7 @@ public class WorkoutSession {
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+
+    public List<WorkoutSet> getSets() { return sets; }
+    public void setSets(List<WorkoutSet> sets) { this.sets = sets; }
 }

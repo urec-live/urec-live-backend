@@ -35,6 +35,15 @@ public class AdminExerciseService {
     }
 
     /**
+     * Returns all exercises.
+     */
+    public List<AdminExerciseResponse> getAll() {
+        return exerciseRepository.findAll().stream()
+                .map(AdminExerciseResponse::from)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    /**
      * Creates a new exercise. Name must be unique.
      */
     public AdminExerciseResponse create(CreateExerciseRequest request) {
