@@ -68,7 +68,7 @@ public class JwtUtil {
     private Claims extractAllClaims(String token) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         return Jwts.parser()
-            .setSigningKey(key)
+            .verifyWith(key)
             .build()
             .parseSignedClaims(token)
             .getPayload();
@@ -91,7 +91,7 @@ public class JwtUtil {
         try {
             SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
             Jwts.parser()
-                .setSigningKey(key)
+                .verifyWith(key)
                 .build()
                 .parseSignedClaims(token);
             return !isTokenExpired(token);

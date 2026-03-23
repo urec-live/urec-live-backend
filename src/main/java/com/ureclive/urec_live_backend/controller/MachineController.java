@@ -5,8 +5,10 @@ import com.ureclive.urec_live_backend.entity.Exercise;
 import com.ureclive.urec_live_backend.dto.MachineDTO;
 import com.ureclive.urec_live_backend.repository.EquipmentRepository;
 import com.ureclive.urec_live_backend.repository.ExerciseRepository;
+import com.ureclive.urec_live_backend.service.ActivityLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.lang.NonNull;
 import org.slf4j.Logger;
@@ -26,14 +28,17 @@ public class MachineController {
     private final EquipmentRepository equipmentRepository;
     private final ExerciseRepository exerciseRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ActivityLogService activityLogService;
 
     @Autowired
-    public MachineController(EquipmentRepository equipmentRepository, 
-                           ExerciseRepository exerciseRepository,
-                           SimpMessagingTemplate messagingTemplate) {
+    public MachineController(EquipmentRepository equipmentRepository,
+                             ExerciseRepository exerciseRepository,
+                             SimpMessagingTemplate messagingTemplate,
+                             ActivityLogService activityLogService) {
         this.equipmentRepository = equipmentRepository;
         this.exerciseRepository = exerciseRepository;
         this.messagingTemplate = messagingTemplate;
+        this.activityLogService = activityLogService;
     }
 
     // ✅ Get all machines
@@ -148,11 +153,18 @@ public class MachineController {
         logger.info("[PUT /api/machines/{}/status] Updated machine {} from '{}' to '{}'", id, equipment.getName(), oldStatus, status);
         
         MachineDTO dto = new MachineDTO(updated, getPrimaryExerciseName(updated));
-        
+
         // Broadcast update to all WebSocket clients
         messagingTemplate.convertAndSend("/topic/machines", dto);
         logger.info("[WebSocket] Broadcasted machine update for ID: {}", id);
-        
+
+        String username = SecurityContextHolder.getContext().getAuthentication() != null
+                ? SecurityContextHolder.getContext().getAuthentication().getName() : "anonymous";
+        String eventType = "In Use".equalsIgnoreCase(status) ? "CHECK_IN" : "CHECK_OUT";
+        activityLogService.log(eventType, username,
+                eventType + " on " + equipment.getName() + " (status: " + status + ")",
+                equipment.getName());
+
         return dto;
     }
 
@@ -192,11 +204,18 @@ public class MachineController {
         logger.info("[PUT /api/machines/code/{}/status] Updated machine {} from '{}' to '{}'", code, equipment.getName(), oldStatus, status);
         
         MachineDTO dto = new MachineDTO(updated, getPrimaryExerciseName(updated));
-        
+
         // Broadcast update to all WebSocket clients
         messagingTemplate.convertAndSend("/topic/machines", dto);
         logger.info("[WebSocket] Broadcasted machine update for code: {}", code);
-        
+
+        String username = SecurityContextHolder.getContext().getAuthentication() != null
+                ? SecurityContextHolder.getContext().getAuthentication().getName() : "anonymous";
+        String eventType = "In Use".equalsIgnoreCase(status) ? "CHECK_IN" : "CHECK_OUT";
+        activityLogService.log(eventType, username,
+                eventType + " on " + equipment.getName() + " (status: " + status + ")",
+                equipment.getName());
+
         return dto;
     }
 

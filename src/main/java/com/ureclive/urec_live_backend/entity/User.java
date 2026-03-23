@@ -1,6 +1,7 @@
 package com.ureclive.urec_live_backend.entity;
 
 import jakarta.persistence.*;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,6 +31,12 @@ public class User {
 
     @Column(nullable = false)
     private Boolean enabled = true;
+
+    @Column(updatable = false)
+    private Instant createdAt;
+
+    @PrePersist
+    void onCreate() { this.createdAt = Instant.now(); }
 
     public User() {}
 
@@ -90,4 +97,6 @@ public class User {
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
     }
+
+    public Instant getCreatedAt() { return createdAt; }
 }

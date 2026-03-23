@@ -30,15 +30,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         try {
             String jwt = extractJwtFromRequest(request);
-            if (jwt != null && jwtUtil.validateToken(jwt)) {
-                String username = jwtUtil.extractUsername(jwt);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if (jwt != null) {
+                boolean valid = jwtUtil.validateToken(jwt);
+                logger.info("JWT present, valid={}, path={}", valid, request.getRequestURI());
+                if (valid) {
+                    String username = jwtUtil.extractUsername(jwt);
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    logger.info("Loaded user={}, authorities={}", username, userDetails.getAuthorities());
 
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userDetails, null, userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        userDetails, null, userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
         } catch (Exception ex) {
             logger.error("Could not set user authentication in security context", ex);

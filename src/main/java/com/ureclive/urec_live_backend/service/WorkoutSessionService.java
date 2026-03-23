@@ -11,6 +11,7 @@ import com.ureclive.urec_live_backend.repository.EquipmentRepository;
 import com.ureclive.urec_live_backend.repository.ExerciseRepository;
 import com.ureclive.urec_live_backend.repository.UserRepository;
 import com.ureclive.urec_live_backend.repository.WorkoutSessionRepository;
+import com.ureclive.urec_live_backend.service.ActivityLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,16 +33,19 @@ public class WorkoutSessionService {
     private final UserRepository userRepository;
     private final EquipmentRepository equipmentRepository;
     private final ExerciseRepository exerciseRepository;
+    private final ActivityLogService activityLogService;
 
     @Autowired
     public WorkoutSessionService(WorkoutSessionRepository sessionRepository,
                                  UserRepository userRepository,
                                  EquipmentRepository equipmentRepository,
-                                 ExerciseRepository exerciseRepository) {
+                                 ExerciseRepository exerciseRepository,
+                                 ActivityLogService activityLogService) {
         this.sessionRepository = sessionRepository;
         this.userRepository = userRepository;
         this.equipmentRepository = equipmentRepository;
         this.exerciseRepository = exerciseRepository;
+        this.activityLogService = activityLogService;
     }
 
     public SessionResponse saveSession(CreateSessionRequest request, String username) {
@@ -73,6 +77,14 @@ public class WorkoutSessionService {
         session.setNotes(request.getNotes());
 
         WorkoutSession saved = sessionRepository.save(session);
+
+        String machineName = machine != null ? machine.getName() : null;
+        String exerciseName = exercise != null ? exercise.getName() : request.getExerciseName();
+        activityLogService.log("SESSION_SAVED", username,
+                "Completed " + (exerciseName != null ? exerciseName : "workout") +
+                (machineName != null ? " on " + machineName : ""),
+                machineName);
+
         return SessionResponse.from(saved);
     }
 
