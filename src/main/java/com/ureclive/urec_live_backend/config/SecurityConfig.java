@@ -17,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -64,10 +65,16 @@ public class SecurityConfig {
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh", "/api/auth/test").permitAll()
-                .requestMatchers("/api/machines/**").permitAll()
-                .requestMatchers("/ws/**").permitAll()
+                .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.OPTIONS, "/**")).permitAll()
+                .requestMatchers(
+                    AntPathRequestMatcher.antMatcher("/api/auth/register"),
+                    AntPathRequestMatcher.antMatcher("/api/auth/login"),
+                    AntPathRequestMatcher.antMatcher("/api/auth/refresh"),
+                    AntPathRequestMatcher.antMatcher("/api/auth/test")
+                ).permitAll()
+                .requestMatchers(AntPathRequestMatcher.antMatcher("/api/machines/**")).permitAll()
+                .requestMatchers(AntPathRequestMatcher.antMatcher("/ws/**")).permitAll()
+                .requestMatchers(AntPathRequestMatcher.antMatcher("/error")).permitAll()
                 .anyRequest().authenticated()
             );
 

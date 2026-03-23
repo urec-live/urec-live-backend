@@ -25,7 +25,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
         Collection<GrantedAuthority> authorities = user.getRoles().stream()
-            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+            .map(role -> new SimpleGrantedAuthority(role.getName()))
             .collect(Collectors.toList());
 
         return org.springframework.security.core.userdetails.User.builder()
@@ -35,7 +35,7 @@ public class CustomUserDetailsService implements UserDetailsService {
             .accountExpired(false)
             .accountLocked(false)
             .credentialsExpired(false)
-            .disabled(!user.getEnabled())
+            .disabled(Boolean.FALSE.equals(user.getEnabled()))
             .build();
     }
 }

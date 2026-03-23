@@ -32,11 +32,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = extractJwtFromRequest(request);
             if (jwt != null) {
                 boolean valid = jwtUtil.validateToken(jwt);
-                logger.info("JWT present, valid={}, path={}", valid, request.getRequestURI());
+                logger.info("JWT present, valid=" + valid + ", path=" + request.getRequestURI());
                 if (valid) {
                     String username = jwtUtil.extractUsername(jwt);
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                    logger.info("Loaded user={}, authorities={}", username, userDetails.getAuthorities());
+                    logger.info("Loaded user=" + username + ", authorities=" + userDetails.getAuthorities());
 
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());

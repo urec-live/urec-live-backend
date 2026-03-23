@@ -7,10 +7,12 @@ import com.ureclive.urec_live_backend.entity.Equipment;
 import com.ureclive.urec_live_backend.entity.Exercise;
 import com.ureclive.urec_live_backend.entity.User;
 import com.ureclive.urec_live_backend.entity.WorkoutSession;
+import com.ureclive.urec_live_backend.entity.WorkoutSet;
 import com.ureclive.urec_live_backend.repository.EquipmentRepository;
 import com.ureclive.urec_live_backend.repository.ExerciseRepository;
 import com.ureclive.urec_live_backend.repository.UserRepository;
 import com.ureclive.urec_live_backend.repository.WorkoutSessionRepository;
+import com.ureclive.urec_live_backend.repository.WorkoutSetRepository;
 import com.ureclive.urec_live_backend.service.ActivityLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +33,7 @@ import java.util.stream.Collectors;
 public class WorkoutSessionService {
 
     private final WorkoutSessionRepository sessionRepository;
+    private final WorkoutSetRepository workoutSetRepository;
     private final UserRepository userRepository;
     private final EquipmentRepository equipmentRepository;
     private final ExerciseRepository exerciseRepository;
@@ -37,11 +41,13 @@ public class WorkoutSessionService {
 
     @Autowired
     public WorkoutSessionService(WorkoutSessionRepository sessionRepository,
+                                 WorkoutSetRepository workoutSetRepository,
                                  UserRepository userRepository,
                                  EquipmentRepository equipmentRepository,
                                  ExerciseRepository exerciseRepository,
                                  ActivityLogService activityLogService) {
         this.sessionRepository = sessionRepository;
+        this.workoutSetRepository = workoutSetRepository;
         this.userRepository = userRepository;
         this.equipmentRepository = equipmentRepository;
         this.exerciseRepository = exerciseRepository;
@@ -77,6 +83,22 @@ public class WorkoutSessionService {
         session.setNotes(request.getNotes());
 
         WorkoutSession saved = sessionRepository.save(session);
+
+        // Save per-set details if provided
+        if (request.getSetDetails() != null && !request.getSetDetails().isEmpty()) {
+            List<WorkoutSet> sets = new ArrayList<>();
+            for (int i = 0; i < request.getSetDetails().size(); i++) {
+                CreateSessionRequest.SetDetailDto dto = request.getSetDetails().get(i);
+                WorkoutSet set = new WorkoutSet();
+                set.setSession(saved);
+                set.setSetNumber(i + 1);
+                set.setReps(dto.getReps());
+                set.setWeightLbs(dto.getWeightLbs());
+                sets.add(set);
+            }
+            workoutSetRepository.saveAll(sets);
+            saved.getSets().addAll(sets);
+        }
 
         String machineName = machine != null ? machine.getName() : null;
         String exerciseName = exercise != null ? exercise.getName() : request.getExerciseName();

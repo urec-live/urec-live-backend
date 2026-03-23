@@ -6,6 +6,7 @@ import com.ureclive.urec_live_backend.dto.LinkEquipmentRequest;
 import com.ureclive.urec_live_backend.dto.UpdateExerciseRequest;
 import com.ureclive.urec_live_backend.service.AdminExerciseService;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,13 @@ public class AdminExerciseController {
     @Autowired
     public AdminExerciseController(AdminExerciseService adminExerciseService) {
         this.adminExerciseService = adminExerciseService;
+    }
+
+    /** GET /api/admin/exercises */
+    @GetMapping
+    public List<AdminExerciseResponse> getAll() {
+        logger.info("[GET /api/admin/exercises] Fetching all exercises");
+        return adminExerciseService.getAll();
     }
 
     /** POST /api/admin/exercises */
