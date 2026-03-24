@@ -2,9 +2,12 @@ package com.ureclive.urec_live_backend.controller;
 
 import com.ureclive.urec_live_backend.entity.Equipment;
 import com.ureclive.urec_live_backend.entity.Exercise;
+import com.ureclive.urec_live_backend.entity.FloorPlan;
+import com.ureclive.urec_live_backend.dto.FloorPlanResponse;
 import com.ureclive.urec_live_backend.dto.MachineDTO;
 import com.ureclive.urec_live_backend.repository.EquipmentRepository;
 import com.ureclive.urec_live_backend.repository.ExerciseRepository;
+import com.ureclive.urec_live_backend.repository.FloorPlanRepository;
 import com.ureclive.urec_live_backend.service.ActivityLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -27,16 +30,19 @@ public class MachineController {
     private static final Logger logger = LoggerFactory.getLogger(MachineController.class);
     private final EquipmentRepository equipmentRepository;
     private final ExerciseRepository exerciseRepository;
+    private final FloorPlanRepository floorPlanRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final ActivityLogService activityLogService;
 
     @Autowired
     public MachineController(EquipmentRepository equipmentRepository,
                              ExerciseRepository exerciseRepository,
+                             FloorPlanRepository floorPlanRepository,
                              SimpMessagingTemplate messagingTemplate,
                              ActivityLogService activityLogService) {
         this.equipmentRepository = equipmentRepository;
         this.exerciseRepository = exerciseRepository;
+        this.floorPlanRepository = floorPlanRepository;
         this.messagingTemplate = messagingTemplate;
         this.activityLogService = activityLogService;
     }
@@ -217,6 +223,33 @@ public class MachineController {
                 equipment.getName());
 
         return dto;
+    }
+
+    // ✅ Get active floor plan with all equipment positions and statuses
+    @GetMapping("/floor-plan")
+    public org.springframework.http.ResponseEntity<FloorPlanResponse> getFloorPlan() {
+        logger.info("[GET /api/machines/floor-plan] Fetching active floor plan");
+        Optional<FloorPlan> optPlan = floorPlanRepository.findByActiveTrue();
+        if (optPlan.isEmpty()) {
+            // Return a default virtual floor plan with all equipment
+            FloorPlan defaultPlan = new FloorPlan();
+            defaultPlan.setId(0L);
+            defaultPlan.setName("Gym Floor");
+            defaultPlan.setWidth(800);
+            defaultPlan.setHeight(600);
+            defaultPlan.setActive(true);
+
+            List<MachineDTO> allEquipment = equipmentRepository.findAllByDeletedFalse().stream()
+                    .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
+                    .collect(Collectors.toList());
+            return org.springframework.http.ResponseEntity.ok(FloorPlanResponse.from(defaultPlan, allEquipment));
+        }
+
+        FloorPlan plan = optPlan.get();
+        List<MachineDTO> allEquipment = equipmentRepository.findAllByDeletedFalse().stream()
+                .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
+                .collect(Collectors.toList());
+        return org.springframework.http.ResponseEntity.ok(FloorPlanResponse.from(plan, allEquipment));
     }
 
     // Helper method to get primary exercise name

@@ -10,6 +10,9 @@ public class MachineDTO {
     private String exercise;  // Primary exercise name for backward compatibility
     private String imageUrl;
     private Boolean heldByMe;
+    private Double floorX;
+    private Double floorY;
+    private String floorLabel;
 
     public MachineDTO() {}
 
@@ -21,6 +24,9 @@ public class MachineDTO {
         this.exercise = primaryExerciseName;
         this.imageUrl = equipment.getImageUrl();
         this.heldByMe = false;
+        this.floorX = equipment.getFloorX();
+        this.floorY = equipment.getFloorY();
+        this.floorLabel = equipment.getFloorLabel();
     }
 
     // Getters and Setters
@@ -44,4 +50,13 @@ public class MachineDTO {
 
     public Boolean getHeldByMe() { return heldByMe; }
     public void setHeldByMe(Boolean heldByMe) { this.heldByMe = heldByMe; }
+
+    public Double getFloorX() { return floorX; }
+    public void setFloorX(Double floorX) { this.floorX = floorX; }
+
+    public Double getFloorY() { return floorY; }
+    public void setFloorY(Double floorY) { this.floorY = floorY; }
+
+    public String getFloorLabel() { return floorLabel; }
+    public void setFloorLabel(String floorLabel) { this.floorLabel = floorLabel; }
 }

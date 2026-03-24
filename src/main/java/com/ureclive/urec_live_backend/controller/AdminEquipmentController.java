@@ -3,7 +3,11 @@ package com.ureclive.urec_live_backend.controller;
 import com.ureclive.urec_live_backend.dto.AdminEquipmentResponse;
 import com.ureclive.urec_live_backend.dto.CreateEquipmentRequest;
 import com.ureclive.urec_live_backend.dto.UpdateEquipmentRequest;
+import com.ureclive.urec_live_backend.entity.Equipment;
+import com.ureclive.urec_live_backend.repository.EquipmentRepository;
 import com.ureclive.urec_live_backend.service.AdminEquipmentService;
+
+import java.util.Map;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,10 +26,13 @@ public class AdminEquipmentController {
     private static final Logger logger = LoggerFactory.getLogger(AdminEquipmentController.class);
 
     private final AdminEquipmentService adminEquipmentService;
+    private final EquipmentRepository equipmentRepository;
 
     @Autowired
-    public AdminEquipmentController(AdminEquipmentService adminEquipmentService) {
+    public AdminEquipmentController(AdminEquipmentService adminEquipmentService,
+                                     EquipmentRepository equipmentRepository) {
         this.adminEquipmentService = adminEquipmentService;
+        this.equipmentRepository = equipmentRepository;
     }
 
     /** GET /api/admin/equipment?page=0&size=20&name=bench */
@@ -67,5 +74,29 @@ public class AdminEquipmentController {
     public AdminEquipmentResponse generateQr(@PathVariable Long id) {
         logger.info("[POST /api/admin/equipment/{}/qr] Generating QR code", id);
         return adminEquipmentService.generateQrCode(id);
+    }
+
+    /** PUT /api/admin/equipment/{id}/position — set floor map coordinates */
+    @PutMapping("/{id}/position")
+    public Map<String, Object> updatePosition(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        logger.info("[PUT /api/admin/equipment/{}/position] Updating floor position", id);
+        Equipment equipment = equipmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Equipment not found: " + id));
+
+        if (body.containsKey("floorX")) {
+            equipment.setFloorX(((Number) body.get("floorX")).doubleValue());
+        }
+        if (body.containsKey("floorY")) {
+            equipment.setFloorY(((Number) body.get("floorY")).doubleValue());
+        }
+        if (body.containsKey("floorLabel")) {
+            equipment.setFloorLabel((String) body.get("floorLabel"));
+        }
+        equipmentRepository.save(equipment);
+
+        return Map.of("id", equipment.getId(),
+                "floorX", equipment.getFloorX() != null ? equipment.getFloorX() : 0,
+                "floorY", equipment.getFloorY() != null ? equipment.getFloorY() : 0,
+                "floorLabel", equipment.getFloorLabel() != null ? equipment.getFloorLabel() : "");
     }
 }
