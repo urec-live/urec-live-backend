@@ -1,8 +1,10 @@
 package com.ureclive.urec_live_backend.controller;
 
 import com.ureclive.urec_live_backend.dto.CreateSessionRequest;
+import com.ureclive.urec_live_backend.dto.PersonalRecordResponse;
 import com.ureclive.urec_live_backend.dto.SessionResponse;
 import com.ureclive.urec_live_backend.dto.SessionStatsResponse;
+import com.ureclive.urec_live_backend.dto.WeightProgressionResponse;
 import com.ureclive.urec_live_backend.service.WorkoutSessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -10,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/sessions")
@@ -44,5 +48,20 @@ public class WorkoutSessionController {
     public ResponseEntity<SessionStatsResponse> getMyStats(Authentication auth) {
         SessionStatsResponse stats = sessionService.getUserStats(auth.getName());
         return ResponseEntity.ok(stats);
+    }
+
+    @GetMapping("/me/prs")
+    public ResponseEntity<List<PersonalRecordResponse>> getMyPRs(Authentication auth) {
+        List<PersonalRecordResponse> prs = sessionService.getPersonalRecords(auth.getName());
+        return ResponseEntity.ok(prs);
+    }
+
+    @GetMapping("/me/prs/{exerciseName}/history")
+    public ResponseEntity<List<WeightProgressionResponse>> getExerciseProgression(
+            @PathVariable String exerciseName,
+            Authentication auth) {
+        List<WeightProgressionResponse> progression =
+                sessionService.getExerciseProgression(auth.getName(), exerciseName);
+        return ResponseEntity.ok(progression);
     }
 }

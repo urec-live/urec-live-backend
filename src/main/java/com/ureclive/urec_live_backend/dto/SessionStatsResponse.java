@@ -9,6 +9,11 @@ public class SessionStatsResponse {
     private long totalDurationSeconds;
     private List<ExerciseCount> topExercises;
     private Map<String, Long> sessionsPerWeek;
+    private int currentStreak;
+    private int longestStreak;
+    private double totalVolumeLbs;
+    private Map<String, Double> volumePerWeek;
+    private Map<String, Long> muscleGroupBreakdown;
 
     public SessionStatsResponse() {}
 
@@ -23,6 +28,21 @@ public class SessionStatsResponse {
 
     public Map<String, Long> getSessionsPerWeek() { return sessionsPerWeek; }
     public void setSessionsPerWeek(Map<String, Long> sessionsPerWeek) { this.sessionsPerWeek = sessionsPerWeek; }
+
+    public int getCurrentStreak() { return currentStreak; }
+    public void setCurrentStreak(int currentStreak) { this.currentStreak = currentStreak; }
+
+    public int getLongestStreak() { return longestStreak; }
+    public void setLongestStreak(int longestStreak) { this.longestStreak = longestStreak; }
+
+    public double getTotalVolumeLbs() { return totalVolumeLbs; }
+    public void setTotalVolumeLbs(double totalVolumeLbs) { this.totalVolumeLbs = totalVolumeLbs; }
+
+    public Map<String, Double> getVolumePerWeek() { return volumePerWeek; }
+    public void setVolumePerWeek(Map<String, Double> volumePerWeek) { this.volumePerWeek = volumePerWeek; }
+
+    public Map<String, Long> getMuscleGroupBreakdown() { return muscleGroupBreakdown; }
+    public void setMuscleGroupBreakdown(Map<String, Long> muscleGroupBreakdown) { this.muscleGroupBreakdown = muscleGroupBreakdown; }
 
     public static class ExerciseCount {
         private String name;
