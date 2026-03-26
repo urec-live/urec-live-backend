@@ -11,6 +11,7 @@ public class FloorPlanResponse {
     private String imageUrl;
     private Integer width;
     private Integer height;
+    private Integer floorNumber;
     private List<MachineDTO> equipment;
 
     public FloorPlanResponse() {}
@@ -22,6 +23,7 @@ public class FloorPlanResponse {
         resp.imageUrl = plan.getImageUrl();
         resp.width = plan.getWidth();
         resp.height = plan.getHeight();
+        resp.floorNumber = plan.getFloorNumber();
         resp.equipment = equipment;
         return resp;
     }
@@ -40,6 +42,9 @@ public class FloorPlanResponse {
 
     public Integer getHeight() { return height; }
     public void setHeight(Integer height) { this.height = height; }
+
+    public Integer getFloorNumber() { return floorNumber; }
+    public void setFloorNumber(Integer floorNumber) { this.floorNumber = floorNumber; }
 
     public List<MachineDTO> getEquipment() { return equipment; }
     public void setEquipment(List<MachineDTO> equipment) { this.equipment = equipment; }

@@ -225,31 +225,44 @@ public class MachineController {
         return dto;
     }
 
-    // ✅ Get active floor plan with all equipment positions and statuses
-    @GetMapping("/floor-plan")
-    public org.springframework.http.ResponseEntity<FloorPlanResponse> getFloorPlan() {
-        logger.info("[GET /api/machines/floor-plan] Fetching active floor plan");
-        Optional<FloorPlan> optPlan = floorPlanRepository.findByActiveTrue();
-        if (optPlan.isEmpty()) {
+    // ✅ Get all floor plans with equipment grouped by floor
+    @GetMapping("/floor-plans")
+    public List<FloorPlanResponse> getFloorPlans() {
+        logger.info("[GET /api/machines/floor-plans] Fetching all floor plans with equipment");
+        List<FloorPlan> plans = floorPlanRepository.findAllByActiveTrueOrderByFloorNumberAsc();
+
+        if (plans.isEmpty()) {
             // Return a default virtual floor plan with all equipment
             FloorPlan defaultPlan = new FloorPlan();
             defaultPlan.setId(0L);
             defaultPlan.setName("Gym Floor");
             defaultPlan.setWidth(800);
             defaultPlan.setHeight(600);
+            defaultPlan.setFloorNumber(1);
             defaultPlan.setActive(true);
 
             List<MachineDTO> allEquipment = equipmentRepository.findAllByDeletedFalse().stream()
                     .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
                     .collect(Collectors.toList());
-            return org.springframework.http.ResponseEntity.ok(FloorPlanResponse.from(defaultPlan, allEquipment));
+            return List.of(FloorPlanResponse.from(defaultPlan, allEquipment));
         }
 
-        FloorPlan plan = optPlan.get();
-        List<MachineDTO> allEquipment = equipmentRepository.findAllByDeletedFalse().stream()
-                .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
-                .collect(Collectors.toList());
-        return org.springframework.http.ResponseEntity.ok(FloorPlanResponse.from(plan, allEquipment));
+        return plans.stream().map(plan -> {
+            List<MachineDTO> equipment = equipmentRepository
+                    .findAllByDeletedFalseAndFloorPlanId(plan.getId())
+                    .stream()
+                    .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
+                    .collect(Collectors.toList());
+            return FloorPlanResponse.from(plan, equipment);
+        }).collect(Collectors.toList());
+    }
+
+    // Backward-compatible single floor plan endpoint
+    @GetMapping("/floor-plan")
+    public org.springframework.http.ResponseEntity<FloorPlanResponse> getFloorPlan() {
+        logger.info("[GET /api/machines/floor-plan] Fetching primary floor plan");
+        List<FloorPlanResponse> plans = getFloorPlans();
+        return org.springframework.http.ResponseEntity.ok(plans.get(0));
     }
 
     // Helper method to get primary exercise name

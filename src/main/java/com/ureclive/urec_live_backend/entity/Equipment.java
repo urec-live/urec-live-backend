@@ -35,6 +35,10 @@ public class Equipment {
     @Column(name = "floor_label", length = 50)
     private String floorLabel;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "floor_plan_id")
+    private FloorPlan floorPlan;
+
     @ManyToMany
     @JoinTable(
         name = "equipment_exercise",
@@ -92,4 +96,7 @@ public class Equipment {
 
     public String getFloorLabel() { return floorLabel; }
     public void setFloorLabel(String floorLabel) { this.floorLabel = floorLabel; }
+
+    public FloorPlan getFloorPlan() { return floorPlan; }
+    public void setFloorPlan(FloorPlan floorPlan) { this.floorPlan = floorPlan; }
 }

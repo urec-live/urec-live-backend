@@ -4,7 +4,9 @@ import com.ureclive.urec_live_backend.dto.AdminEquipmentResponse;
 import com.ureclive.urec_live_backend.dto.CreateEquipmentRequest;
 import com.ureclive.urec_live_backend.dto.UpdateEquipmentRequest;
 import com.ureclive.urec_live_backend.entity.Equipment;
+import com.ureclive.urec_live_backend.entity.FloorPlan;
 import com.ureclive.urec_live_backend.repository.EquipmentRepository;
+import com.ureclive.urec_live_backend.repository.FloorPlanRepository;
 import com.ureclive.urec_live_backend.service.AdminEquipmentService;
 
 import java.util.Map;
@@ -27,12 +29,15 @@ public class AdminEquipmentController {
 
     private final AdminEquipmentService adminEquipmentService;
     private final EquipmentRepository equipmentRepository;
+    private final FloorPlanRepository floorPlanRepository;
 
     @Autowired
     public AdminEquipmentController(AdminEquipmentService adminEquipmentService,
-                                     EquipmentRepository equipmentRepository) {
+                                     EquipmentRepository equipmentRepository,
+                                     FloorPlanRepository floorPlanRepository) {
         this.adminEquipmentService = adminEquipmentService;
         this.equipmentRepository = equipmentRepository;
+        this.floorPlanRepository = floorPlanRepository;
     }
 
     /** GET /api/admin/equipment?page=0&size=20&name=bench */
@@ -91,6 +96,16 @@ public class AdminEquipmentController {
         }
         if (body.containsKey("floorLabel")) {
             equipment.setFloorLabel((String) body.get("floorLabel"));
+        }
+        if (body.containsKey("floorPlanId")) {
+            Object fpId = body.get("floorPlanId");
+            if (fpId != null) {
+                FloorPlan plan = floorPlanRepository.findById(((Number) fpId).longValue())
+                        .orElseThrow(() -> new RuntimeException("Floor plan not found"));
+                equipment.setFloorPlan(plan);
+            } else {
+                equipment.setFloorPlan(null);
+            }
         }
         equipmentRepository.save(equipment);
 

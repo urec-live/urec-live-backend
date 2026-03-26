@@ -13,6 +13,7 @@ public class MachineDTO {
     private Double floorX;
     private Double floorY;
     private String floorLabel;
+    private Long floorPlanId;
 
     public MachineDTO() {}
 
@@ -27,6 +28,7 @@ public class MachineDTO {
         this.floorX = equipment.getFloorX();
         this.floorY = equipment.getFloorY();
         this.floorLabel = equipment.getFloorLabel();
+        this.floorPlanId = equipment.getFloorPlan() != null ? equipment.getFloorPlan().getId() : null;
     }
 
     // Getters and Setters
@@ -59,4 +61,7 @@ public class MachineDTO {
 
     public String getFloorLabel() { return floorLabel; }
     public void setFloorLabel(String floorLabel) { this.floorLabel = floorLabel; }
+
+    public Long getFloorPlanId() { return floorPlanId; }
+    public void setFloorPlanId(Long floorPlanId) { this.floorPlanId = floorPlanId; }
 }

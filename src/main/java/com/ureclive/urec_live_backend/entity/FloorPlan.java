@@ -23,6 +23,9 @@ public class FloorPlan {
     @Column(nullable = false)
     private Integer height = 600;
 
+    @Column(name = "floor_number", nullable = false)
+    private Integer floorNumber = 1;
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -50,6 +53,9 @@ public class FloorPlan {
 
     public Integer getHeight() { return height; }
     public void setHeight(Integer height) { this.height = height; }
+
+    public Integer getFloorNumber() { return floorNumber; }
+    public void setFloorNumber(Integer floorNumber) { this.floorNumber = floorNumber; }
 
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
