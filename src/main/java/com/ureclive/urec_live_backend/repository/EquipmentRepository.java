@@ -24,4 +24,8 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
 
     @Query("SELECT e FROM Equipment e JOIN e.exercises ex WHERE LOWER(ex.name) = LOWER(:exerciseName) AND e.deleted = false")
     List<Equipment> findByExerciseName(@Param("exerciseName") String exerciseName);
+
+    List<Equipment> findAllByDeletedFalseAndFloorPlanId(Long floorPlanId);
+
+    List<Equipment> findAllByDeletedFalseAndFloorPlanIsNull();
 }
