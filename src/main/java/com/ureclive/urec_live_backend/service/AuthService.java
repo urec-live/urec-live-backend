@@ -1,14 +1,8 @@
 package com.ureclive.urec_live_backend.service;
 
-import com.ureclive.urec_live_backend.dto.AuthResponse;
-import com.ureclive.urec_live_backend.dto.LoginRequest;
-import com.ureclive.urec_live_backend.dto.RegisterRequest;
-import com.ureclive.urec_live_backend.entity.Role;
-import com.ureclive.urec_live_backend.entity.User;
-import com.ureclive.urec_live_backend.repository.RoleRepository;
-import com.ureclive.urec_live_backend.repository.UserRepository;
-import com.ureclive.urec_live_backend.security.JwtUtil;
-import com.ureclive.urec_live_backend.service.ActivityLogService;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -19,10 +13,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.ureclive.urec_live_backend.dto.AuthResponse;
+import com.ureclive.urec_live_backend.dto.LoginRequest;
+import com.ureclive.urec_live_backend.dto.RegisterRequest;
+import com.ureclive.urec_live_backend.entity.Role;
+import com.ureclive.urec_live_backend.entity.User;
+import com.ureclive.urec_live_backend.repository.RoleRepository;
+import com.ureclive.urec_live_backend.repository.UserRepository;
+import com.ureclive.urec_live_backend.security.JwtUtil;
 
 @Service
 public class AuthService {
