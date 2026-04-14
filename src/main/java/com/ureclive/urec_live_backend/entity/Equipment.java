@@ -26,6 +26,19 @@ public class Equipment {
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean deleted = false;
 
+    @Column(name = "floor_x")
+    private Double floorX;
+
+    @Column(name = "floor_y")
+    private Double floorY;
+
+    @Column(name = "floor_label", length = 50)
+    private String floorLabel;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "floor_plan_id")
+    private FloorPlan floorPlan;
+
     @ManyToMany
     @JoinTable(
         name = "equipment_exercise",
@@ -74,4 +87,16 @@ public class Equipment {
 
     public boolean isDeleted() { return deleted; }
     public void setDeleted(boolean deleted) { this.deleted = deleted; }
+
+    public Double getFloorX() { return floorX; }
+    public void setFloorX(Double floorX) { this.floorX = floorX; }
+
+    public Double getFloorY() { return floorY; }
+    public void setFloorY(Double floorY) { this.floorY = floorY; }
+
+    public String getFloorLabel() { return floorLabel; }
+    public void setFloorLabel(String floorLabel) { this.floorLabel = floorLabel; }
+
+    public FloorPlan getFloorPlan() { return floorPlan; }
+    public void setFloorPlan(FloorPlan floorPlan) { this.floorPlan = floorPlan; }
 }
