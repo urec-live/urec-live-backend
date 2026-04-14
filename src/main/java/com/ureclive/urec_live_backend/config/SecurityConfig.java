@@ -1,23 +1,24 @@
 package com.ureclive.urec_live_backend.config;
 
-import com.ureclive.urec_live_backend.security.CustomUserDetailsService;
-import com.ureclive.urec_live_backend.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import com.ureclive.urec_live_backend.security.CustomUserDetailsService;
+import com.ureclive.urec_live_backend.security.JwtAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -56,11 +57,23 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
             .exceptionHandling(exception -> exception
+                // ✅ FIX: Write JSON directly instead of sendError()
+                // sendError() hands off to the servlet error page which can
+                // strip CORS headers before Angular sees the response,
+                // causing the error handler to miss the 401 status check.
                 .authenticationEntryPoint((request, response, authException) -> {
-                    response.sendError(401, "Unauthorized");
+                    response.setStatus(401);
+                    response.setContentType("application/json");
+                    response.getWriter().write(
+                        "{\"error\":\"Unauthorized\",\"message\":\"Invalid username or password\"}"
+                    );
                 })
                 .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    response.sendError(403, "Forbidden");
+                    response.setStatus(403);
+                    response.setContentType("application/json");
+                    response.getWriter().write(
+                        "{\"error\":\"Forbidden\",\"message\":\"You do not have permission to access this resource\"}"
+                    );
                 })
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
