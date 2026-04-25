@@ -14,6 +14,10 @@ public class MachineDTO {
     private Double floorY;
     private String floorLabel;
     private Long floorPlanId;
+    private String availabilitySource;
+    private String secondaryStatus;
+    private Double secondaryConfidence;
+    private String secondaryTimestamp;
 
     public MachineDTO() {}
 
@@ -29,6 +33,7 @@ public class MachineDTO {
         this.floorY = equipment.getFloorY();
         this.floorLabel = equipment.getFloorLabel();
         this.floorPlanId = equipment.getFloorPlan() != null ? equipment.getFloorPlan().getId() : null;
+        this.availabilitySource = "PRIMARY";
     }
 
     // Getters and Setters
@@ -64,4 +69,16 @@ public class MachineDTO {
 
     public Long getFloorPlanId() { return floorPlanId; }
     public void setFloorPlanId(Long floorPlanId) { this.floorPlanId = floorPlanId; }
+
+    public String getAvailabilitySource() { return availabilitySource; }
+    public void setAvailabilitySource(String availabilitySource) { this.availabilitySource = availabilitySource; }
+
+    public String getSecondaryStatus() { return secondaryStatus; }
+    public void setSecondaryStatus(String secondaryStatus) { this.secondaryStatus = secondaryStatus; }
+
+    public Double getSecondaryConfidence() { return secondaryConfidence; }
+    public void setSecondaryConfidence(Double secondaryConfidence) { this.secondaryConfidence = secondaryConfidence; }
+
+    public String getSecondaryTimestamp() { return secondaryTimestamp; }
+    public void setSecondaryTimestamp(String secondaryTimestamp) { this.secondaryTimestamp = secondaryTimestamp; }
 }
