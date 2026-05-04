@@ -27,6 +27,10 @@ public class WorkoutPlan {
     @OrderBy("dayOfWeek ASC")
     private List<DayPlan> dayPlans = new ArrayList<>();
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10, columnDefinition = "varchar(10) default 'PRIVATE'")
+    private PlanVisibility visibility = PlanVisibility.PRIVATE;
+
     @Column(updatable = false)
     private Instant createdAt;
 
@@ -60,7 +64,12 @@ public class WorkoutPlan {
     public List<DayPlan> getDayPlans() { return dayPlans; }
     public void setDayPlans(List<DayPlan> dayPlans) { this.dayPlans = dayPlans; }
 
+    public PlanVisibility getVisibility() { return visibility; }
+    public void setVisibility(PlanVisibility visibility) { this.visibility = visibility; }
+
     public Instant getCreatedAt() { return createdAt; }
 
     public Instant getUpdatedAt() { return updatedAt; }
+
+    public enum PlanVisibility { PRIVATE, PUBLIC }
 }

@@ -13,7 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/sessions")
@@ -63,5 +65,11 @@ public class WorkoutSessionController {
         List<WeightProgressionResponse> progression =
                 sessionService.getExerciseProgression(auth.getName(), exerciseName);
         return ResponseEntity.ok(progression);
+    }
+
+    @GetMapping("/me/calendar")
+    public ResponseEntity<Map<String, List<LocalDate>>> getMyCalendar(Authentication auth) {
+        List<LocalDate> dates = sessionService.getWorkoutCalendar(auth.getName());
+        return ResponseEntity.ok(Map.of("workoutDates", dates));
     }
 }

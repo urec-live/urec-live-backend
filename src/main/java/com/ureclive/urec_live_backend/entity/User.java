@@ -7,6 +7,8 @@ import java.util.Set;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -42,6 +44,13 @@ public class User {
 
     @Column(nullable = false)
     private Boolean enabled = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10, columnDefinition = "varchar(10) default 'PRIVATE'")
+    private ProfileVisibility profileVisibility = ProfileVisibility.PRIVATE;
+
+    @Column(length = 300)
+    private String bio;
 
     @Column(updatable = false)
     private Instant createdAt;
@@ -109,5 +118,13 @@ public class User {
         this.enabled = enabled;
     }
 
+    public ProfileVisibility getProfileVisibility() { return profileVisibility; }
+    public void setProfileVisibility(ProfileVisibility profileVisibility) { this.profileVisibility = profileVisibility; }
+
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
+
     public Instant getCreatedAt() { return createdAt; }
+
+    public enum ProfileVisibility { PRIVATE, PUBLIC }
 }

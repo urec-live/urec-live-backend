@@ -1,6 +1,7 @@
 package com.ureclive.urec_live_backend.repository;
 
 import com.ureclive.urec_live_backend.entity.User;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -15,4 +16,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Boolean existsByUsername(String username);
     Boolean existsByEmail(String email);
     List<User> findByCreatedAtBetween(Instant from, Instant to);
+    List<User> findByUsernameContainingIgnoreCaseAndProfileVisibility(
+            String query, User.ProfileVisibility visibility, Pageable pageable);
 }

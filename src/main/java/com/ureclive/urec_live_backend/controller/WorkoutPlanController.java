@@ -11,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/plans")
 @CrossOrigin(origins = "*")
@@ -64,5 +67,27 @@ public class WorkoutPlanController {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok(today);
+    }
+
+    @GetMapping("/public")
+    public ResponseEntity<List<WorkoutPlanResponse>> getPublicPlans(
+            @RequestParam String username, Authentication auth) {
+        return ResponseEntity.ok(planService.getPublicPlans(username));
+    }
+
+    @PostMapping("/{id}/copy")
+    public ResponseEntity<WorkoutPlanResponse> copyPlan(
+            @PathVariable Long id, Authentication auth) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(planService.copyPlan(id, auth.getName()));
+    }
+
+    @PatchMapping("/{id}/visibility")
+    public ResponseEntity<WorkoutPlanResponse> updateVisibility(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body,
+            Authentication auth) {
+        String visibility = body.get("visibility");
+        if (visibility == null) return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(planService.updateVisibility(id, visibility, auth.getName()));
     }
 }
