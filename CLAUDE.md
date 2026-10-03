@@ -31,7 +31,7 @@ UREC Live is a cross-platform gym management and fitness tracking platform targe
 
 ### Database Schema
 
-Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exercise`, `workout_sessions`, `workout_sets`, `activity_log`
+Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exercise`, `workout_sessions`, `workout_sets`, `activity_log`, `equipment_issue_reports`
 
 - Schema auto-managed via `spring.jpa.hibernate.ddl-auto=update`
 - `DataInitializer` seeds 40+ exercises across all muscle groups on first startup
@@ -45,7 +45,8 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 - **Role** — ROLE_ADMIN, ROLE_USER
 - **WorkoutSession** — user, machine, exercise, muscleGroup, startedAt, endedAt, durationSeconds, notes
 - **WorkoutSet** — setNumber, reps, weightLbs (per-set tracking within a session)
-- **ActivityLog** — eventType (CHECK_IN/CHECK_OUT), username, description, equipmentName, timestamp
+- **ActivityLog** — eventType (CHECK_IN/CHECK_OUT, … ISSUE_REPORTED/ISSUE_STATUS_CHANGED), username, description, equipmentName, timestamp
+- **EquipmentIssueReport** — equipment, reporter (User), severity (`IssueSeverity`: OUT_OF_ORDER/DAMAGED), description (10–1000 chars), status (`IssueStatus`: REPORTED → ACKNOWLEDGED → IN_PROGRESS → RESOLVED), reportedAt, updatedAt, resolvedAt. One open report per member per machine (409 otherwise). Never changes `Equipment.status`.
 
 ---
 
@@ -78,6 +79,16 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 | GET | `/api/sessions/me` | User's session history (paginated, default 20/page) |
 | GET | `/api/sessions/me/stats` | Aggregated stats (total sessions, duration, top exercises, sessions/week) |
 
+### Equipment Issue Endpoints (Authenticated)
+
+Deliberately outside `/api/machines/**`, which is `permitAll`.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/equipment-issues` | Report a problem `{equipmentId, severity, description}` → 201; 409 if already open; 404 if machine missing/removed |
+| GET | `/api/equipment-issues/me` | Caller's reports, newest first |
+| GET | `/api/equipment-issues/equipment/{id}` | Open-issue summary for the machine page (counts/status only — no reporter details) |
+
 ### Admin Endpoints (ROLE_ADMIN only, `@PreAuthorize`)
 
 | Method | Endpoint | Description |
@@ -101,6 +112,12 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 | GET | `/api/admin/users` | List all users (paginated) |
 | GET | `/api/admin/users/{id}` | User detail |
 | PUT | `/api/admin/users/{id}/role` | Change user role |
+| GET | `/api/admin/equipment-issues?includeResolved=false` | Reports grouped by machine (not-working first) |
+| GET | `/api/admin/equipment-issues/summary` | Counts: reported, acknowledged, inProgress, affectedMachines |
+| PUT | `/api/admin/equipment-issues/{id}/status` | Set one report's status |
+| PUT | `/api/admin/equipment-issues/equipment/{id}/status` | Set status on all of a machine's open reports |
+
+Note: role names are stored verbatim (the admin UI assigns `ADMIN`), so `hasRole('ADMIN')` only matches `ROLE_ADMIN`. `AdminUserController` and `AdminEquipmentIssueController` accept both via `hasAuthority('ADMIN') or hasAuthority('ROLE_ADMIN')`.
 
 ### WebSocket
 
@@ -121,22 +138,28 @@ src/main/java/com/ureclive/urec_live_backend/
 │   ├── AdminEquipmentController.java
 │   ├── AdminExerciseController.java
 │   ├── AdminAnalyticsController.java
-│   └── AdminUserController.java
+│   ├── AdminUserController.java
+│   ├── EquipmentIssueController.java       # member issue reporting
+│   └── AdminEquipmentIssueController.java  # admin Equipment Issues view
 ├── service/
 │   ├── AuthService.java
 │   ├── AdminEquipmentService.java
 │   ├── AdminExerciseService.java
 │   ├── AdminAnalyticsService.java
 │   ├── WorkoutSessionService.java
-│   └── ActivityLogService.java
+│   ├── ActivityLogService.java
+│   ├── EquipmentIssueService.java
+│   └── AdminEquipmentIssueService.java
 ├── entity/
 │   ├── User.java, Equipment.java, Exercise.java, Role.java
 │   ├── WorkoutSession.java, WorkoutSet.java, ActivityLog.java
+│   ├── EquipmentIssueReport.java, IssueSeverity.java, IssueStatus.java
 ├── repository/
 │   ├── UserRepository.java, EquipmentRepository.java
 │   ├── ExerciseRepository.java, RoleRepository.java
 │   ├── WorkoutSessionRepository.java, WorkoutSetRepository.java
-│   └── ActivityLogRepository.java
+│   ├── ActivityLogRepository.java
+│   └── EquipmentIssueReportRepository.java
 ├── dto/              # Request + response objects for every endpoint
 ├── security/
 │   ├── JwtUtil.java, JwtAuthenticationFilter.java
@@ -155,7 +178,14 @@ src/main/java/com/ureclive/urec_live_backend/
 - All new endpoints need proper error handling with meaningful HTTP status codes
 - Use `@Valid` and Bean Validation annotations on request DTOs
 - Keep controllers thin — business logic belongs in service classes
-- All `/api/admin/**` endpoints must use `@PreAuthorize("hasRole('ADMIN')")`
+- All `/api/admin/**` endpoints must use `@PreAuthorize` with an admin check (see the role-name note under Admin Endpoints)
+
+## Testing
+
+- Unit tests: Mockito, no Spring context (e.g. `service/EquipmentIssueServiceTest`)
+- Integration tests: `@SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test")` — the `test` profile (`src/test/resources/application-test.properties`) uses in-memory H2, so no database or `.env` is needed. Mint tokens with `JwtUtil.generateToken(userDetailsService.loadUserByUsername(...))`.
+- `mvn test -Dtest='*EquipmentIssue*'` runs the equipment issue suite; `UrecLiveBackendApplicationTests.contextLoads` still needs the real DB env vars.
+- API smoke test against a running server: `scripts/smoke-test-equipment-issues.sh` (see `EQUIPMENT_ISSUES_TESTING.md`)
 
 ---
 
