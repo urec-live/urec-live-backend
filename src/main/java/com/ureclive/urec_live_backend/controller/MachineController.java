@@ -227,6 +227,26 @@ public class MachineController {
         return dto;
     }
 
+    /**
+     * Out-of-order machines are controlled by admins: members can't mark a machine out of order (403)
+     * or check in to one (409). Checking out still succeeds, so a workout that was already in progress
+     * can end, but the machine stays out of order.
+     */
+    private String statusToApply(Equipment equipment, String requested) {
+        if (com.ureclive.urec_live_backend.entity.EquipmentStatuses.isOutOfOrder(requested)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Only admins can mark machines out of order");
+        }
+        if (!com.ureclive.urec_live_backend.entity.EquipmentStatuses.isOutOfOrder(equipment.getStatus())) {
+            return requested;
+        }
+        if (com.ureclive.urec_live_backend.entity.EquipmentStatuses.IN_USE.equalsIgnoreCase(requested.trim())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT, "Machine is out of order");
+        }
+        return equipment.getStatus();
+    }
+
     // ✅ Get all floor plans with equipment grouped by floor
     @GetMapping("/floor-plans")
     public List<FloorPlanResponse> getFloorPlans() {
@@ -273,25 +293,5 @@ public class MachineController {
             .findFirst()
             .map(Exercise::getName)
             .orElse("Unknown");
-    }
-
-    /**
-     * Out-of-order machines are controlled by admins: members can't mark a machine out of order (403)
-     * or check in to one (409). Checking out still succeeds, so a workout that was already in progress
-     * can end, but the machine stays out of order.
-     */
-    private String statusToApply(Equipment equipment, String requested) {
-        if (com.ureclive.urec_live_backend.entity.EquipmentStatuses.isOutOfOrder(requested)) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                    org.springframework.http.HttpStatus.FORBIDDEN, "Only admins can mark machines out of order");
-        }
-        if (!com.ureclive.urec_live_backend.entity.EquipmentStatuses.isOutOfOrder(equipment.getStatus())) {
-            return requested;
-        }
-        if (com.ureclive.urec_live_backend.entity.EquipmentStatuses.IN_USE.equalsIgnoreCase(requested.trim())) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                    org.springframework.http.HttpStatus.CONFLICT, "Machine is out of order");
-        }
-        return equipment.getStatus();
     }
 }
