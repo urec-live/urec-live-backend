@@ -16,6 +16,7 @@ public class EquipmentIssueGroupResponse {
     private Long equipmentId;
     private String equipmentName;
     private String equipmentCode;
+    private String equipmentStatus;        // Equipment.status, e.g. "Out of Order"
     private long openReportCount;
     private IssueSeverity worstSeverity;   // across open reports; null when every report is resolved
     private Instant latestReportedAt;      // newest open report, or newest report when all are resolved
@@ -33,6 +34,7 @@ public class EquipmentIssueGroupResponse {
         dto.equipmentId = equipment.getId();
         dto.equipmentName = equipment.getName();
         dto.equipmentCode = equipment.getCode();
+        dto.equipmentStatus = equipment.getStatus();
         dto.openReportCount = open.size();
         dto.worstSeverity = open.stream()
                 .map(EquipmentIssueReport::getSeverity)
@@ -48,6 +50,7 @@ public class EquipmentIssueGroupResponse {
     public Long getEquipmentId() { return equipmentId; }
     public String getEquipmentName() { return equipmentName; }
     public String getEquipmentCode() { return equipmentCode; }
+    public String getEquipmentStatus() { return equipmentStatus; }
     public long getOpenReportCount() { return openReportCount; }
     public IssueSeverity getWorstSeverity() { return worstSeverity; }
     public Instant getLatestReportedAt() { return latestReportedAt; }

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -73,9 +74,10 @@ public class AdminEquipmentController {
     /** PUT /api/admin/equipment/{id} */
     @PutMapping("/{id}")
     public AdminEquipmentResponse update(@PathVariable Long id,
-                                         @RequestBody UpdateEquipmentRequest request) {
+                                         @RequestBody UpdateEquipmentRequest request,
+                                         Authentication auth) {
         logger.info("[PUT /api/admin/equipment/{}] Updating equipment", id);
-        return adminEquipmentService.update(id, request);
+        return adminEquipmentService.update(id, request, auth.getName());
     }
 
     /** DELETE /api/admin/equipment/{id} — soft delete */

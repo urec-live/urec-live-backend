@@ -1,10 +1,12 @@
 package com.ureclive.urec_live_backend.service;
 
+import com.ureclive.urec_live_backend.dto.AdminEquipmentResponse;
 import com.ureclive.urec_live_backend.dto.EquipmentIssueGroupResponse;
 import com.ureclive.urec_live_backend.dto.EquipmentIssueSummaryResponse;
 import com.ureclive.urec_live_backend.dto.IssueReportResponse;
 import com.ureclive.urec_live_backend.entity.Equipment;
 import com.ureclive.urec_live_backend.entity.EquipmentIssueReport;
+import com.ureclive.urec_live_backend.entity.EquipmentStatuses;
 import com.ureclive.urec_live_backend.entity.IssueStatus;
 import com.ureclive.urec_live_backend.repository.EquipmentIssueReportRepository;
 import com.ureclive.urec_live_backend.repository.EquipmentRepository;
@@ -21,7 +23,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/** Admin side of equipment issue reporting: the grouped issues view and status changes. */
+/**
+ * Admin side of equipment issue reporting: the grouped issues view, report status changes and taking
+ * machines out of service. Resolving a machine's last open report puts it back in service.
+ */
 @Service
 public class AdminEquipmentIssueService {
 
@@ -35,14 +40,17 @@ public class AdminEquipmentIssueService {
     private final EquipmentIssueReportRepository issueReportRepository;
     private final EquipmentRepository equipmentRepository;
     private final ActivityLogService activityLogService;
+    private final MachineStatusService machineStatusService;
 
     @Autowired
     public AdminEquipmentIssueService(EquipmentIssueReportRepository issueReportRepository,
                                       EquipmentRepository equipmentRepository,
-                                      ActivityLogService activityLogService) {
+                                      ActivityLogService activityLogService,
+                                      MachineStatusService machineStatusService) {
         this.issueReportRepository = issueReportRepository;
         this.equipmentRepository = equipmentRepository;
         this.activityLogService = activityLogService;
+        this.machineStatusService = machineStatusService;
     }
 
     /**
@@ -75,6 +83,7 @@ public class AdminEquipmentIssueService {
         if (report.changeStatus(status)) {
             report = issueReportRepository.save(report);
             logStatusChange(adminUsername, report.getEquipment(), "Report #" + report.getId(), status);
+            if (status == IssueStatus.RESOLVED) returnToServiceIfFixed(report.getEquipment(), adminUsername);
         }
         return IssueReportResponse.from(report);
     }
@@ -99,8 +108,29 @@ public class AdminEquipmentIssueService {
         if (!changed.isEmpty()) {
             issueReportRepository.saveAll(changed);
             logStatusChange(adminUsername, equipment, changed.size() + " report(s)", status);
+            if (status == IssueStatus.RESOLVED) equipment = returnToServiceIfFixed(equipment, adminUsername);
         }
         return EquipmentIssueGroupResponse.from(equipment, openReports);
+    }
+
+    /**
+     * Takes a machine out of service, or puts it back. Putting it back only affects a machine that's
+     * currently out of order, so it never turns an in-use machine into an available one.
+     */
+    @Transactional
+    public AdminEquipmentResponse setOutOfOrder(Long equipmentId, boolean outOfOrder, String adminUsername) {
+        Equipment equipment = equipmentRepository.findById(equipmentId)
+                .filter(e -> !e.isDeleted())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Equipment not found with id: " + equipmentId));
+
+        boolean currentlyOutOfOrder = EquipmentStatuses.isOutOfOrder(equipment.getStatus());
+        if (outOfOrder && !currentlyOutOfOrder) {
+            equipment = machineStatusService.changeStatus(equipment, EquipmentStatuses.OUT_OF_ORDER, adminUsername, null);
+        } else if (!outOfOrder && currentlyOutOfOrder) {
+            equipment = machineStatusService.changeStatus(equipment, EquipmentStatuses.AVAILABLE, adminUsername, null);
+        }
+        return AdminEquipmentResponse.from(equipment);
     }
 
     public EquipmentIssueSummaryResponse getSummary() {
@@ -108,7 +138,18 @@ public class AdminEquipmentIssueService {
                 issueReportRepository.countByStatusAndEquipmentDeletedFalse(IssueStatus.REPORTED),
                 issueReportRepository.countByStatusAndEquipmentDeletedFalse(IssueStatus.ACKNOWLEDGED),
                 issueReportRepository.countByStatusAndEquipmentDeletedFalse(IssueStatus.IN_PROGRESS),
-                issueReportRepository.countDistinctEquipmentByStatusNot(IssueStatus.RESOLVED));
+                issueReportRepository.countDistinctEquipmentByStatusNot(IssueStatus.RESOLVED),
+                equipmentRepository.countByDeletedFalseAndStatusIgnoreCase(EquipmentStatuses.OUT_OF_ORDER));
+    }
+
+    /** Puts an out-of-order machine back in service once its last open report is resolved. */
+    private Equipment returnToServiceIfFixed(Equipment equipment, String adminUsername) {
+        if (EquipmentStatuses.isOutOfOrder(equipment.getStatus())
+                && !issueReportRepository.existsByEquipmentIdAndStatusNot(equipment.getId(), IssueStatus.RESOLVED)) {
+            return machineStatusService.changeStatus(equipment, EquipmentStatuses.AVAILABLE, adminUsername,
+                    "last open report resolved");
+        }
+        return equipment;
     }
 
     private void logStatusChange(String adminUsername, Equipment equipment, String subject, IssueStatus status) {

@@ -40,13 +40,13 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 ### Entities
 
 - **User** — username, email, password (BCrypt), roles (M2M)
-- **Equipment** — name, code (QR), status (Available/In Use/Reserved), exercises (M2M), deleted flag
+- **Equipment** — name, code (QR), status (Available/In Use/Reserved/Out of Order — constants in `EquipmentStatuses`, compare case-insensitively), exercises (M2M), deleted flag. Only admins set Out of Order; it blocks check-ins.
 - **Exercise** — name, muscleGroup, gifUrl, equipment (M2M)
 - **Role** — ROLE_ADMIN, ROLE_USER
 - **WorkoutSession** — user, machine, exercise, muscleGroup, startedAt, endedAt, durationSeconds, notes
 - **WorkoutSet** — setNumber, reps, weightLbs (per-set tracking within a session)
 - **ActivityLog** — eventType (CHECK_IN/CHECK_OUT, … ISSUE_REPORTED/ISSUE_STATUS_CHANGED), username, description, equipmentName, timestamp
-- **EquipmentIssueReport** — equipment, reporter (User), severity (`IssueSeverity`: OUT_OF_ORDER/DAMAGED), description (10–1000 chars), status (`IssueStatus`: REPORTED → ACKNOWLEDGED → IN_PROGRESS → RESOLVED), reportedAt, updatedAt, resolvedAt. One open report per member per machine (409 otherwise). Never changes `Equipment.status`.
+- **EquipmentIssueReport** — equipment, reporter (User), severity (`IssueSeverity`: OUT_OF_ORDER/DAMAGED), description (10–1000 chars), status (`IssueStatus`: REPORTED → ACKNOWLEDGED → IN_PROGRESS → RESOLVED), reportedAt, updatedAt, resolvedAt. One open report per member per machine (409 otherwise). Reports don't change `Equipment.status`, except that resolving the last open report on an Out of Order machine puts it back to Available.
 
 ---
 
@@ -65,8 +65,8 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 | GET | `/api/machines/code/{code}` | Machine by QR code |
 | GET | `/api/machines/{id}/exercises` | Exercises for a machine |
 | GET | `/api/machines/code/{code}/exercises` | Exercises by machine code |
-| PUT | `/api/machines/{id}/status` | Update machine status (broadcasts WS) |
-| PUT | `/api/machines/code/{code}/status` | Update status by QR code (broadcasts WS) |
+| PUT | `/api/machines/{id}/status` | Update machine status (broadcasts WS). Out of Order rules: requesting it → 403; checking in to one → 409; other changes return 200 but it stays Out of Order |
+| PUT | `/api/machines/code/{code}/status` | Update status by QR code (broadcasts WS); same Out of Order rules |
 | GET | `/api/machines/muscle-groups` | All unique muscle groups |
 | GET | `/api/machines/exercises/muscle/{group}` | Exercises by muscle group |
 | GET | `/api/machines/exercise/{name}` | Machines for an exercise |
@@ -116,6 +116,9 @@ Deliberately outside `/api/machines/**`, which is `permitAll`.
 | GET | `/api/admin/equipment-issues/summary` | Counts: reported, acknowledged, inProgress, affectedMachines |
 | PUT | `/api/admin/equipment-issues/{id}/status` | Set one report's status |
 | PUT | `/api/admin/equipment-issues/equipment/{id}/status` | Set status on all of a machine's open reports |
+| PUT | `/api/admin/equipment-issues/equipment/{id}/out-of-order` | `{outOfOrder}` — take a machine out of service or put it back (never turns In Use into Available) |
+
+Admin-made status changes (this endpoint, `PUT /api/admin/equipment/{id}`, and the automatic return to service) go through `MachineStatusService`, which broadcasts to `/topic/machines` and logs `EQUIPMENT_OUT_OF_ORDER` / `EQUIPMENT_BACK_IN_SERVICE`.
 
 Note: role names are stored verbatim (the admin UI assigns `ADMIN`), so `hasRole('ADMIN')` only matches `ROLE_ADMIN`. `AdminUserController` and `AdminEquipmentIssueController` accept both via `hasAuthority('ADMIN') or hasAuthority('ROLE_ADMIN')`.
 
@@ -149,11 +152,13 @@ src/main/java/com/ureclive/urec_live_backend/
 │   ├── WorkoutSessionService.java
 │   ├── ActivityLogService.java
 │   ├── EquipmentIssueService.java
-│   └── AdminEquipmentIssueService.java
+│   ├── AdminEquipmentIssueService.java
+│   └── MachineStatusService.java   # admin status changes: save + broadcast + log
 ├── entity/
 │   ├── User.java, Equipment.java, Exercise.java, Role.java
 │   ├── WorkoutSession.java, WorkoutSet.java, ActivityLog.java
 │   ├── EquipmentIssueReport.java, IssueSeverity.java, IssueStatus.java
+│   ├── EquipmentStatuses.java      # Equipment.status values, isOutOfOrder()
 ├── repository/
 │   ├── UserRepository.java, EquipmentRepository.java
 │   ├── ExerciseRepository.java, RoleRepository.java
@@ -183,8 +188,8 @@ src/main/java/com/ureclive/urec_live_backend/
 ## Testing
 
 - Unit tests: Mockito, no Spring context (e.g. `service/EquipmentIssueServiceTest`)
-- Integration tests: `@SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test")` — the `test` profile (`src/test/resources/application-test.properties`) uses in-memory H2, so no database or `.env` is needed. Mint tokens with `JwtUtil.generateToken(userDetailsService.loadUserByUsername(...))`.
-- `mvn test -Dtest='*EquipmentIssue*'` runs the equipment issue suite; `UrecLiveBackendApplicationTests.contextLoads` still needs the real DB env vars.
+- Integration tests extend `controller/ApiIntegrationTestSupport` (`@SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test")`, so they share one cached context). The `test` profile (`src/test/resources/application-test.properties`) uses in-memory H2, so no database or `.env` is needed. The base class mints real JWTs (`tokenFor(username, role)`), resets machines to Available (`machine(...)`), and has request helpers.
+- `mvn test -Dtest='*EquipmentIssue*,*OutOfOrder*,MachineStatusServiceTest'` runs the equipment issue / out-of-order suite; `UrecLiveBackendApplicationTests.contextLoads` still needs the real DB env vars.
 - API smoke test against a running server: `scripts/smoke-test-equipment-issues.sh` (see `EQUIPMENT_ISSUES_TESTING.md`)
 
 ---

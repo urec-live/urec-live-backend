@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ureclive.urec_live_backend.dto.AdminEquipmentResponse;
 import com.ureclive.urec_live_backend.dto.EquipmentIssueGroupResponse;
 import com.ureclive.urec_live_backend.dto.EquipmentIssueSummaryResponse;
 import com.ureclive.urec_live_backend.dto.IssueReportResponse;
+import com.ureclive.urec_live_backend.dto.SetOutOfOrderRequest;
 import com.ureclive.urec_live_backend.dto.UpdateIssueStatusRequest;
 import com.ureclive.urec_live_backend.service.AdminEquipmentIssueService;
 
@@ -70,5 +72,18 @@ public class AdminEquipmentIssueController {
                                                                 Authentication auth) {
         logger.info("[PUT /api/admin/equipment-issues/equipment/{}/status] status={}", equipmentId, request.getStatus());
         return adminIssueService.updateStatusForEquipment(equipmentId, request.getStatus(), auth.getName());
+    }
+
+    /**
+     * PUT /api/admin/equipment-issues/equipment/{equipmentId}/out-of-order — take a machine out of service
+     * or put it back. Lives here rather than on AdminEquipmentController so both admin role names work.
+     */
+    @PutMapping("/equipment/{equipmentId}/out-of-order")
+    public AdminEquipmentResponse setOutOfOrder(@PathVariable Long equipmentId,
+                                                @Valid @RequestBody SetOutOfOrderRequest request,
+                                                Authentication auth) {
+        logger.info("[PUT /api/admin/equipment-issues/equipment/{}/out-of-order] outOfOrder={}",
+                equipmentId, request.getOutOfOrder());
+        return adminIssueService.setOutOfOrder(equipmentId, request.getOutOfOrder(), auth.getName());
     }
 }

@@ -1,35 +1,15 @@
 package com.ureclive.urec_live_backend.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ureclive.urec_live_backend.entity.Equipment;
 import com.ureclive.urec_live_backend.entity.IssueStatus;
-import com.ureclive.urec_live_backend.entity.Role;
-import com.ureclive.urec_live_backend.entity.User;
-import com.ureclive.urec_live_backend.repository.EquipmentIssueReportRepository;
-import com.ureclive.urec_live_backend.repository.EquipmentRepository;
-import com.ureclive.urec_live_backend.repository.RoleRepository;
-import com.ureclive.urec_live_backend.repository.UserRepository;
-import com.ureclive.urec_live_backend.security.CustomUserDetailsService;
-import com.ureclive.urec_live_backend.security.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.everyItem;
@@ -47,24 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * End-to-end tests for equipment issue reporting: real controllers, security (JWT filter and
  * {@code @PreAuthorize}), validation, services and JPA queries, against an in-memory H2 database.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class EquipmentIssueApiIntegrationTest {
-
-    private static final String MEMBER_API = "/api/equipment-issues";
-    private static final String ADMIN_API = "/api/admin/equipment-issues";
-
-    @Autowired private MockMvc mvc;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private EquipmentIssueReportRepository issueReportRepository;
-    @Autowired private EquipmentRepository equipmentRepository;
-    @Autowired private UserRepository userRepository;
-    @Autowired private RoleRepository roleRepository;
-    @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private CustomUserDetailsService userDetailsService;
-    @Autowired private JwtUtil jwtUtil;
-    @Autowired private TransactionTemplate transactionTemplate;
+class EquipmentIssueApiIntegrationTest extends ApiIntegrationTestSupport {
 
     private Equipment legPress;
     private Equipment bench;
@@ -283,6 +246,7 @@ class EquipmentIssueApiIntegrationTest {
                 .andExpect(jsonPath("$[0].equipmentName").value("IT Leg Press"))
                 .andExpect(jsonPath("$[0].worstSeverity").value("OUT_OF_ORDER"))
                 .andExpect(jsonPath("$[0].openReportCount").value(1))
+                .andExpect(jsonPath("$[0].equipmentStatus").value("Available"))
                 .andExpect(jsonPath("$[1].equipmentName").value("IT Bench Press"))
                 .andExpect(jsonPath("$[1].worstSeverity").value("DAMAGED"))
                 .andExpect(jsonPath("$[1].openReportCount").value(2))
@@ -391,7 +355,8 @@ class EquipmentIssueApiIntegrationTest {
                 .andExpect(jsonPath("$.reported").value(1))
                 .andExpect(jsonPath("$.acknowledged").value(1))
                 .andExpect(jsonPath("$.inProgress").value(1))
-                .andExpect(jsonPath("$.affectedMachines").value(2));
+                .andExpect(jsonPath("$.affectedMachines").value(2))
+                .andExpect(jsonPath("$.outOfOrderMachines").isNumber());
     }
 
     @Test
@@ -405,68 +370,5 @@ class EquipmentIssueApiIntegrationTest {
         getAs(adminToken, ADMIN_API + "/summary")
                 .andExpect(jsonPath("$.reported").value(0))
                 .andExpect(jsonPath("$.affectedMachines").value(0));
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private Equipment machine(String code, String name, boolean deleted) {
-        Equipment equipment = equipmentRepository.findByCode(code)
-                .orElseGet(() -> new Equipment(code, name, "Available", null));
-        equipment.setDeleted(deleted);
-        return equipmentRepository.save(equipment);
-    }
-
-    private String tokenFor(String username, String roleName) {
-        // One transaction so an existing Role stays managed when the new User cascades to it
-        transactionTemplate.executeWithoutResult(tx -> {
-            if (userRepository.findByUsername(username).isEmpty()) {
-                Role role = roleRepository.findByName(roleName)
-                        .orElseGet(() -> roleRepository.save(new Role(roleName)));
-                User user = new User(username, username + "@example.com", passwordEncoder.encode("password"));
-                user.addRole(role);
-                userRepository.save(user);
-            }
-        });
-        return jwtUtil.generateToken(userDetailsService.loadUserByUsername(username));
-    }
-
-    private static String bearer(String token) {
-        return "Bearer " + token;
-    }
-
-    private static Map<String, Object> fields(Object... keysAndValues) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        for (int i = 0; i < keysAndValues.length; i += 2) {
-            map.put((String) keysAndValues[i], keysAndValues[i + 1]);
-        }
-        return map;
-    }
-
-    private Map<String, Object> validReport(Equipment equipment) {
-        return fields("equipmentId", equipment.getId(),
-                      "severity", "DAMAGED",
-                      "description", "Something is clearly wrong with it");
-    }
-
-    private MockHttpServletRequestBuilder json(MockHttpServletRequestBuilder request, Object body) throws Exception {
-        return request.contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(body));
-    }
-
-    /** Files a report as the given member and returns its id. */
-    private long fileReport(String token, Equipment equipment, String severity) throws Exception {
-        Map<String, Object> body = validReport(equipment);
-        body.put("severity", severity);
-        String response = mvc.perform(json(post(MEMBER_API).header(HttpHeaders.AUTHORIZATION, bearer(token)), body))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        return objectMapper.readTree(response).get("id").asLong();
-    }
-
-    private ResultActions getAs(String token, String url) throws Exception {
-        return mvc.perform(get(url).header(HttpHeaders.AUTHORIZATION, bearer(token)));
-    }
-
-    private ResultActions putStatusAs(String token, String url, String status) throws Exception {
-        return mvc.perform(json(put(url).header(HttpHeaders.AUTHORIZATION, bearer(token)), Map.of("status", status)));
     }
 }

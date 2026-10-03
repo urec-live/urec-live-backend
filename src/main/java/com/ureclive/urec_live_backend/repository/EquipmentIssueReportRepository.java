@@ -30,6 +30,8 @@ public interface EquipmentIssueReportRepository extends JpaRepository<EquipmentI
 
     boolean existsByReporterAndEquipmentAndStatusNot(User reporter, Equipment equipment, IssueStatus status);
 
+    boolean existsByEquipmentIdAndStatusNot(Long equipmentId, IssueStatus status);
+
     long countByStatusAndEquipmentDeletedFalse(IssueStatus status);
 
     /** Number of machines (not removed) with at least one report not in {@code status}. */

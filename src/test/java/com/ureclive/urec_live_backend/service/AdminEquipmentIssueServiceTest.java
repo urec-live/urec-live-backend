@@ -1,9 +1,11 @@
 package com.ureclive.urec_live_backend.service;
 
+import com.ureclive.urec_live_backend.dto.AdminEquipmentResponse;
 import com.ureclive.urec_live_backend.dto.EquipmentIssueGroupResponse;
 import com.ureclive.urec_live_backend.dto.IssueReportResponse;
 import com.ureclive.urec_live_backend.entity.Equipment;
 import com.ureclive.urec_live_backend.entity.EquipmentIssueReport;
+import com.ureclive.urec_live_backend.entity.EquipmentStatuses;
 import com.ureclive.urec_live_backend.entity.IssueSeverity;
 import com.ureclive.urec_live_backend.entity.IssueStatus;
 import com.ureclive.urec_live_backend.entity.User;
@@ -39,6 +41,7 @@ class AdminEquipmentIssueServiceTest {
     @Mock private EquipmentIssueReportRepository issueReportRepository;
     @Mock private EquipmentRepository equipmentRepository;
     @Mock private ActivityLogService activityLogService;
+    @Mock private MachineStatusService machineStatusService;
 
     @InjectMocks private AdminEquipmentIssueService service;
 
@@ -152,6 +155,127 @@ class AdminEquipmentIssueServiceTest {
 
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
         verifyNoInteractions(activityLogService);
+    }
+
+    // ── Out of order ──────────────────────────────────────────────────────────
+
+    @Test
+    void resolvingTheLastOpenReportPutsAnOutOfOrderMachineBackInService() {
+        legPress.setStatus(EquipmentStatuses.OUT_OF_ORDER);
+        EquipmentIssueReport report = report(1L, legPress, IssueSeverity.OUT_OF_ORDER, IssueStatus.IN_PROGRESS, NOW);
+        when(issueReportRepository.findById(1L)).thenReturn(Optional.of(report));
+        when(issueReportRepository.save(report)).thenReturn(report);
+        when(issueReportRepository.existsByEquipmentIdAndStatusNot(10L, IssueStatus.RESOLVED)).thenReturn(false);
+
+        service.updateStatus(1L, IssueStatus.RESOLVED, "admin");
+
+        verify(machineStatusService).changeStatus(legPress, EquipmentStatuses.AVAILABLE, "admin",
+                "last open report resolved");
+    }
+
+    @Test
+    void anOutOfOrderMachineStaysOutWhileAnotherReportIsOpen() {
+        legPress.setStatus(EquipmentStatuses.OUT_OF_ORDER);
+        EquipmentIssueReport report = report(1L, legPress, IssueSeverity.DAMAGED, IssueStatus.ACKNOWLEDGED, NOW);
+        when(issueReportRepository.findById(1L)).thenReturn(Optional.of(report));
+        when(issueReportRepository.save(report)).thenReturn(report);
+        when(issueReportRepository.existsByEquipmentIdAndStatusNot(10L, IssueStatus.RESOLVED)).thenReturn(true);
+
+        service.updateStatus(1L, IssueStatus.RESOLVED, "admin");
+
+        verifyNoInteractions(machineStatusService);
+    }
+
+    @Test
+    void resolvingReportsLeavesAMachineThatIsNotOutOfOrderAlone() {
+        legPress.setStatus(EquipmentStatuses.IN_USE);
+        EquipmentIssueReport report = report(1L, legPress, IssueSeverity.DAMAGED, IssueStatus.REPORTED, NOW);
+        when(issueReportRepository.findById(1L)).thenReturn(Optional.of(report));
+        when(issueReportRepository.save(report)).thenReturn(report);
+
+        service.updateStatus(1L, IssueStatus.RESOLVED, "admin");
+
+        verifyNoInteractions(machineStatusService);
+    }
+
+    @Test
+    void reopeningAResolvedReportDoesNotTakeTheMachineOutOfService() {
+        EquipmentIssueReport report = report(1L, legPress, IssueSeverity.OUT_OF_ORDER, IssueStatus.RESOLVED, NOW);
+        when(issueReportRepository.findById(1L)).thenReturn(Optional.of(report));
+        when(issueReportRepository.save(report)).thenReturn(report);
+
+        service.updateStatus(1L, IssueStatus.IN_PROGRESS, "admin");
+
+        verifyNoInteractions(machineStatusService);
+        assertEquals(EquipmentStatuses.AVAILABLE, legPress.getStatus());
+    }
+
+    @Test
+    void resolvingEveryOpenReportOnAMachinePutsItBackInService() {
+        legPress.setStatus(EquipmentStatuses.OUT_OF_ORDER);
+        EquipmentIssueReport first = report(1L, legPress, IssueSeverity.OUT_OF_ORDER, IssueStatus.IN_PROGRESS, NOW);
+        EquipmentIssueReport second = report(2L, legPress, IssueSeverity.DAMAGED, IssueStatus.REPORTED, NOW.minusSeconds(60));
+        when(equipmentRepository.findById(10L)).thenReturn(Optional.of(legPress));
+        when(issueReportRepository.findByEquipmentIdAndStatusNotOrderByReportedAtDesc(10L, IssueStatus.RESOLVED))
+                .thenReturn(List.of(first, second));
+        when(issueReportRepository.existsByEquipmentIdAndStatusNot(10L, IssueStatus.RESOLVED)).thenReturn(false);
+        when(machineStatusService.changeStatus(legPress, EquipmentStatuses.AVAILABLE, "admin", "last open report resolved"))
+                .thenAnswer(inv -> {
+                    legPress.setStatus(EquipmentStatuses.AVAILABLE);
+                    return legPress;
+                });
+
+        EquipmentIssueGroupResponse group = service.updateStatusForEquipment(10L, IssueStatus.RESOLVED, "admin");
+
+        assertEquals(EquipmentStatuses.AVAILABLE, group.getEquipmentStatus());
+        assertEquals(0, group.getOpenReportCount());
+    }
+
+    @Test
+    void setOutOfOrderTakesAMachineOutOfService() {
+        when(equipmentRepository.findById(10L)).thenReturn(Optional.of(legPress));
+        when(machineStatusService.changeStatus(legPress, EquipmentStatuses.OUT_OF_ORDER, "admin", null))
+                .thenAnswer(inv -> {
+                    legPress.setStatus(EquipmentStatuses.OUT_OF_ORDER);
+                    return legPress;
+                });
+
+        AdminEquipmentResponse response = service.setOutOfOrder(10L, true, "admin");
+
+        assertEquals(EquipmentStatuses.OUT_OF_ORDER, response.getStatus());
+    }
+
+    @Test
+    void puttingBackInServiceNeverTurnsAnInUseMachineAvailable() {
+        legPress.setStatus(EquipmentStatuses.IN_USE);
+        when(equipmentRepository.findById(10L)).thenReturn(Optional.of(legPress));
+
+        AdminEquipmentResponse response = service.setOutOfOrder(10L, false, "admin");
+
+        assertEquals(EquipmentStatuses.IN_USE, response.getStatus());
+        verifyNoInteractions(machineStatusService);
+    }
+
+    @Test
+    void markingAnAlreadyOutOfOrderMachineChangesNothing() {
+        legPress.setStatus(EquipmentStatuses.OUT_OF_ORDER);
+        when(equipmentRepository.findById(10L)).thenReturn(Optional.of(legPress));
+
+        service.setOutOfOrder(10L, true, "admin");
+
+        verifyNoInteractions(machineStatusService);
+    }
+
+    @Test
+    void setOutOfOrderOnARemovedMachineIsNotFound() {
+        legPress.setDeleted(true);
+        when(equipmentRepository.findById(10L)).thenReturn(Optional.of(legPress));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> service.setOutOfOrder(10L, true, "admin"));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        verifyNoInteractions(machineStatusService);
     }
 
     private static Equipment machine(long id, String name) {

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Smoke test for equipment issue reporting against a RUNNING backend.
 #
-# Walks the real member -> admin -> member loop over HTTP and prints PASS/FAIL for each check.
-# It writes real data (one issue report, resolved again at the end, plus activity-log entries),
+# Walks the real member -> admin -> member loop over HTTP and prints PASS/FAIL for each check,
+# including taking the machine out of service and back. It writes real data (one issue report,
+# resolved again at the end, plus activity-log entries) and briefly marks the machine out of order,
 # so point it at a local or dev database, never production.
 #
 # Usage (Git Bash, macOS or Linux), from the repo root:
@@ -67,6 +68,18 @@ login() { # USER PASS -> prints the access token
   request POST /auth/login "" "{\"username\":\"$(json_escape "$1")\",\"password\":\"$(json_escape "$2")\"}"
   [ "$STATUS" = 200 ] && json_string accessToken "$BODY"
 }
+
+# If the script takes a machine out of service, always put it back, even when a check fails part-way
+MARKED_OUT_OF_ORDER=0
+cleanup() {
+  local exit_code=$?
+  if [ "$MARKED_OUT_OF_ORDER" = 1 ] && [ -n "${ADMIN_TOKEN:-}" ]; then
+    request PUT "/admin/equipment-issues/equipment/$EQUIPMENT_ID/out-of-order" "$ADMIN_TOKEN" '{"outOfOrder":false}'
+    echo "  (cleanup: put equipment $EQUIPMENT_ID back in service, status $STATUS)"
+  fi
+  exit "$exit_code"
+}
+trap cleanup EXIT
 
 echo "Equipment issue reporting smoke test -> $API"
 
@@ -166,11 +179,48 @@ request GET /admin/equipment-issues/summary "$ADMIN_TOKEN"
 expect_status 200 "Admin summary counts load"
 
 echo
-echo "4. Resolve (also cleans up)"
+echo "4. Out of order"
+MARKED_OUT_OF_ORDER=1 # from here on, cleanup puts the machine back in service on exit
+request PUT "/admin/equipment-issues/equipment/$EQUIPMENT_ID/out-of-order" "$MEMBER_TOKEN" '{"outOfOrder":true}'
+expect_status 403 "Members can't use the admin out-of-order switch"
+request PUT "/machines/$EQUIPMENT_ID/status" "" '{"status":"Out of Order"}'
+expect_status 403 "Members can't mark a machine out of order through check-in"
+
+request PUT "/admin/equipment-issues/equipment/$EQUIPMENT_ID/out-of-order" "$ADMIN_TOKEN" '{"outOfOrder":true}'
+expect_status 200 "Admin marks the machine out of order"
+request GET "/machines/$EQUIPMENT_ID"
+if grep -q '"status":"Out of Order"' <<< "$BODY"; then
+  pass "Members see the machine as Out of Order"
+else
+  fail "Members see the machine as Out of Order"
+fi
+request PUT "/machines/$EQUIPMENT_ID/status" "$MEMBER_TOKEN" '{"status":"In Use"}'
+expect_status 409 "Checking in to an out-of-order machine is refused"
+request GET /admin/equipment-issues/summary "$ADMIN_TOKEN"
+if [ "$(json_number outOfOrderMachines "$BODY")" -ge 1 ] 2>/dev/null; then
+  pass "Admin summary counts the out-of-order machine"
+else
+  fail "Admin summary counts the out-of-order machine"
+fi
+
+echo
+echo "5. Resolve (puts the machine back in service and cleans up)"
 request PUT "/admin/equipment-issues/$REPORT_ID/status" "$ADMIN_TOKEN" '{"status":"RESOLVED"}'
 expect_status 200 "Admin resolves the report"
 if grep -q '"resolvedAt":"' <<< "$BODY"; then pass "Resolved report records when it was fixed"; else fail "Resolved report records when it was fixed"; fi
 request GET /equipment-issues/me "$MEMBER_TOKEN"
 has_report_status "$REPORT_ID" RESOLVED "Member sees it as RESOLVED (shown as Fixed in the app)"
+
+request GET "/equipment-issues/equipment/$EQUIPMENT_ID" "$MEMBER_TOKEN"
+OTHER_OPEN=$(json_number openReportCount "$BODY")
+request GET "/machines/$EQUIPMENT_ID"
+if [ "${OTHER_OPEN:-0}" -gt 0 ]; then
+  echo "  (the machine still has $OTHER_OPEN other open report(s), so it stays out of order until cleanup)"
+elif grep -q '"status":"Available"' <<< "$BODY"; then
+  pass "Resolving the last open report put the machine back in service"
+  MARKED_OUT_OF_ORDER=0
+else
+  fail "Resolving the last open report put the machine back in service"
+fi
 
 summary
