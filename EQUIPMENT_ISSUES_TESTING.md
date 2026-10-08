@@ -7,6 +7,13 @@ Admins can also mark a machine **Out of Order**, from the Equipment Issues page 
 - Check-outs still work, so a workout that's already in progress can end.
 - When the machine's last open report is resolved, it goes back to Available automatically.
 
+On the dashboard:
+- A new report shows up within about 10 seconds on any page, with no refresh: a toast, the sidebar badge and the Dashboard's Recent Activity.
+- "Set all open reports to …" and resolving a report (one or all at once) ask "Are you sure?" first.
+- The Dashboard's **Total Machines** card quietly notes how many machines are out of order.
+
+A report can't be taken back once it's sent. The member can't withdraw, edit or delete it, in the app or through the API. Only staff change its status.
+
 The feature spans three repos, each on the `equipment-issue-reports` branch. This guide covers all three. The app and admin repos each have a shorter `EQUIPMENT_ISSUES_TESTING.md` for their own part.
 
 ---
@@ -15,13 +22,13 @@ The feature spans three repos, each on the `equipment-issue-reports` branch. Thi
 
 | Repo | Command | Tests | Needs |
 |---|---|---|---|
-| `urec-live-backend` | `mvn test -Dtest='*EquipmentIssue*,*OutOfOrder*,MachineStatusServiceTest'` | 69 | Java 21 + Maven. **No database or `.env`**: runs on in-memory H2 |
-| `urec-live-admin` | `npx ng test --watch=false --browsers=ChromeHeadless` | 44 | Chrome |
-| `urec-live-app` | `npm test` | 65 | Node 18+ |
+| `urec-live-backend` | `mvn test -Dtest='*EquipmentIssue*,*OutOfOrder*,MachineStatusServiceTest'` | 70 | Java 21 + Maven. **No database or `.env`**: runs on in-memory H2 |
+| `urec-live-admin` | `npx ng test --watch=false --browsers=ChromeHeadless` | 62 | Chrome |
+| `urec-live-app` | `npm test` | 67 | Node 18+ |
 
 All three should finish with zero failures.
 
-### Backend (69)
+### Backend (70)
 - **Unit tests** (Mockito, no Spring context): `EquipmentIssueServiceTest` (6), `AdminEquipmentIssueServiceTest` (16) and `MachineStatusServiceTest` (4). They cover:
   - descriptions are trimmed
   - a second open report on the same machine is rejected (409)
@@ -34,7 +41,8 @@ All three should finish with zero failures.
   - switching a machine back never turns In Use into Available
   - admin status changes are broadcast live and logged only when a machine goes out of or back into service
 - **Integration tests** (the whole app on H2 with real JWTs, through the shared `ApiIntegrationTestSupport`):
-  - **`EquipmentIssueApiIntegrationTest` (28):**
+  - **`EquipmentIssueApiIntegrationTest` (29):**
+    - **members can't take back a report:** DELETE, PUT and PATCH on their report all fail, as does marking it resolved through the admin endpoints, and the report stays exactly as filed
     - 401 without a token or with a bad one; 403 for members on admin endpoints
     - admins whose role is stored as `ADMIN` **or** `ROLE_ADMIN` are both let in
     - 9 kinds of invalid report → 400
@@ -108,10 +116,10 @@ ADMIN_USER=<admin username>   ADMIN_PASS='<password>' \
 | 2 | Tap **Report a problem** | A form with the machine's name, two choices (**Not working**, **Damaged / hard to use**) and a description box showing `0 / 1000` and "At least 10 characters". |
 | 3 | Type `broken` without choosing a type | **Send report** stays disabled. |
 | 4 | Choose **Not working**, then type `   short    ` | Still disabled, because the text is under 10 characters once trimmed. |
-| 5 | Enter a real description and tap **Send report** | "Thanks, staff have been notified", with **View my reports** and **Done** buttons. |
+| 5 | Enter a real description and tap **Send report** | "Thanks, staff have been notified", with **View my reports** and **Done** buttons. There's no undo. |
 | 6 | Tap **Done** | Back on the machine page, which now shows a red **Reported not working · Awaiting staff review** banner. |
 | 7 | Report the same machine again | An inline error: "You already have an open report for this machine" with a **View my reports** link. |
-| 8 | Profile → **My Equipment Reports** | The report appears with the status pill **Submitted** and the progress strip at step 1 (Submitted → Seen → Repairing → Fixed). |
+| 8 | Profile → **My Equipment Reports** | The report appears with the status pill **Submitted** and the progress strip at step 1 (Submitted → Seen → Repairing → Fixed). Look for a way to take it back: there's none. Nothing on the card can be tapped to withdraw, edit or delete it. |
 
 ### Other entry points
 | # | Do this | Expect |
@@ -122,28 +130,29 @@ ADMIN_USER=<admin username>   ADMIN_PASS='<password>' \
 ### Admin: work the reports
 | # | Do this | Expect |
 |---|---|---|
-| 11 | Look at the sidebar | **Equipment Issues** has a red badge with the number of reports awaiting review. It refreshes every 60s. |
+| 11 | Stay on the **Dashboard** (the default page) while a member files a report | Within about 10 s, with no refresh: a toast "New equipment issue · Leg Press (LP01) · Not working" with **View**, the sidebar badge goes up, and Recent Activity shows "Issue Reported". It works on any admin page. There's no chime; that's kept for help requests. |
 | 12 | Open **Equipment Issues** | Four stat cards (Awaiting review, Acknowledged, Repair in progress, Machines affected) and one panel per machine. Not-working machines are listed first. Panels with new reports start open. Each report shows the reporter, the time, a severity chip and the full description. |
-| 13 | Set a report to **Acknowledged** | A snackbar appears, the badge and stat cards update, and the change is still there after a page refresh. |
+| 13 | Set a report to **Acknowledged** | No dialog. A snackbar appears, the badge and stat cards update, and the change is still there after a page refresh. |
 | 14 | In the member app, pull to refresh My Reports | The status now reads **Seen by staff**. The machine banner reads **Staff are aware**. |
-| 15 | Use **Set all open reports to → Repairing** on a machine | Every open report on that machine changes. The member sees **Repair on the way**, and the banner reads **Repair in progress**. |
+| 15 | Use **Set all open reports to → Repairing** on a machine | An "Are you sure?" dialog: "This sets the open report on Leg Press to Repairing." With several reports it reads "all N open reports". **Cancel** changes nothing and puts the toggle back. **Yes, set all to Repairing** changes every open report on that machine. The member sees **Repair on the way**, and the banner reads **Repair in progress**. |
 | 16 | Search by machine name or code, and filter by severity | The list narrows. With no matches it shows "No machines match your filters". |
 | 17 | Stop the backend and change a status | A "Failed to update status" snackbar appears, and the toggle goes back to its previous value. |
 
 ### Out of order
 | # | Do this | Expect |
 |---|---|---|
-| 18 | On a machine's panel, turn on **Out of order** | A snackbar says "... marked out of order". The panel header shows an **Out of order** chip, and "Machines affected" shows "1 out of order". |
+| 18 | On a machine's panel, turn on **Out of order** | A snackbar says "... marked out of order". The panel header shows an **Out of order** chip, and "Machines affected" shows "1 out of order". Within about 10 s, the small line under the Dashboard's **Total Machines** changes from a grey "0 out of order" to a darker "1 out of order". |
 | 19 | In the app, look at the Equipment tab and the floor map (no refresh needed) | The machine turns gray with an **Out of order** badge, live. The floor map marker is gray and the legend lists Out of Order. The machine page shows "Staff have taken this machine out of service…" in place of **Scan QR to Check In**. |
 | 20 | Try to check in: scan its QR code and tap **Confirm Check-In**, or use **Start** in a workout's machine list | The scan screen says "This machine is out of order…". In the workout list the machine is grayed out with no **Start** button. |
 | 21 | Check in to a machine first, have the admin mark it out of order, then end the workout | The workout ends and saves normally, and the machine stays out of order. |
-| 22 | Resolve the machine's last open report (single toggle or **Set all → Resolved**) | The snackbar adds "back in service". The machine shows Available again in the admin and the app. |
+| 22 | Resolve the machine's last open report. First use **Set all open reports to → Resolved** and press **Cancel**. Then use the report's own **Resolved** toggle and confirm | Both ask "Are you sure?" first and end with "Leg Press goes back in service." "Set all" says "This resolves the open report on Leg Press. Members will see it as Fixed." (with several reports: "all N open reports", **Yes, resolve all**). **Cancel** changes nothing and puts the toggle back. The single toggle says "This resolves jdoe's report on Leg Press. They'll see it as Fixed." After **Yes, resolve**, the snackbar adds "back in service", the machine shows Available again in the admin and the app, and the member sees **Fixed**. |
 | 23 | Equipment page → edit a machine with no reports → status **Out of Order** | Check-in is blocked in the app. Setting it back to **Available** restores it. |
 | 24 | Activity page | **Out of Order** and **Back in Service** events, alongside **Issue Reported** and **Issue Updated**. The dashboard feed shows them with a build/warning icon. |
 
 ### Access checks
 - A member account can't use `/api/admin/equipment-issues/**` (403). The admin dashboard login already rejects non-admins.
 - The member check-in endpoints (`/api/machines/**`, no login required) refuse to set "Out of Order" (403) and refuse check-ins to out-of-order machines (409).
+- Members can only file and read reports (POST and GET). `DELETE`, `PUT` or `PATCH` on `/api/equipment-issues/{id}` fails, and the admin status endpoints return 403. A report can't be taken back.
 - Every member issue endpoint requires a login. The machine-page summary (`GET /api/equipment-issues/equipment/{id}`) returns only counts and statuses, never who reported a problem or what they wrote.
 
 ---

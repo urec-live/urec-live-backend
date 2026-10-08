@@ -1,6 +1,7 @@
 package com.ureclive.urec_live_backend.controller;
 
 import com.ureclive.urec_live_backend.entity.Equipment;
+import com.ureclive.urec_live_backend.entity.EquipmentIssueReport;
 import com.ureclive.urec_live_backend.entity.IssueStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,9 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -123,6 +126,35 @@ class EquipmentIssueApiIntegrationTest extends ApiIntegrationTestSupport {
         fileReport(memberToken, bench, "DAMAGED");
         fileReport(otherMemberToken, legPress, "OUT_OF_ORDER");
         assertEquals(3L, issueReportRepository.count());
+    }
+
+    @Test
+    void membersCantTakeBackAReportOnceItsMade() throws Exception {
+        long reportId = fileReport(memberToken, legPress, "OUT_OF_ORDER");
+        String ownReport = MEMBER_API + "/" + reportId;
+
+        // No way to withdraw, edit or delete it through the member API...
+        mvc.perform(delete(ownReport).header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
+                .andExpect(status().is4xxClientError());
+        mvc.perform(json(put(ownReport).header(HttpHeaders.AUTHORIZATION, bearer(memberToken)),
+                        fields("description", "Never mind, it works fine")))
+                .andExpect(status().is4xxClientError());
+        mvc.perform(json(patch(ownReport).header(HttpHeaders.AUTHORIZATION, bearer(memberToken)),
+                        fields("status", "RESOLVED")))
+                .andExpect(status().is4xxClientError());
+        mvc.perform(delete(MEMBER_API + "/me").header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
+                .andExpect(status().is4xxClientError());
+        // ...nor by marking it resolved through the admin endpoints
+        putStatusAs(memberToken, ADMIN_API + "/" + reportId + "/status", "RESOLVED")
+                .andExpect(status().isForbidden());
+        putStatusAs(memberToken, ADMIN_API + "/equipment/" + legPress.getId() + "/status", "RESOLVED")
+                .andExpect(status().isForbidden());
+
+        EquipmentIssueReport stored = issueReportRepository.findById(reportId).orElseThrow();
+        assertEquals(IssueStatus.REPORTED, stored.getStatus());
+        assertEquals("Something is clearly wrong with it", stored.getDescription());
+        getAs(memberToken, MEMBER_API + "/me").andExpect(jsonPath("$[0].id").value((int) reportId));
+        getAs(adminToken, ADMIN_API).andExpect(jsonPath("$[0].reports[0].id").value((int) reportId));
     }
 
     @Test
