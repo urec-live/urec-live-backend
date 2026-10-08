@@ -31,7 +31,7 @@ UREC Live is a cross-platform gym management and fitness tracking platform targe
 
 ### Database Schema
 
-Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exercise`, `workout_sessions`, `workout_sets`, `activity_log`
+Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exercise`, `workout_sessions`, `workout_sets`, `activity_log`, `help_requests`
 
 - Schema auto-managed via `spring.jpa.hibernate.ddl-auto=update`
 - `DataInitializer` seeds 40+ exercises across all muscle groups on first startup
@@ -45,7 +45,8 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 - **Role** — ROLE_ADMIN, ROLE_USER
 - **WorkoutSession** — user, machine, exercise, muscleGroup, startedAt, endedAt, durationSeconds, notes
 - **WorkoutSet** — setNumber, reps, weightLbs (per-set tracking within a session)
-- **ActivityLog** — eventType (CHECK_IN/CHECK_OUT), username, description, equipmentName, timestamp
+- **ActivityLog** — eventType (CHECK_IN/CHECK_OUT, … HELP_REQUESTED/HELP_STATUS_CHANGED/HELP_CLOSED), username, description, equipmentName, timestamp
+- **HelpRequest** — a member's "Call staff" at a machine: member, equipment, optional exercise, status (`HelpRequestStatus`: open REQUEST_RECEIVED/ON_THE_WAY/TOO_BUSY, closed RESOLVED/CANCELLED/EXPIRED), staff (who last responded), createdAt, updatedAt, firstResponseAt, closedAt, closedBy (`HelpRequestClosedBy`: STAFF/MEMBER/SYSTEM), `@Version`. One open request per member (409 otherwise). `HelpRequestExpiryJob` expires requests idle for 30 min.
 
 ---
 
@@ -78,6 +79,20 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 | GET | `/api/sessions/me` | User's session history (paginated, default 20/page) |
 | GET | `/api/sessions/me/stats` | Aggregated stats (total sessions, duration, top exercises, sessions/week) |
 
+### Help Request Endpoints (Authenticated)
+
+Members only ever see their own requests (someone else's id → 404), and the member view never names the staff member.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/help-requests` | Call staff `{equipmentId \| equipmentCode, exerciseName?}` → 201 with `demos`; 409 if one is already open; 404 if the machine is missing/removed |
+| GET | `/api/help-requests/me/active` | The open request, or 204 |
+| GET | `/api/help-requests/{id}` | One of the caller's requests, open or closed (the app polls this) |
+| POST | `/api/help-requests/{id}/received` | "Received help": closes it as RESOLVED by the member; 409 if already closed |
+| POST | `/api/help-requests/{id}/cancel` | Cancels it; 409 if already closed |
+
+`demos` (`HelpDemoLinks`): one entry per exercise (the member's, else up to 3 of the machine's, else the machine itself), each with `videoUrl`/`gifUrl` and `videoPlaceholder`/`gifPlaceholder` flags. Until real how-to media exist, every demo gets the placeholder video, and the placeholder GIF unless an admin set a real one (see Configuration).
+
 ### Admin Endpoints (ROLE_ADMIN only, `@PreAuthorize`)
 
 | Method | Endpoint | Description |
@@ -101,6 +116,12 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 | GET | `/api/admin/users` | List all users (paginated) |
 | GET | `/api/admin/users/{id}` | User detail |
 | PUT | `/api/admin/users/{id}/role` | Change user role |
+| GET | `/api/admin/help-requests` | Open help requests, longest waiting first |
+| GET | `/api/admin/help-requests/history?limit=50` | Recently closed requests, newest first |
+| PUT | `/api/admin/help-requests/{id}/status` | `{status: ON_THE_WAY \| TOO_BUSY}`; other statuses → 400; closed → 409 |
+| POST | `/api/admin/help-requests/{id}/done` | "Done helping": closes it as RESOLVED by staff |
+
+Role names are stored verbatim (the admin UI assigns `ADMIN`), so `hasRole('ADMIN')` only matches `ROLE_ADMIN`. `AdminHelpRequestController` accepts both via `hasAuthority('ADMIN') or hasAuthority('ROLE_ADMIN')`. Clients poll the help request endpoints (every 5 s) rather than use the WebSocket.
 
 ### WebSocket
 
@@ -121,28 +142,36 @@ src/main/java/com/ureclive/urec_live_backend/
 │   ├── AdminEquipmentController.java
 │   ├── AdminExerciseController.java
 │   ├── AdminAnalyticsController.java
-│   └── AdminUserController.java
+│   ├── AdminUserController.java
+│   ├── HelpRequestController.java        # member "Call staff"
+│   └── AdminHelpRequestController.java   # staff queue
 ├── service/
 │   ├── AuthService.java
 │   ├── AdminEquipmentService.java
 │   ├── AdminExerciseService.java
 │   ├── AdminAnalyticsService.java
 │   ├── WorkoutSessionService.java
-│   └── ActivityLogService.java
+│   ├── ActivityLogService.java
+│   ├── HelpRequestService.java, AdminHelpRequestService.java
+│   ├── HelpDemoLinks.java                # demo media (placeholders for now)
+│   └── HelpRequestExpiryJob.java         # @Scheduled: expires idle requests
 ├── entity/
 │   ├── User.java, Equipment.java, Exercise.java, Role.java
 │   ├── WorkoutSession.java, WorkoutSet.java, ActivityLog.java
+│   ├── HelpRequest.java, HelpRequestStatus.java, HelpRequestClosedBy.java
 ├── repository/
 │   ├── UserRepository.java, EquipmentRepository.java
 │   ├── ExerciseRepository.java, RoleRepository.java
 │   ├── WorkoutSessionRepository.java, WorkoutSetRepository.java
-│   └── ActivityLogRepository.java
+│   ├── ActivityLogRepository.java
+│   └── HelpRequestRepository.java
 ├── dto/              # Request + response objects for every endpoint
 ├── security/
 │   ├── JwtUtil.java, JwtAuthenticationFilter.java
 │   └── CustomUserDetailsService.java
 ├── config/
 │   ├── WebSocketConfig.java, SecurityConfig.java, CorsConfig.java
+│   └── SchedulingConfig.java   # @EnableScheduling
 └── DataInitializer.java
 ```
 
@@ -178,6 +207,17 @@ Connects to Neon PostgreSQL (see `application.properties`). DataInitializer seed
 - DB: `jdbc:postgresql://ep-twilight-surf-adiwldgq-pooler.c-2.us-east-1.aws.neon.tech/...` (Neon)
 - `server.address=0.0.0.0`, `server.port=8080`
 - JWT: 24h access token expiry, 7d refresh token expiry
+
+Help requests (defaults live in the `@Value` annotations, so nothing is needed in `application.properties`):
+- `app.help-requests.expire-after-minutes` (30) and `app.help-requests.expiry-check-ms` (60000)
+- `app.help-requests.placeholder-video-url` and `app.help-requests.placeholder-gif-url`: the placeholder demo media (an MDN sample MP4 and a "Coming soon" GIF). A blank value switches that placeholder off. As environment variables: `APP_HELPREQUESTS_PLACEHOLDERVIDEOURL`, `APP_HELPREQUESTS_PLACEHOLDERGIFURL`.
+
+## Testing
+
+- Unit tests: Mockito, no Spring context (e.g. `service/HelpRequestServiceTest`)
+- Integration tests extend `controller/HelpRequestApiTestSupport` (`@SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test")`). The `test` profile (`src/test/resources/application-test.properties`) uses in-memory H2, so no database or `.env` is needed. The base class mints real JWTs (`tokenFor(username, role)`), finds or creates test machines (`machine(...)`), and has request helpers. Test data outlives each test, so give a test that changes shared data its own machine/exercise.
+- `mvn test -Dtest='HelpRequest*,HelpDemoLinksTest,AdminHelpRequestServiceTest'` runs the help request suite; `UrecLiveBackendApplicationTests.contextLoads` still needs the real DB env vars.
+- API smoke test against a running server: `scripts/smoke-test-help-requests.sh` (see `HELP_REQUESTS_TESTING.md`)
 
 ---
 
