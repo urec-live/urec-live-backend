@@ -18,6 +18,8 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -62,6 +64,7 @@ class EquipmentIssueApiIntegrationTest extends ApiIntegrationTestSupport {
         mvc.perform(json(post(MEMBER_API), validReport(legPress))).andExpect(status().isUnauthorized());
         mvc.perform(get(MEMBER_API + "/me")).andExpect(status().isUnauthorized());
         mvc.perform(get(MEMBER_API + "/equipment/" + legPress.getId())).andExpect(status().isUnauthorized());
+        mvc.perform(post(MEMBER_API + "/1/withdraw")).andExpect(status().isUnauthorized());
         assertEquals(0L, issueReportRepository.count());
     }
 
@@ -128,33 +131,85 @@ class EquipmentIssueApiIntegrationTest extends ApiIntegrationTestSupport {
         assertEquals(3L, issueReportRepository.count());
     }
 
-    @Test
-    void membersCantTakeBackAReportOnceItsMade() throws Exception {
-        long reportId = fileReport(memberToken, legPress, "OUT_OF_ORDER");
-        String ownReport = MEMBER_API + "/" + reportId;
+    // ── Withdrawing a report filed by mistake ─────────────────────────────────
 
-        // No way to withdraw, edit or delete it through the member API...
+    @Test
+    void memberCanWithdrawAReportFiledByMistake() throws Exception {
+        long reportId = fileReport(memberToken, legPress, "OUT_OF_ORDER");
+        putStatusAs(adminToken, ADMIN_API + "/" + reportId + "/status", "ACKNOWLEDGED").andExpect(status().isOk());
+
+        withdrawAs(memberToken, reportId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value((int) reportId))
+                .andExpect(jsonPath("$.status").value("RESOLVED"))
+                .andExpect(jsonPath("$.withdrawnAt").isNotEmpty())
+                .andExpect(jsonPath("$.resolvedAt").isNotEmpty());
+
+        // The member still sees it, marked as withdrawn
+        getAs(memberToken, MEMBER_API + "/me")
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].withdrawnAt").isNotEmpty());
+        // It no longer counts as open anywhere
+        getAs(memberToken, MEMBER_API + "/equipment/" + legPress.getId())
+                .andExpect(jsonPath("$.openReportCount").value(0));
+        getAs(adminToken, ADMIN_API).andExpect(jsonPath("$", hasSize(0)));
+        getAs(adminToken, ADMIN_API + "/summary")
+                .andExpect(jsonPath("$.reported").value(0))
+                .andExpect(jsonPath("$.acknowledged").value(0))
+                .andExpect(jsonPath("$.affectedMachines").value(0));
+        // Staff can still find it among closed reports, marked as withdrawn
+        getAs(adminToken, ADMIN_API + "?includeResolved=true")
+                .andExpect(jsonPath("$[0].reports[0].id").value((int) reportId))
+                .andExpect(jsonPath("$[0].reports[0].withdrawnAt").isNotEmpty());
+        // And the member can report the machine again if it really is broken
+        fileReport(memberToken, legPress, "DAMAGED");
+    }
+
+    @Test
+    void onlyTheMemberWhoFiledAnOpenReportCanWithdrawIt() throws Exception {
+        long reportId = fileReport(memberToken, legPress, "DAMAGED");
+
+        mvc.perform(post(MEMBER_API + "/" + reportId + "/withdraw")).andExpect(status().isUnauthorized());
+        withdrawAs(otherMemberToken, reportId).andExpect(status().isNotFound());
+        withdrawAs(adminToken, reportId).andExpect(status().isNotFound()); // staff close reports from the dashboard
+        withdrawAs(memberToken, 999_999L).andExpect(status().isNotFound());
+        assertEquals(IssueStatus.REPORTED, issueReportRepository.findById(reportId).orElseThrow().getStatus());
+
+        withdrawAs(memberToken, reportId).andExpect(status().isOk());
+        withdrawAs(memberToken, reportId).andExpect(status().isConflict()); // already withdrawn
+
+        long fixedId = fileReport(memberToken, bench, "DAMAGED");
+        putStatusAs(adminToken, ADMIN_API + "/" + fixedId + "/status", "RESOLVED").andExpect(status().isOk());
+        withdrawAs(memberToken, fixedId).andExpect(status().isConflict()); // already fixed
+        assertNull(issueReportRepository.findById(fixedId).orElseThrow().getWithdrawnAt());
+    }
+
+    @Test
+    void aWithdrawnReportStaysClosedAndOnRecord() throws Exception {
+        long reportId = fileReport(memberToken, legPress, "OUT_OF_ORDER");
+        withdrawAs(memberToken, reportId).andExpect(status().isOk());
+
+        // Staff can't reopen it, from a stale page or otherwise
+        putStatusAs(adminToken, ADMIN_API + "/" + reportId + "/status", "ACKNOWLEDGED")
+                .andExpect(status().isConflict());
+        putStatusAs(adminToken, ADMIN_API + "/equipment/" + legPress.getId() + "/status", "IN_PROGRESS")
+                .andExpect(status().isNotFound()); // no open reports left on the machine
+
+        // Members still can't delete or edit reports: withdrawing is the only way to take one back
+        String ownReport = MEMBER_API + "/" + reportId;
         mvc.perform(delete(ownReport).header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
                 .andExpect(status().is4xxClientError());
         mvc.perform(json(put(ownReport).header(HttpHeaders.AUTHORIZATION, bearer(memberToken)),
                         fields("description", "Never mind, it works fine")))
                 .andExpect(status().is4xxClientError());
         mvc.perform(json(patch(ownReport).header(HttpHeaders.AUTHORIZATION, bearer(memberToken)),
-                        fields("status", "RESOLVED")))
+                        fields("status", "REPORTED")))
                 .andExpect(status().is4xxClientError());
-        mvc.perform(delete(MEMBER_API + "/me").header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
-                .andExpect(status().is4xxClientError());
-        // ...nor by marking it resolved through the admin endpoints
-        putStatusAs(memberToken, ADMIN_API + "/" + reportId + "/status", "RESOLVED")
-                .andExpect(status().isForbidden());
-        putStatusAs(memberToken, ADMIN_API + "/equipment/" + legPress.getId() + "/status", "RESOLVED")
-                .andExpect(status().isForbidden());
 
         EquipmentIssueReport stored = issueReportRepository.findById(reportId).orElseThrow();
-        assertEquals(IssueStatus.REPORTED, stored.getStatus());
+        assertEquals(IssueStatus.RESOLVED, stored.getStatus());
+        assertNotNull(stored.getWithdrawnAt());
         assertEquals("Something is clearly wrong with it", stored.getDescription());
-        getAs(memberToken, MEMBER_API + "/me").andExpect(jsonPath("$[0].id").value((int) reportId));
-        getAs(adminToken, ADMIN_API).andExpect(jsonPath("$[0].reports[0].id").value((int) reportId));
     }
 
     @Test

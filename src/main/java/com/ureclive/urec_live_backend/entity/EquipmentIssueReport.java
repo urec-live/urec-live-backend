@@ -42,6 +42,14 @@ public class EquipmentIssueReport {
     @Column(name = "resolved_at")
     private Instant resolvedAt;
 
+    /**
+     * Set when the member who filed the report took it back as a mistake. A withdrawn report is closed
+     * (RESOLVED) for good. A timestamp rather than a new IssueStatus value: Hibernate's generated check
+     * constraint on {@code status} wouldn't widen under ddl-auto=update, while a new nullable column is fine.
+     */
+    @Column(name = "withdrawn_at")
+    private Instant withdrawnAt;
+
     @PrePersist
     void onCreate() {
         Instant now = Instant.now();
@@ -71,6 +79,22 @@ public class EquipmentIssueReport {
         return true;
     }
 
+    /**
+     * Closes the report because the member filed it by mistake. Returns false (and changes nothing)
+     * if it's already closed, whether fixed or withdrawn.
+     */
+    public boolean withdraw() {
+        if (status == IssueStatus.RESOLVED) return false;
+        Instant now = Instant.now();
+        status = IssueStatus.RESOLVED;
+        resolvedAt = now;
+        updatedAt = now;
+        withdrawnAt = now;
+        return true;
+    }
+
+    public boolean isWithdrawn() { return withdrawnAt != null; }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -97,4 +121,7 @@ public class EquipmentIssueReport {
 
     public Instant getResolvedAt() { return resolvedAt; }
     public void setResolvedAt(Instant resolvedAt) { this.resolvedAt = resolvedAt; }
+
+    public Instant getWithdrawnAt() { return withdrawnAt; }
+    public void setWithdrawnAt(Instant withdrawnAt) { this.withdrawnAt = withdrawnAt; }
 }

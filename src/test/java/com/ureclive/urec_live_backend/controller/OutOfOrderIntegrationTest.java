@@ -164,6 +164,20 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
     }
 
     @Test
+    void withdrawingTheLastReportLeavesTheMachineOutOfServiceForStaffToCheck() throws Exception {
+        long reportId = fileReport(memberToken, legPress, "OUT_OF_ORDER");
+        setOutOfOrder(adminToken, legPress, true).andExpect(status().isOk());
+
+        withdrawAs(memberToken, reportId).andExpect(status().isOk());
+
+        assertEquals(OUT_OF_ORDER, storedStatus(legPress));
+        memberSetsStatus("/" + legPress.getId(), "In Use").andExpect(status().isConflict());
+        // Staff put it back with the switch once they've checked it
+        setOutOfOrder(adminToken, legPress, false).andExpect(status().isOk());
+        assertEquals(AVAILABLE, storedStatus(legPress));
+    }
+
+    @Test
     void theMachineStaysOutOfOrderWhileAnotherReportIsOpen() throws Exception {
         long first = fileReport(memberToken, legPress, "OUT_OF_ORDER");
         long second = fileReport(otherMemberToken, legPress, "DAMAGED");

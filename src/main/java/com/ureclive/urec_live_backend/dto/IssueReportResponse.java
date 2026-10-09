@@ -19,6 +19,7 @@ public class IssueReportResponse {
     private Instant reportedAt;
     private Instant updatedAt;
     private Instant resolvedAt;
+    private Instant withdrawnAt; // set when the reporter took it back as a mistake (status is then RESOLVED)
 
     public IssueReportResponse() {}
 
@@ -35,6 +36,7 @@ public class IssueReportResponse {
         dto.reportedAt = report.getReportedAt();
         dto.updatedAt = report.getUpdatedAt();
         dto.resolvedAt = report.getResolvedAt();
+        dto.withdrawnAt = report.getWithdrawnAt();
         return dto;
     }
 
@@ -49,4 +51,5 @@ public class IssueReportResponse {
     public Instant getReportedAt() { return reportedAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public Instant getResolvedAt() { return resolvedAt; }
+    public Instant getWithdrawnAt() { return withdrawnAt; }
 }

@@ -82,6 +82,22 @@ class AdminEquipmentIssueServiceTest {
     }
 
     @Test
+    void updateStatus_leavesAWithdrawnReportClosed() {
+        EquipmentIssueReport report = report(1L, legPress, IssueSeverity.DAMAGED, IssueStatus.REPORTED, NOW);
+        report.withdraw();
+        when(issueReportRepository.findById(1L)).thenReturn(Optional.of(report));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> service.updateStatus(1L, IssueStatus.ACKNOWLEDGED, "admin"));
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        assertEquals(IssueStatus.RESOLVED, report.getStatus());
+        assertNotNull(report.getWithdrawnAt());
+        verify(issueReportRepository, never()).save(any());
+        verifyNoInteractions(activityLogService, machineStatusService);
+    }
+
+    @Test
     void updateStatus_unknownReportIsNotFound() {
         when(issueReportRepository.findById(99L)).thenReturn(Optional.empty());
 

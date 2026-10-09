@@ -79,6 +79,11 @@ public class AdminEquipmentIssueService {
         EquipmentIssueReport report = issueReportRepository.findById(reportId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Issue report not found with id: " + reportId));
+        // The member took it back, so it stays closed (this also stops a stale admin page from reopening it)
+        if (report.isWithdrawn()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "This report was withdrawn by the member who filed it");
+        }
 
         if (report.changeStatus(status)) {
             report = issueReportRepository.save(report);

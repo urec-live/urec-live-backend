@@ -24,11 +24,13 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -104,6 +106,67 @@ class EquipmentIssueServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
         verify(issueReportRepository, never()).save(any());
+    }
+
+    // ── Withdrawing a report filed by mistake ─────────────────────────────────
+
+    @Test
+    void withdrawReport_closesTheMembersOwnOpenReportAndLogsIt() {
+        EquipmentIssueReport report = report(IssueSeverity.OUT_OF_ORDER, IssueStatus.ACKNOWLEDGED);
+        when(issueReportRepository.findById(5L)).thenReturn(Optional.of(report));
+        when(issueReportRepository.save(report)).thenReturn(report);
+
+        IssueReportResponse response = service.withdrawReport(5L, "jdoe");
+
+        assertEquals(IssueStatus.RESOLVED, response.getStatus());
+        assertNotNull(response.getWithdrawnAt());
+        assertNotNull(response.getResolvedAt());
+        verify(issueReportRepository).save(report);
+        verify(activityLogService).log("ISSUE_WITHDRAWN", "jdoe",
+                "Withdrew their report on Leg Press (reported by mistake)", "Leg Press");
+    }
+
+    @Test
+    void withdrawReport_onSomeoneElsesReportIsNotFound() {
+        when(issueReportRepository.findById(5L))
+                .thenReturn(Optional.of(report(IssueSeverity.DAMAGED, IssueStatus.REPORTED)));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> service.withdrawReport(5L, "someone_else"));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        verify(issueReportRepository, never()).save(any());
+        verifyNoInteractions(activityLogService);
+    }
+
+    @Test
+    void withdrawReport_onAnUnknownReportIsNotFound() {
+        when(issueReportRepository.findById(99L)).thenReturn(Optional.empty());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> service.withdrawReport(99L, "jdoe"));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void withdrawReport_onAClosedReportIsAConflict() {
+        EquipmentIssueReport fixed = report(IssueSeverity.DAMAGED, IssueStatus.RESOLVED);
+        EquipmentIssueReport withdrawn = report(IssueSeverity.DAMAGED, IssueStatus.REPORTED);
+        withdrawn.withdraw();
+        when(issueReportRepository.findById(5L)).thenReturn(Optional.of(fixed));
+        when(issueReportRepository.findById(6L)).thenReturn(Optional.of(withdrawn));
+
+        ResponseStatusException fixedEx = assertThrows(ResponseStatusException.class,
+                () -> service.withdrawReport(5L, "jdoe"));
+        ResponseStatusException withdrawnEx = assertThrows(ResponseStatusException.class,
+                () -> service.withdrawReport(6L, "jdoe"));
+
+        assertEquals(HttpStatus.CONFLICT, fixedEx.getStatusCode());
+        assertEquals(HttpStatus.CONFLICT, withdrawnEx.getStatusCode());
+        assertNull(fixed.getWithdrawnAt()); // a fixed report doesn't turn into a withdrawn one
+        verify(issueReportRepository, never()).save(any());
+        verifyNoInteractions(activityLogService);
     }
 
     @Test

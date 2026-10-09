@@ -44,6 +44,12 @@ public class EquipmentIssueController {
         return ResponseEntity.ok(issueService.getMyReports(auth.getName()));
     }
 
+    /** POST /api/equipment-issues/{id}/withdraw — take back your own open report, filed by mistake */
+    @PostMapping("/{id}/withdraw")
+    public ResponseEntity<IssueReportResponse> withdrawReport(@PathVariable Long id, Authentication auth) {
+        return ResponseEntity.ok(issueService.withdrawReport(id, auth.getName()));
+    }
+
     /** GET /api/equipment-issues/equipment/{equipmentId} — open-issue summary for the machine page */
     @GetMapping("/equipment/{equipmentId}")
     public ResponseEntity<MachineIssueStatusResponse> getMachineIssueStatus(@PathVariable Long equipmentId) {

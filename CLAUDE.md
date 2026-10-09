@@ -87,6 +87,7 @@ Deliberately outside `/api/machines/**`, which is `permitAll`.
 |--------|----------|-------------|
 | POST | `/api/equipment-issues` | Report a problem `{equipmentId, severity, description}` → 201; 409 if already open; 404 if machine missing/removed |
 | GET | `/api/equipment-issues/me` | Caller's reports, newest first |
+| POST | `/api/equipment-issues/{id}/withdraw` | Take back your own open report (filed by mistake) → closed as RESOLVED with `withdrawnAt` set; 404 if not yours; 409 if already closed. The machine's status is left alone |
 | GET | `/api/equipment-issues/equipment/{id}` | Open-issue summary for the machine page (counts/status only — no reporter details) |
 
 ### Admin Endpoints (ROLE_ADMIN only, `@PreAuthorize`)
@@ -114,7 +115,7 @@ Deliberately outside `/api/machines/**`, which is `permitAll`.
 | PUT | `/api/admin/users/{id}/role` | Change user role |
 | GET | `/api/admin/equipment-issues?includeResolved=false` | Reports grouped by machine (not-working first) |
 | GET | `/api/admin/equipment-issues/summary` | Counts: reported, acknowledged, inProgress, affectedMachines |
-| PUT | `/api/admin/equipment-issues/{id}/status` | Set one report's status |
+| PUT | `/api/admin/equipment-issues/{id}/status` | Set one report's status; 409 if the member withdrew it |
 | PUT | `/api/admin/equipment-issues/equipment/{id}/status` | Set status on all of a machine's open reports |
 | PUT | `/api/admin/equipment-issues/equipment/{id}/out-of-order` | `{outOfOrder}` — take a machine out of service or put it back (never turns In Use into Available) |
 

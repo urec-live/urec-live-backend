@@ -14,6 +14,7 @@ import com.ureclive.urec_live_backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -82,6 +83,32 @@ public class EquipmentIssueService {
         return issueReportRepository.findByReporterOrderByReportedAtDesc(reporter).stream()
                 .map(IssueReportResponse::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Takes back a report the member filed by mistake. Only the member who filed it can withdraw it, and
+     * only while it's open; anyone else gets 404, as if it didn't exist. A withdrawn report is closed for
+     * good and no longer counts as open. The machine's status is left alone: if staff took it out of
+     * service, they decide when it goes back.
+     */
+    @Transactional
+    public IssueReportResponse withdrawReport(Long reportId, String username) {
+        EquipmentIssueReport report = issueReportRepository.findById(reportId)
+                .filter(r -> r.getReporter().getUsername().equals(username))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Issue report not found with id: " + reportId));
+
+        if (!report.withdraw()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, report.isWithdrawn()
+                    ? "You've already withdrawn this report"
+                    : "This report is already resolved");
+        }
+        report = issueReportRepository.save(report);
+
+        String machineName = report.getEquipment().getName();
+        activityLogService.log("ISSUE_WITHDRAWN", username,
+                "Withdrew their report on " + machineName + " (reported by mistake)", machineName);
+        return IssueReportResponse.from(report);
     }
 
     /** Open-issue summary for a machine; openReportCount is 0 when nothing is open. */

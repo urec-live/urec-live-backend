@@ -119,6 +119,12 @@ abstract class ApiIntegrationTestSupport {
         return mvc.perform(get(url).header(HttpHeaders.AUTHORIZATION, bearer(token)));
     }
 
+    /** POST /api/equipment-issues/{id}/withdraw as the given member. */
+    protected ResultActions withdrawAs(String token, long reportId) throws Exception {
+        return mvc.perform(post(MEMBER_API + "/" + reportId + "/withdraw")
+                .header(HttpHeaders.AUTHORIZATION, bearer(token)));
+    }
+
     protected ResultActions putStatusAs(String token, String url, String status) throws Exception {
         return putJsonAs(token, url, Map.of("status", status));
     }

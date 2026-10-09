@@ -2,9 +2,10 @@
 # Smoke test for equipment issue reporting against a RUNNING backend.
 #
 # Walks the real member -> admin -> member loop over HTTP and prints PASS/FAIL for each check,
-# including taking the machine out of service and back. It writes real data (one issue report,
-# resolved again at the end, plus activity-log entries) and briefly marks the machine out of order,
-# so point it at a local or dev database, never production.
+# including taking the machine out of service and back, and a member withdrawing a report filed by
+# mistake. It writes real data (two issue reports, one resolved and one withdrawn by the end, plus
+# activity-log entries) and briefly marks the machine out of order, so point it at a local or dev
+# database, never production.
 #
 # Usage (Git Bash, macOS or Linux), from the repo root:
 #   MEMBER_USER=alice MEMBER_PASS='secret' ADMIN_USER=admin ADMIN_PASS='secret' \
@@ -222,5 +223,26 @@ elif grep -q '"status":"Available"' <<< "$BODY"; then
 else
   fail "Resolving the last open report put the machine back in service"
 fi
+
+echo
+echo "6. Member withdraws a report filed by mistake"
+request POST /equipment-issues "$MEMBER_TOKEN" "$REPORT_JSON"
+expect_status 201 "Member files a second report"
+MISTAKE_ID=$(json_number id "$BODY")
+request POST "/equipment-issues/$MISTAKE_ID/withdraw"
+expect_status 401 "Withdrawing without signing in is rejected"
+request POST "/equipment-issues/$MISTAKE_ID/withdraw" "$MEMBER_TOKEN"
+expect_status 200 "Member withdraws their own report"
+if grep -q '"withdrawnAt":"' <<< "$BODY"; then pass "The report records when it was withdrawn"; else fail "The report records when it was withdrawn"; fi
+request GET /equipment-issues/me "$MEMBER_TOKEN"
+if split_objects "$BODY" | grep "\"id\":$MISTAKE_ID," | grep -q '"withdrawnAt":"'; then
+  pass "Member sees it as withdrawn in My Reports"
+else
+  fail "Member sees it as withdrawn in My Reports"
+fi
+request POST "/equipment-issues/$MISTAKE_ID/withdraw" "$MEMBER_TOKEN"
+expect_status 409 "Withdrawing it again is refused"
+request PUT "/admin/equipment-issues/$MISTAKE_ID/status" "$ADMIN_TOKEN" '{"status":"ACKNOWLEDGED"}'
+expect_status 409 "Staff can't reopen a withdrawn report"
 
 summary
