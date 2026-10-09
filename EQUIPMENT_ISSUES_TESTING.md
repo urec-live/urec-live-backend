@@ -23,7 +23,7 @@ The feature spans three repos, each on the `equipment-issue-reports` branch. Thi
 | Repo | Command | Tests | Needs |
 |---|---|---|---|
 | `urec-live-backend` | `mvn test -Dtest='*EquipmentIssue*,*OutOfOrder*,MachineStatusServiceTest'` | 70 | Java 21 + Maven. **No database or `.env`**: runs on in-memory H2 |
-| `urec-live-admin` | `npx ng test --watch=false --browsers=ChromeHeadless` | 62 | Chrome |
+| `urec-live-admin` | `npx ng test --watch=false --browsers=ChromeHeadless` | 67 | Chrome |
 | `urec-live-app` | `npm test` | 67 | Node 18+ |
 
 All three should finish with zero failures.
@@ -130,8 +130,8 @@ ADMIN_USER=<admin username>   ADMIN_PASS='<password>' \
 ### Admin: work the reports
 | # | Do this | Expect |
 |---|---|---|
-| 11 | Stay on the **Dashboard** (the default page) while a member files a report | Within about 10 s, with no refresh: a toast "New equipment issue · Leg Press (LP01) · Not working" with **View**, the sidebar badge goes up, and Recent Activity shows "Issue Reported". It works on any admin page. There's no chime; that's kept for help requests. |
-| 12 | Open **Equipment Issues** | Four stat cards (Awaiting review, Acknowledged, Repair in progress, Machines affected) and one panel per machine. Not-working machines are listed first. Panels with new reports start open. Each report shows the reporter, the time, a severity chip and the full description. |
+| 11 | Stay on the **Dashboard** (the default page) while a member files a report | Within about 10 s, with no refresh: a toast "New equipment issue · Leg Press (LP01) · Not working" with **View**, the sidebar badge goes up, and Recent Activity shows "Issue Reported". Start with no reports awaiting review and the sidebar open: when the badge appears, the sidebar keeps its width and doesn't cover the page. It works on any admin page. There's no chime; that's kept for help requests. |
+| 12 | Open **Equipment Issues** | Four stat cards (Awaiting review, Acknowledged, Repair in progress, Machines affected; "Machine affected" when it's 1) and one panel per machine. Not-working machines are listed first. Panels with new reports start open. Each report shows the reporter, the time, a severity chip and the full description. |
 | 13 | Set a report to **Acknowledged** | No dialog. A snackbar appears, the badge and stat cards update, and the change is still there after a page refresh. |
 | 14 | In the member app, pull to refresh My Reports | The status now reads **Seen by staff**. The machine banner reads **Staff are aware**. |
 | 15 | Use **Set all open reports to → Repairing** on a machine | An "Are you sure?" dialog: "This sets the open report on Leg Press to Repairing." With several reports it reads "all N open reports". **Cancel** changes nothing and puts the toggle back. **Yes, set all to Repairing** changes every open report on that machine. The member sees **Repair on the way**, and the banner reads **Repair in progress**. |
