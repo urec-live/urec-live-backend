@@ -64,4 +64,32 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, 
            "ORDER BY CAST(ws.startedAt AS LocalDate) ASC")
     List<Object[]> findWeightProgressionByExercise(
             @Param("user") User user, @Param("exerciseName") String exerciseName);
+
+    // Weekly volume for a single user (for league scoring)
+    @Query("SELECT COALESCE(SUM(s.reps * s.weightLbs), 0) FROM WorkoutSet s " +
+           "JOIN s.session ws " +
+           "WHERE ws.user = :user AND ws.startedAt >= :weekStart AND ws.startedAt < :weekEnd " +
+           "AND s.reps IS NOT NULL AND s.weightLbs IS NOT NULL")
+    double sumVolumeByUserAndWeek(@Param("user") User user,
+                                  @Param("weekStart") Instant weekStart,
+                                  @Param("weekEnd") Instant weekEnd);
+
+    // All users who have at least one session in the given week
+    @Query("SELECT DISTINCT ws.user FROM WorkoutSession ws " +
+           "WHERE ws.startedAt >= :weekStart AND ws.startedAt < :weekEnd")
+    List<User> findActiveUsersBetween(@Param("weekStart") Instant weekStart,
+                                      @Param("weekEnd") Instant weekEnd);
+
+    // Workout dates for the past N days (for heatmap calendar)
+    @Query("SELECT DISTINCT CAST(ws.startedAt AS LocalDate) FROM WorkoutSession ws " +
+           "WHERE ws.user = :user AND ws.startedAt >= :since " +
+           "ORDER BY CAST(ws.startedAt AS LocalDate) DESC")
+    List<LocalDate> findDistinctWorkoutDatesByUserSince(@Param("user") User user,
+                                                        @Param("since") Instant since);
+
+    // Recent muscle groups used by a user since a given time
+    @Query("SELECT DISTINCT ws.muscleGroup FROM WorkoutSession ws " +
+           "WHERE ws.user = :user AND ws.startedAt >= :since AND ws.muscleGroup IS NOT NULL")
+    List<String> findDistinctMuscleGroupsByUserSince(@Param("user") User user,
+                                                     @Param("since") Instant since);
 }

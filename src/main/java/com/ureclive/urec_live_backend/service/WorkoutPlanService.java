@@ -7,6 +7,7 @@ import com.ureclive.urec_live_backend.entity.DayPlan;
 import com.ureclive.urec_live_backend.entity.DayPlanItem;
 import com.ureclive.urec_live_backend.entity.User;
 import com.ureclive.urec_live_backend.entity.WorkoutPlan;
+import com.ureclive.urec_live_backend.entity.WorkoutPlan.PlanVisibility;
 import com.ureclive.urec_live_backend.entity.WorkoutSession;
 import com.ureclive.urec_live_backend.repository.UserRepository;
 import com.ureclive.urec_live_backend.repository.WorkoutPlanRepository;
@@ -155,6 +156,62 @@ public class WorkoutPlanService {
         }
 
         planRepository.delete(plan);
+    }
+
+    public List<WorkoutPlanResponse> getPublicPlans(String ownerUsername) {
+        User owner = userRepository.findByUsername(ownerUsername)
+                .orElseThrow(() -> new RuntimeException("User not found: " + ownerUsername));
+        return planRepository.findByUserAndVisibility(owner, PlanVisibility.PUBLIC)
+                .stream().map(WorkoutPlanResponse::from).toList();
+    }
+
+    @Transactional
+    public WorkoutPlanResponse copyPlan(Long planId, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        WorkoutPlan source = planRepository.findById(planId)
+                .orElseThrow(() -> new RuntimeException("Plan not found: " + planId));
+        if (source.getVisibility() != PlanVisibility.PUBLIC
+                && !source.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Plan is not public");
+        }
+
+        WorkoutPlan copy = new WorkoutPlan();
+        copy.setUser(user);
+        copy.setName(source.getName() + " (copy)");
+        copy.setActive(false);
+        copy.setVisibility(PlanVisibility.PRIVATE);
+
+        for (DayPlan srcDay : source.getDayPlans()) {
+            DayPlan dayPlan = new DayPlan();
+            dayPlan.setPlan(copy);
+            dayPlan.setDayOfWeek(srcDay.getDayOfWeek());
+            dayPlan.setLabel(srcDay.getLabel());
+            for (DayPlanItem srcItem : srcDay.getItems()) {
+                DayPlanItem item = new DayPlanItem();
+                item.setDayPlan(dayPlan);
+                item.setMuscleGroup(srcItem.getMuscleGroup());
+                item.setTargetCount(srcItem.getTargetCount());
+                item.setSortOrder(srcItem.getSortOrder());
+                dayPlan.getItems().add(item);
+            }
+            copy.getDayPlans().add(dayPlan);
+        }
+
+        return WorkoutPlanResponse.from(planRepository.save(copy));
+    }
+
+    @Transactional
+    public WorkoutPlanResponse updateVisibility(Long planId, String visibility, String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        WorkoutPlan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new RuntimeException("Plan not found: " + planId));
+        if (!plan.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Not authorized to update this plan");
+        }
+        plan.setVisibility(PlanVisibility.valueOf(visibility));
+        return WorkoutPlanResponse.from(planRepository.save(plan));
     }
 
     public TodayPlanResponse getTodayPlan(String username) {

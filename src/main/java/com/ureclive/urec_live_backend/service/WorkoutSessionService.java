@@ -17,6 +17,7 @@ import com.ureclive.urec_live_backend.repository.WorkoutSessionRepository;
 import com.ureclive.urec_live_backend.repository.WorkoutSetRepository;
 import com.ureclive.urec_live_backend.service.ActivityLogService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +27,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -41,6 +43,7 @@ public class WorkoutSessionService {
     private final EquipmentRepository equipmentRepository;
     private final ExerciseRepository exerciseRepository;
     private final ActivityLogService activityLogService;
+    private BadgeService badgeService;
 
     @Autowired
     public WorkoutSessionService(WorkoutSessionRepository sessionRepository,
@@ -55,6 +58,12 @@ public class WorkoutSessionService {
         this.equipmentRepository = equipmentRepository;
         this.exerciseRepository = exerciseRepository;
         this.activityLogService = activityLogService;
+    }
+
+    @Autowired
+    @Lazy
+    public void setBadgeService(BadgeService badgeService) {
+        this.badgeService = badgeService;
     }
 
     public SessionResponse saveSession(CreateSessionRequest request, String username) {
@@ -109,6 +118,8 @@ public class WorkoutSessionService {
                 "Completed " + (exerciseName != null ? exerciseName : "workout") +
                 (machineName != null ? " on " + machineName : ""),
                 machineName);
+
+        badgeService.checkAndAwardBadges(username);
 
         return SessionResponse.from(saved);
     }
@@ -189,10 +200,10 @@ public class WorkoutSessionService {
 
     /**
      * Calculate current and longest workout streaks from a descending list of distinct workout dates.
-     * A streak counts consecutive days with at least one session.
-     * Today or yesterday can start the current streak (to handle "haven't worked out yet today").
+     * A streak is not reset until 3+ consecutive days are missed (grace period of 2 skipped days).
+     * Missing 1 or 2 days keeps the streak intact; missing 3+ days resets it.
      */
-    private int[] calculateStreaks(List<LocalDate> sortedDatesDesc) {
+    int[] calculateStreaks(List<LocalDate> sortedDatesDesc) {
         if (sortedDatesDesc.isEmpty()) {
             return new int[]{0, 0};
         }
@@ -203,19 +214,20 @@ public class WorkoutSessionService {
         int runningStreak = 1;
         boolean countingCurrent = true;
 
-        // Check if the most recent workout is today or yesterday
+        // Current streak is alive if most recent workout was within 2 days ago
         LocalDate mostRecent = sortedDatesDesc.get(0);
-        if (mostRecent.equals(today) || mostRecent.equals(today.minusDays(1))) {
+        if (ChronoUnit.DAYS.between(mostRecent, today) <= 2) {
             currentStreak = 1;
         } else {
             countingCurrent = false;
         }
 
         for (int i = 1; i < sortedDatesDesc.size(); i++) {
-            LocalDate prev = sortedDatesDesc.get(i - 1);
-            LocalDate curr = sortedDatesDesc.get(i);
-
-            if (prev.minusDays(1).equals(curr)) {
+            LocalDate prev = sortedDatesDesc.get(i - 1); // more recent
+            LocalDate curr = sortedDatesDesc.get(i);      // older
+            // gap <= 3 means at most 2 days were skipped between workouts
+            long gap = ChronoUnit.DAYS.between(curr, prev);
+            if (gap <= 3) {
                 runningStreak++;
                 if (countingCurrent) {
                     currentStreak = runningStreak;
@@ -229,6 +241,27 @@ public class WorkoutSessionService {
         longestStreak = Math.max(longestStreak, runningStreak);
 
         return new int[]{currentStreak, longestStreak};
+    }
+
+    public int[] getStreaksForUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        List<LocalDate> dates = sessionRepository.findDistinctWorkoutDatesByUser(user);
+        return calculateStreaks(dates);
+    }
+
+    public List<LocalDate> getWorkoutCalendar(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        Instant since = Instant.now().minus(365, ChronoUnit.DAYS);
+        return sessionRepository.findDistinctWorkoutDatesByUserSince(user, since);
+    }
+
+    public List<String> getRecentMuscleGroups(String username, int days) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        Instant since = Instant.now().minus(days, ChronoUnit.DAYS);
+        return sessionRepository.findDistinctMuscleGroupsByUserSince(user, since);
     }
 
     public List<PersonalRecordResponse> getPersonalRecords(String username) {
