@@ -28,7 +28,7 @@ The feature spans three repos, each on the `equipment-issue-reports` branch. Thi
 |---|---|---|---|
 | `urec-live-backend` | `mvn test -Dtest='*EquipmentIssue*,*OutOfOrder*,MachineStatusServiceTest'` | 79 | Java 21 + Maven. **No database or `.env`**: runs on in-memory H2 |
 | `urec-live-admin` | `npx ng test --watch=false --browsers=ChromeHeadless` | 142 (the whole suite, help requests included) | Chrome |
-| `urec-live-app` | `npm test` | 206 (the whole suite, help requests included; 78 are for equipment issues) | Node 18+ |
+| `urec-live-app` | `npm test` | 212 (the whole suite, including help requests and gamify; 78 are for equipment issues) | Node 18+ |
 
 All three should finish with zero failures.
 
