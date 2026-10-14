@@ -75,6 +75,7 @@ public class SecurityConfig {
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/api/machines/**")).permitAll()
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/ws/**")).permitAll()
                 .requestMatchers(AntPathRequestMatcher.antMatcher("/error")).permitAll()
+                .requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.GET, "/api/social/users/*")).permitAll()
                 .anyRequest().authenticated()
             );
 
