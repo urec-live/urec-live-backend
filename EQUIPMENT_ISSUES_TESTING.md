@@ -26,14 +26,14 @@ The feature spans three repos, each on the `equipment-issue-reports` branch. Thi
 
 | Repo | Command | Tests | Needs |
 |---|---|---|---|
-| `urec-live-backend` | `mvn test -Dtest='*EquipmentIssue*,*OutOfOrder*,MachineStatusServiceTest'` | 78 | Java 21 + Maven. **No database or `.env`**: runs on in-memory H2 |
+| `urec-live-backend` | `mvn test -Dtest='*EquipmentIssue*,*OutOfOrder*,MachineStatusServiceTest'` | 79 | Java 21 + Maven. **No database or `.env`**: runs on in-memory H2 |
 | `urec-live-admin` | `npx ng test --watch=false --browsers=ChromeHeadless` | 142 (the whole suite, help requests included) | Chrome |
 | `urec-live-app` | `npm test` | 206 (the whole suite, help requests included; 78 are for equipment issues) | Node 18+ |
 
 All three should finish with zero failures.
 
-### Backend (78)
-- **Unit tests** (Mockito, no Spring context): `EquipmentIssueServiceTest` (10), `AdminEquipmentIssueServiceTest` (17) and `MachineStatusServiceTest` (4). They cover:
+### Backend (79)
+- **Unit tests** (Mockito, no Spring context): `EquipmentIssueServiceTest` (10), `AdminEquipmentIssueServiceTest` (17) and `MachineStatusServiceTest` (5). They cover:
   - descriptions are trimmed
   - a second open report on the same machine is rejected (409)
   - removed machines are rejected (404)
@@ -44,6 +44,7 @@ All three should finish with zero failures.
   - reopening a report doesn't take a machine out of service again
   - switching a machine back never turns In Use into Available
   - admin status changes are broadcast live and logged only when a machine goes out of or back into service
+  - those broadcasts get the same camera-availability pass (`CvAvailabilityService`) as the machine endpoints
   - withdrawing: only the member who filed the report (404 for anyone else), only while it's open (409 once fixed or withdrawn), logged as `ISSUE_WITHDRAWN`; staff can't change a withdrawn report (409)
 - **Integration tests** (the whole app on H2 with real JWTs, through the shared `ApiIntegrationTestSupport`):
   - **`EquipmentIssueApiIntegrationTest` (31):**

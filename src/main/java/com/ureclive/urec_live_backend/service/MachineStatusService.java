@@ -16,14 +16,17 @@ public class MachineStatusService {
     private final EquipmentRepository equipmentRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final ActivityLogService activityLogService;
+    private final CvAvailabilityService cvAvailabilityService;
 
     @Autowired
     public MachineStatusService(EquipmentRepository equipmentRepository,
                                 SimpMessagingTemplate messagingTemplate,
-                                ActivityLogService activityLogService) {
+                                ActivityLogService activityLogService,
+                                CvAvailabilityService cvAvailabilityService) {
         this.equipmentRepository = equipmentRepository;
         this.messagingTemplate = messagingTemplate;
         this.activityLogService = activityLogService;
+        this.cvAvailabilityService = cvAvailabilityService;
     }
 
     /**
@@ -39,7 +42,9 @@ public class MachineStatusService {
 
         equipment.setStatus(newStatus);
         Equipment saved = equipmentRepository.save(equipment);
-        messagingTemplate.convertAndSend("/topic/machines", new MachineDTO(saved, primaryExerciseName(saved)));
+        // Same camera-availability pass as MachineController's machine endpoints, so live screens don't lose it
+        MachineDTO dto = cvAvailabilityService.applySecondaryStatus(new MachineDTO(saved, primaryExerciseName(saved)));
+        messagingTemplate.convertAndSend("/topic/machines", dto);
 
         boolean wasOutOfOrder = EquipmentStatuses.isOutOfOrder(oldStatus);
         boolean isOutOfOrder = EquipmentStatuses.isOutOfOrder(newStatus);

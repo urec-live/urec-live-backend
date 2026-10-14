@@ -15,7 +15,9 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -26,6 +28,7 @@ class MachineStatusServiceTest {
     @Mock private EquipmentRepository equipmentRepository;
     @Mock private SimpMessagingTemplate messagingTemplate;
     @Mock private ActivityLogService activityLogService;
+    @Mock private CvAvailabilityService cvAvailabilityService;
 
     @InjectMocks private MachineStatusService service;
 
@@ -35,6 +38,8 @@ class MachineStatusServiceTest {
     void setUp() {
         legPress = new Equipment("LP01", "Leg Press", EquipmentStatuses.AVAILABLE, null);
         legPress.setId(10L);
+        // With the camera feed off, the availability pass leaves the machine as it is
+        lenient().when(cvAvailabilityService.applySecondaryStatus(any())).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @Test
@@ -73,11 +78,29 @@ class MachineStatusServiceTest {
     }
 
     @Test
+    void broadcastsTheMachineWithTheCameraAvailabilityAppliedLikeTheMachineEndpoints() {
+        when(equipmentRepository.save(legPress)).thenReturn(legPress);
+        when(cvAvailabilityService.applySecondaryStatus(any())).thenAnswer(inv -> {
+            MachineDTO dto = inv.getArgument(0);
+            dto.setStatus("In Use");
+            dto.setAvailabilitySource("camera");
+            return dto;
+        });
+        legPress.setStatus(EquipmentStatuses.OUT_OF_ORDER);
+
+        service.changeStatus(legPress, EquipmentStatuses.AVAILABLE, "admin", null);
+
+        MachineDTO broadcast = broadcastPayload();
+        assertEquals("In Use", broadcast.getStatus());
+        assertEquals("camera", broadcast.getAvailabilitySource());
+    }
+
+    @Test
     void anUnchangedStatusDoesNothing() {
         Equipment result = service.changeStatus(legPress, EquipmentStatuses.AVAILABLE, "admin", null);
 
         assertSame(legPress, result);
-        verifyNoInteractions(equipmentRepository, messagingTemplate, activityLogService);
+        verifyNoInteractions(equipmentRepository, messagingTemplate, activityLogService, cvAvailabilityService);
     }
 
     private MachineDTO broadcastPayload() {
