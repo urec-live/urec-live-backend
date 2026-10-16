@@ -60,7 +60,7 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 | POST | `/api/auth/login` | Login → JWT tokens |
 | POST | `/api/auth/refresh` | Refresh access token |
 | GET | `/api/auth/test` | Health check |
-| GET | `/api/machines` | List all equipment |
+| GET | `/api/machines` | List all equipment. Every machine response (here, by id/code, by exercise, floor plans, status updates) includes `exerciseNames` and `muscleGroups` (sorted), so clients don't need `/{id}/exercises` per machine |
 | GET | `/api/machines/{id}` | Single machine |
 | GET | `/api/machines/code/{code}` | Machine by QR code |
 | GET | `/api/machines/{id}/exercises` | Exercises for a machine |
@@ -126,7 +126,7 @@ Role names are stored verbatim (the admin UI assigns `ADMIN`), so `hasRole('ADMI
 ### WebSocket
 
 - STOMP broker over SockJS at `/ws`
-- Broadcasts updated machine list to `/topic/machines` on every status change
+- Broadcasts the updated machine (one `MachineDTO`, same shape as a `GET /api/machines` entry) to `/topic/machines` on every status change
 - All connected clients receive real-time equipment updates
 
 ---
@@ -207,6 +207,7 @@ Connects to Neon PostgreSQL (see `application.properties`). DataInitializer seed
 - DB: `jdbc:postgresql://ep-twilight-surf-adiwldgq-pooler.c-2.us-east-1.aws.neon.tech/...` (Neon)
 - `server.address=0.0.0.0`, `server.port=8080`
 - JWT: 24h access token expiry, 7d refresh token expiry
+- `spring.jpa.properties.hibernate.default_batch_fetch_size=100`: lazy collections (each machine's exercises) load for up to 100 parents in one query. Without it, listing machines ran one Neon round trip per machine (~1.7 s for 95). `MachineApiIntegrationTest` fails if that comes back.
 
 Help requests (defaults live in the `@Value` annotations, so nothing is needed in `application.properties`):
 - `app.help-requests.expire-after-minutes` (30) and `app.help-requests.expiry-check-ms` (60000)
@@ -218,6 +219,7 @@ Help requests (defaults live in the `@Value` annotations, so nothing is needed i
 - Integration tests extend `controller/HelpRequestApiTestSupport` (`@SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test")`). The `test` profile (`src/test/resources/application-test.properties`) uses in-memory H2, so no database or `.env` is needed. The base class mints real JWTs (`tokenFor(username, role)`), finds or creates test machines (`machine(...)`), and has request helpers. Test data outlives each test, so give a test that changes shared data its own machine/exercise.
 - `mvn test -Dtest='HelpRequest*,HelpDemoLinksTest,AdminHelpRequestServiceTest'` runs the help request suite; `UrecLiveBackendApplicationTests.contextLoads` still needs the real DB env vars.
 - API smoke test against a running server: `scripts/smoke-test-help-requests.sh` (see `HELP_REQUESTS_TESTING.md`)
+- `controller/MachineApiIntegrationTest` covers the public machine endpoints, including the SQL statement count per request (Hibernate statistics, switched on inside the test). Testing guide: `MINOR_FIXES_TESTING.md`
 
 ---
 
