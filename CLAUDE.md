@@ -31,7 +31,7 @@ UREC Live is a cross-platform gym management and fitness tracking platform targe
 
 ### Database Schema
 
-Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exercise`, `workout_sessions`, `workout_sets`, `activity_log`, `help_requests`
+Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exercise`, `workout_sessions`, `workout_sets`, `activity_log`, `equipment_issue_reports`, `help_requests`
 
 - Schema auto-managed via `spring.jpa.hibernate.ddl-auto=update`
 - `DataInitializer` seeds 40+ exercises across all muscle groups on first startup
@@ -40,12 +40,13 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 ### Entities
 
 - **User** — username, email, password (BCrypt), roles (M2M)
-- **Equipment** — name, code (QR), status (Available/In Use/Reserved), exercises (M2M), deleted flag
+- **Equipment** — name, code (QR), status (Available/In Use/Reserved/Out of Order — constants in `EquipmentStatuses`, compare case-insensitively), exercises (M2M), deleted flag. Only admins set Out of Order; it blocks check-ins.
 - **Exercise** — name, muscleGroup, gifUrl, equipment (M2M)
 - **Role** — ROLE_ADMIN, ROLE_USER
 - **WorkoutSession** — user, machine, exercise, muscleGroup, startedAt, endedAt, durationSeconds, notes
 - **WorkoutSet** — setNumber, reps, weightLbs (per-set tracking within a session)
-- **ActivityLog** — eventType (CHECK_IN/CHECK_OUT, … HELP_REQUESTED/HELP_STATUS_CHANGED/HELP_CLOSED), username, description, equipmentName, timestamp
+- **ActivityLog** — eventType (CHECK_IN/CHECK_OUT, … ISSUE_REPORTED/ISSUE_STATUS_CHANGED/ISSUE_WITHDRAWN, HELP_REQUESTED/HELP_STATUS_CHANGED/HELP_CLOSED), username, description, equipmentName, timestamp
+- **EquipmentIssueReport** — equipment, reporter (User), severity (`IssueSeverity`: OUT_OF_ORDER/DAMAGED), description (10–1000 chars), status (`IssueStatus`: REPORTED → ACKNOWLEDGED → IN_PROGRESS → RESOLVED), reportedAt, updatedAt, resolvedAt, withdrawnAt (set when the member withdrew it as a mistake; it's then RESOLVED for good). One open report per member per machine (409 otherwise). Reports don't change `Equipment.status`, except that resolving the last open report on an Out of Order machine puts it back to Available.
 - **HelpRequest** — a member's "Call staff" at a machine: member, equipment, optional exercise, status (`HelpRequestStatus`: open REQUEST_RECEIVED/ON_THE_WAY/TOO_BUSY, closed RESOLVED/CANCELLED/EXPIRED), staff (who last responded), createdAt, updatedAt, firstResponseAt, closedAt, closedBy (`HelpRequestClosedBy`: STAFF/MEMBER/SYSTEM), `@Version`. One open request per member (409 otherwise). `HelpRequestExpiryJob` expires requests idle for 30 min.
 
 ---
@@ -65,8 +66,8 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 | GET | `/api/machines/code/{code}` | Machine by QR code |
 | GET | `/api/machines/{id}/exercises` | Exercises for a machine |
 | GET | `/api/machines/code/{code}/exercises` | Exercises by machine code |
-| PUT | `/api/machines/{id}/status` | Update machine status (broadcasts WS) |
-| PUT | `/api/machines/code/{code}/status` | Update status by QR code (broadcasts WS) |
+| PUT | `/api/machines/{id}/status` | Update machine status (broadcasts WS). Out of Order rules: requesting it → 403; checking in to one → 409; other changes return 200 but it stays Out of Order |
+| PUT | `/api/machines/code/{code}/status` | Update status by QR code (broadcasts WS); same Out of Order rules |
 | GET | `/api/machines/muscle-groups` | All unique muscle groups |
 | GET | `/api/machines/exercises/muscle/{group}` | Exercises by muscle group |
 | GET | `/api/machines/exercise/{name}` | Machines for an exercise |
@@ -78,6 +79,17 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 | POST | `/api/sessions` | Save a completed workout session |
 | GET | `/api/sessions/me` | User's session history (paginated, default 20/page) |
 | GET | `/api/sessions/me/stats` | Aggregated stats (total sessions, duration, top exercises, sessions/week) |
+
+### Equipment Issue Endpoints (Authenticated)
+
+Deliberately outside `/api/machines/**`, which is `permitAll`.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/equipment-issues` | Report a problem `{equipmentId, severity, description}` → 201; 409 if already open; 404 if machine missing/removed |
+| GET | `/api/equipment-issues/me` | Caller's reports, newest first |
+| POST | `/api/equipment-issues/{id}/withdraw` | Take back your own open report (filed by mistake) → closed as RESOLVED with `withdrawnAt` set; 404 if not yours; 409 if already closed. The machine's status is left alone |
+| GET | `/api/equipment-issues/equipment/{id}` | Open-issue summary for the machine page (counts/status only — no reporter details) |
 
 ### Help Request Endpoints (Authenticated)
 
@@ -116,12 +128,19 @@ Members only ever see their own requests (someone else's id → 404), and the me
 | GET | `/api/admin/users` | List all users (paginated) |
 | GET | `/api/admin/users/{id}` | User detail |
 | PUT | `/api/admin/users/{id}/role` | Change user role |
+| GET | `/api/admin/equipment-issues?includeResolved=false` | Reports grouped by machine (not-working first) |
+| GET | `/api/admin/equipment-issues/summary` | Counts: reported, acknowledged, inProgress, affectedMachines |
+| PUT | `/api/admin/equipment-issues/{id}/status` | Set one report's status; 409 if the member withdrew it |
+| PUT | `/api/admin/equipment-issues/equipment/{id}/status` | Set status on all of a machine's open reports |
+| PUT | `/api/admin/equipment-issues/equipment/{id}/out-of-order` | `{outOfOrder}` — take a machine out of service or put it back (never turns In Use into Available) |
 | GET | `/api/admin/help-requests` | Open help requests, longest waiting first |
 | GET | `/api/admin/help-requests/history?limit=50` | Recently closed requests, newest first |
 | PUT | `/api/admin/help-requests/{id}/status` | `{status: ON_THE_WAY \| TOO_BUSY}`; other statuses → 400; closed → 409 |
 | POST | `/api/admin/help-requests/{id}/done` | "Done helping": closes it as RESOLVED by staff |
 
-Role names are stored verbatim (the admin UI assigns `ADMIN`), so `hasRole('ADMIN')` only matches `ROLE_ADMIN`. `AdminHelpRequestController` accepts both via `hasAuthority('ADMIN') or hasAuthority('ROLE_ADMIN')`. Clients poll the help request endpoints (every 5 s) rather than use the WebSocket.
+Admin-made status changes (the out-of-order endpoint, `PUT /api/admin/equipment/{id}`, and the automatic return to service) go through `MachineStatusService`, which broadcasts to `/topic/machines` (after the same `CvAvailabilityService` pass as the machine endpoints) and logs `EQUIPMENT_OUT_OF_ORDER` / `EQUIPMENT_BACK_IN_SERVICE`.
+
+Role names are stored verbatim (the admin UI assigns `ADMIN`), so `hasRole('ADMIN')` only matches `ROLE_ADMIN`. `AdminUserController`, `AdminEquipmentIssueController` and `AdminHelpRequestController` accept both via `hasAuthority('ADMIN') or hasAuthority('ROLE_ADMIN')`. Clients poll the help request endpoints (every 5 s) rather than use the WebSocket.
 
 ### WebSocket
 
@@ -143,8 +162,10 @@ src/main/java/com/ureclive/urec_live_backend/
 │   ├── AdminExerciseController.java
 │   ├── AdminAnalyticsController.java
 │   ├── AdminUserController.java
-│   ├── HelpRequestController.java        # member "Call staff"
-│   └── AdminHelpRequestController.java   # staff queue
+│   ├── EquipmentIssueController.java       # member issue reporting
+│   ├── AdminEquipmentIssueController.java  # admin Equipment Issues view
+│   ├── HelpRequestController.java          # member "Call staff"
+│   └── AdminHelpRequestController.java     # staff queue
 ├── service/
 │   ├── AuthService.java
 │   ├── AdminEquipmentService.java
@@ -152,18 +173,24 @@ src/main/java/com/ureclive/urec_live_backend/
 │   ├── AdminAnalyticsService.java
 │   ├── WorkoutSessionService.java
 │   ├── ActivityLogService.java
+│   ├── EquipmentIssueService.java
+│   ├── AdminEquipmentIssueService.java
+│   ├── MachineStatusService.java   # admin status changes: save + broadcast + log
 │   ├── HelpRequestService.java, AdminHelpRequestService.java
-│   ├── HelpDemoLinks.java                # demo media (placeholders for now)
-│   └── HelpRequestExpiryJob.java         # @Scheduled: expires idle requests
+│   ├── HelpDemoLinks.java          # demo media (placeholders for now)
+│   └── HelpRequestExpiryJob.java   # @Scheduled: expires idle requests
 ├── entity/
 │   ├── User.java, Equipment.java, Exercise.java, Role.java
 │   ├── WorkoutSession.java, WorkoutSet.java, ActivityLog.java
+│   ├── EquipmentIssueReport.java, IssueSeverity.java, IssueStatus.java
+│   ├── EquipmentStatuses.java      # Equipment.status values, isOutOfOrder()
 │   ├── HelpRequest.java, HelpRequestStatus.java, HelpRequestClosedBy.java
 ├── repository/
 │   ├── UserRepository.java, EquipmentRepository.java
 │   ├── ExerciseRepository.java, RoleRepository.java
 │   ├── WorkoutSessionRepository.java, WorkoutSetRepository.java
 │   ├── ActivityLogRepository.java
+│   ├── EquipmentIssueReportRepository.java
 │   └── HelpRequestRepository.java
 ├── dto/              # Request + response objects for every endpoint
 ├── security/
@@ -184,7 +211,17 @@ src/main/java/com/ureclive/urec_live_backend/
 - All new endpoints need proper error handling with meaningful HTTP status codes
 - Use `@Valid` and Bean Validation annotations on request DTOs
 - Keep controllers thin — business logic belongs in service classes
-- All `/api/admin/**` endpoints must use `@PreAuthorize("hasRole('ADMIN')")`
+- All `/api/admin/**` endpoints must use `@PreAuthorize` with an admin check (see the role-name note under Admin Endpoints)
+
+## Testing
+
+- Unit tests: Mockito, no Spring context (e.g. `service/EquipmentIssueServiceTest`, `service/HelpRequestServiceTest`)
+- Integration tests run the whole app on in-memory H2: the `test` profile (`src/test/resources/application-test.properties`), so no database or `.env` is needed. Two base classes, both `@SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test")` (one shared, cached context), mint real JWTs (`tokenFor(username, role)`) and have request helpers:
+  - `controller/ApiIntegrationTestSupport` (equipment issues, out of order): `machine(...)` resets a machine to Available
+  - `controller/HelpRequestApiTestSupport` (help requests): `machine(...)` finds or creates a test machine
+  - Test data outlives each test and is shared across classes, so give a test that changes shared data its own machine/exercise.
+- Suites: `mvn test -Dtest='*EquipmentIssue*,*OutOfOrder*,MachineStatusServiceTest'` (equipment issues / out of order) and `mvn test -Dtest='HelpRequest*,HelpDemoLinksTest,AdminHelpRequestServiceTest'` (help requests). `UrecLiveBackendApplicationTests.contextLoads` still needs the real DB env vars.
+- API smoke tests against a running server: `scripts/smoke-test-equipment-issues.sh` (see `EQUIPMENT_ISSUES_TESTING.md`) and `scripts/smoke-test-help-requests.sh` (see `HELP_REQUESTS_TESTING.md`)
 
 ---
 
@@ -211,13 +248,6 @@ Connects to Neon PostgreSQL (see `application.properties`). DataInitializer seed
 Help requests (defaults live in the `@Value` annotations, so nothing is needed in `application.properties`):
 - `app.help-requests.expire-after-minutes` (30) and `app.help-requests.expiry-check-ms` (60000)
 - `app.help-requests.placeholder-video-url` and `app.help-requests.placeholder-gif-url`: the placeholder demo media (an MDN sample MP4 and a "Coming soon" GIF). A blank value switches that placeholder off. As environment variables: `APP_HELPREQUESTS_PLACEHOLDERVIDEOURL`, `APP_HELPREQUESTS_PLACEHOLDERGIFURL`.
-
-## Testing
-
-- Unit tests: Mockito, no Spring context (e.g. `service/HelpRequestServiceTest`)
-- Integration tests extend `controller/HelpRequestApiTestSupport` (`@SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test")`). The `test` profile (`src/test/resources/application-test.properties`) uses in-memory H2, so no database or `.env` is needed. The base class mints real JWTs (`tokenFor(username, role)`), finds or creates test machines (`machine(...)`), and has request helpers. Test data outlives each test, so give a test that changes shared data its own machine/exercise.
-- `mvn test -Dtest='HelpRequest*,HelpDemoLinksTest,AdminHelpRequestServiceTest'` runs the help request suite; `UrecLiveBackendApplicationTests.contextLoads` still needs the real DB env vars.
-- API smoke test against a running server: `scripts/smoke-test-help-requests.sh` (see `HELP_REQUESTS_TESTING.md`)
 
 ---
 
