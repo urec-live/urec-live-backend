@@ -1,6 +1,11 @@
 package com.ureclive.urec_live_backend.dto;
 
 import com.ureclive.urec_live_backend.entity.Equipment;
+import com.ureclive.urec_live_backend.entity.Exercise;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class MachineDTO {
     private Long id;
@@ -8,6 +13,10 @@ public class MachineDTO {
     private String name;
     private String status;
     private String exercise;  // Primary exercise name for backward compatibility
+    // Every exercise the machine supports and their muscle groups (sorted), so a machine list
+    // doesn't need a follow-up request per machine to show them
+    private List<String> exerciseNames = new ArrayList<>();
+    private List<String> muscleGroups = new ArrayList<>();
     private String imageUrl;
     private Boolean heldByMe;
     private Double floorX;
@@ -27,6 +36,8 @@ public class MachineDTO {
         this.name = equipment.getName();
         this.status = equipment.getStatus();
         this.exercise = primaryExerciseName;
+        this.exerciseNames = sortedDistinct(equipment.getExercises().stream().map(Exercise::getName).toList());
+        this.muscleGroups = sortedDistinct(equipment.getExercises().stream().map(Exercise::getMuscleGroup).toList());
         this.imageUrl = equipment.getImageUrl();
         this.heldByMe = false;
         this.floorX = equipment.getFloorX();
@@ -34,6 +45,14 @@ public class MachineDTO {
         this.floorLabel = equipment.getFloorLabel();
         this.floorPlanId = equipment.getFloorPlan() != null ? equipment.getFloorPlan().getId() : null;
         this.availabilitySource = "PRIMARY";
+    }
+
+    private static List<String> sortedDistinct(List<String> values) {
+        return values.stream()
+            .filter(value -> value != null && !value.isBlank())
+            .distinct()
+            .sorted()
+            .collect(Collectors.toList());
     }
 
     // Getters and Setters
@@ -51,6 +70,12 @@ public class MachineDTO {
 
     public String getExercise() { return exercise; }
     public void setExercise(String exercise) { this.exercise = exercise; }
+
+    public List<String> getExerciseNames() { return exerciseNames; }
+    public void setExerciseNames(List<String> exerciseNames) { this.exerciseNames = exerciseNames; }
+
+    public List<String> getMuscleGroups() { return muscleGroups; }
+    public void setMuscleGroups(List<String> muscleGroups) { this.muscleGroups = muscleGroups; }
 
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
