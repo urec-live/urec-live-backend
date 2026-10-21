@@ -1,10 +1,9 @@
 package com.ureclive.urec_live_backend.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ureclive.urec_live_backend.entity.Equipment;
+import com.ureclive.urec_live_backend.entity.EquipmentStatuses;
 import com.ureclive.urec_live_backend.entity.Exercise;
-import com.ureclive.urec_live_backend.repository.EquipmentRepository;
 import com.ureclive.urec_live_backend.repository.ExerciseRepository;
 import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.SessionFactory;
@@ -13,20 +12,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.support.AbstractSubscribableChannel;
 import org.springframework.messaging.support.ChannelInterceptor;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,21 +37,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * The public machine endpoints behind the app's Equipment tab and workout screens. Boots the whole
  * app on in-memory H2 (the "test" profile, which also runs the DataInitializer's ~95 seeded
- * machines). Same annotations as the other API tests, so they all share one cached Spring context.
+ * machines). Shares one cached Spring context with the other API tests.
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-class MachineApiIntegrationTest {
+class MachineApiIntegrationTest extends ApiIntegrationTestSupport {
 
     // "MF-" codes never clash with the seeded BP001 and friends or the help request tests' "HR-" ones
     private static final String CABLE = "MF-CABLE";
     private static final List<String> CABLE_GROUPS = List.of("Chest", "Triceps");
     private static final List<String> CABLE_EXERCISES = List.of("MF Cable Fly", "MF Crossover", "MF Pushdown");
 
-    @Autowired private MockMvc mvc;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private EquipmentRepository equipmentRepository;
     @Autowired private ExerciseRepository exerciseRepository;
     @Autowired private TransactionTemplate transactionTemplate;
     @Autowired private EntityManagerFactory entityManagerFactory;
@@ -67,8 +57,8 @@ class MachineApiIntegrationTest {
     void cableStationWithAChestAndATricepsExercise() {
         cableId = transactionTemplate.execute(tx -> {
             Equipment cable = equipmentRepository.findByCode(CABLE)
-                    .orElseGet(() -> new Equipment(CABLE, "MF Cable Station", "Available", null));
-            cable.setStatus("Available");
+                    .orElseGet(() -> new Equipment(CABLE, "MF Cable Station", EquipmentStatuses.AVAILABLE, null));
+            cable.setStatus(EquipmentStatuses.AVAILABLE);
             link(cable, "MF Cable Fly", "Chest");
             link(cable, "MF Pushdown", "Triceps");
             link(cable, "MF Crossover", "Chest");
@@ -122,36 +112,43 @@ class MachineApiIntegrationTest {
 
     @Test
     void statusChangeResponseAndBroadcastCarryMuscleGroups() throws Exception {
-        List<Message<?>> broadcasts = new CopyOnWriteArrayList<>();
-        ChannelInterceptor capture = new ChannelInterceptor() {
-            @Override
-            public Message<?> preSend(Message<?> message, MessageChannel channel) {
-                if ("/topic/machines".equals(SimpMessageHeaderAccessor.getDestination(message.getHeaders()))) {
-                    broadcasts.add(message);
-                }
-                return message;
-            }
-        };
-        brokerChannel.addInterceptor(capture);
-        JsonNode response;
-        try {
-            response = objectMapper.readTree(mvc.perform(put("/api/machines/code/{code}/status", CABLE)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"status\":\"In Use\"}"))
-                    .andExpect(status().isOk())
-                    .andReturn().getResponse().getContentAsString());
-        } finally {
-            brokerChannel.removeInterceptor(capture);
-        }
+        List<JsonNode> responses = new ArrayList<>();
+        List<JsonNode> broadcasts = machineBroadcastsDuring(() ->
+                responses.add(objectMapper.readTree(mvc.perform(put("/api/machines/code/{code}/status", CABLE)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"status\":\"In Use\"}"))
+                        .andExpect(status().isOk())
+                        .andReturn().getResponse().getContentAsString())));
 
+        JsonNode response = responses.get(0);
         assertEquals("In Use", response.get("status").asText());
         assertEquals(CABLE_GROUPS, texts(response.get("muscleGroups")));
 
         // What the app's live updates receive, so a patched machine keeps its groups
         assertEquals(1, broadcasts.size());
-        JsonNode broadcast = objectMapper.readTree((byte[]) broadcasts.get(0).getPayload());
+        JsonNode broadcast = broadcasts.get(0);
         assertEquals(CABLE, broadcast.get("code").asText());
         assertEquals("In Use", broadcast.get("status").asText());
+        assertEquals(CABLE_GROUPS, texts(broadcast.get("muscleGroups")));
+        assertEquals(CABLE_EXERCISES, texts(broadcast.get("exerciseNames")));
+    }
+
+    /**
+     * Staff changes (the out-of-order switch, the admin Equipment page, the automatic return to
+     * service) broadcast through MachineStatusService, not MachineController. The app applies that
+     * broadcast to every saved list, so it needs the same fields.
+     */
+    @Test
+    void staffTakingAMachineOutOfOrderBroadcastsItsExercisesToo() throws Exception {
+        String adminToken = tokenFor("mf_admin", "ADMIN");
+        List<JsonNode> broadcasts = machineBroadcastsDuring(() ->
+                putJsonAs(adminToken, ADMIN_API + "/equipment/" + cableId + "/out-of-order", Map.of("outOfOrder", true))
+                        .andExpect(status().isOk()));
+
+        assertEquals(1, broadcasts.size());
+        JsonNode broadcast = broadcasts.get(0);
+        assertEquals(CABLE, broadcast.get("code").asText());
+        assertEquals(EquipmentStatuses.OUT_OF_ORDER, broadcast.get("status").asText());
         assertEquals(CABLE_GROUPS, texts(broadcast.get("muscleGroups")));
         assertEquals(CABLE_EXERCISES, texts(broadcast.get("exerciseNames")));
     }
@@ -178,6 +175,35 @@ class MachineApiIntegrationTest {
         } finally {
             statistics.setStatisticsEnabled(wasEnabled);
         }
+    }
+
+    private interface Request {
+        void run() throws Exception;
+    }
+
+    /** Runs the request and returns what it sent to /topic/machines, as the app's live updates get it. */
+    private List<JsonNode> machineBroadcastsDuring(Request request) throws Exception {
+        List<Message<?>> broadcasts = new CopyOnWriteArrayList<>();
+        ChannelInterceptor capture = new ChannelInterceptor() {
+            @Override
+            public Message<?> preSend(Message<?> message, MessageChannel channel) {
+                if ("/topic/machines".equals(SimpMessageHeaderAccessor.getDestination(message.getHeaders()))) {
+                    broadcasts.add(message);
+                }
+                return message;
+            }
+        };
+        brokerChannel.addInterceptor(capture);
+        try {
+            request.run();
+        } finally {
+            brokerChannel.removeInterceptor(capture);
+        }
+        List<JsonNode> payloads = new ArrayList<>();
+        for (Message<?> message : broadcasts) {
+            payloads.add(objectMapper.readTree((byte[]) message.getPayload()));
+        }
+        return payloads;
     }
 
     private long queriesFor(Statistics statistics, String url) throws Exception {
