@@ -14,7 +14,7 @@ Branch `minor-fixes-and-speed-ups`, here and in `urec-live-app`. The app side (s
   - `GET /api/machines`, `/{id}`, `/code/{code}` and `/exercise/{name}`
   - the floor plans
   - status updates
-  - the `/topic/machines` broadcast
+  - the `/topic/machines` broadcast, including staff changes from main's out-of-order switch and the admin Equipment page (`MachineStatusService` builds the same `MachineDTO`)
 - The app's Equipment tab used to send one `GET /api/machines/{id}/exercises` per machine (95) to show them. Now it sends one request.
 - The fields are only added, so clients that don't know them (the admin dashboard, older app builds) ignore them.
 
@@ -24,11 +24,11 @@ Branch `minor-fixes-and-speed-ups`, here and in `urec-live-app`. The app side (s
 mvn test
 ```
 
-You should see `Tests run: 133, Failures: 0`, including 8 new tests. As before, `UrecLiveBackendApplicationTests.contextLoads` connects to the database in `application.properties`; everything else runs on in-memory H2.
+You should see `Tests run: 213, Failures: 0`, including 9 from this branch. The branch now includes main as of PR #16 (equipment issue reports). As before, `UrecLiveBackendApplicationTests.contextLoads` connects to the database in `application.properties`; everything else runs on in-memory H2. Run it in a terminal where `.env` isn't loaded: TERMINAL 1's `SPRING_DATASOURCE_URL` overrides the tests' H2 database, and the integration tests then fail to start.
 
 | File | What it covers |
 |---|---|
-| `controller/MachineApiIntegrationTest` (5) | The list, by id, by code, by exercise and the floor plans include both fields. A machine listed under one of its other exercises keeps that exercise as `exercise`, and lists all of them in `exerciseNames`. The status update's response and its `/topic/machines` broadcast (captured on the broker channel) carry them. `GET /api/machines` and `/floor-plans` run fewer than 10 SQL statements with the ~96 seeded machines (counted with Hibernate statistics, switched on inside the test) |
+| `controller/MachineApiIntegrationTest` (6) | The list, by id, by code, by exercise and the floor plans include both fields. A machine listed under one of its other exercises keeps that exercise as `exercise`, and lists all of them in `exerciseNames`. The status update's response and its `/topic/machines` broadcast (captured on the broker channel) carry them, and so does the broadcast when an admin takes a machine out of service (main's switch, which goes through `MachineStatusService`). `GET /api/machines` and `/floor-plans` run fewer than 10 SQL statements with the ~96 seeded machines (counted with Hibernate statistics, switched on inside the test) |
 | `dto/MachineDTOTest` (3) | Sorted and distinct; blank and missing values left out; empty lists, never null |
 
 **Mutation check.** Turning batching off makes the query test fail with `GET /api/machines ran 97 queries for 96 machines`:
@@ -73,3 +73,4 @@ cd /c/Users/abelv/portfolio/getmefit/urec-live-backend && git switch minor-fixes
 
 3. The query count. Start the backend with `export SPRING_JPA_SHOW_SQL=true` before `mvn spring-boot:run`, and call `/api/machines` once. The log shows 2 selects: the machines, then the exercises for all of them. On main it's about 96.
 4. Check in to a machine from the app. The admin dashboard's **Live Monitor** still updates (it ignores the new fields), and the app's lists change without a refresh.
+5. On the admin dashboard's **Equipment** page, set a machine to **Out of Order**. The app's Equipment tab shows it as Out of order within a second or two, with its muscle groups still on the card. Set it back to **Available** afterwards. Use an admin account whose role is `ROLE_ADMIN`: the Equipment page returns 403 for one promoted through the dashboard (role `ADMIN`; see "Admin role naming" in `EQUIPMENT_ISSUES_TESTING.md`). The **Out of order** switch under **Equipment Issues** works for both, once the machine has a report.
