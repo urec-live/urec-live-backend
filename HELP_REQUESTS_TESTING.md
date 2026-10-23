@@ -6,21 +6,21 @@ Members who aren't sure how to use a machine can press **Call staff**, much like
 - A request nobody updates for 30 minutes expires.
 - While they wait, the member gets "watch how it's done" demos for the exercise. For now these are **placeholder media**, a short sample video and a "Coming soon" GIF, played in the app's **demo player** screen.
 
-The feature spans three repos, each on the `staff-help-requests` branch. This guide covers all three. The app and admin repos each have a shorter `HELP_REQUESTS_TESTING.md` for their own part.
+The feature is implemented in the checked-out backend, app, and admin repositories. This guide covers all three; the app and admin repositories also have shorter `HELP_REQUESTS_TESTING.md` files for their own surfaces.
 
 ---
 
 ## 1. Automated tests
 
-| Repo | Command | Tests | Needs |
-|---|---|---|---|
-| `urec-live-backend` | `mvn test -Dtest='HelpRequest*,HelpDemoLinksTest,AdminHelpRequestServiceTest'` | 124 | Java 21 + Maven. **No database or `.env`**: runs on in-memory H2 |
-| `urec-live-admin` | `npx ng test --watch=false --browsers=ChromeHeadless` | 69 | Chrome |
-| `urec-live-app` | `npm test` | 128 | Node 18+ |
+| Repo | Command | Needs |
+|---|---|---|
+| `backend/` | `mvn test -Dtest='HelpRequest*,HelpDemoLinksTest,AdminHelpRequestServiceTest'` | Java 21 + Maven. **No database or `.env`**: focused integration tests use in-memory H2 |
+| `admin/` | `npm test -- --watch=false --browsers=ChromeHeadless` | Chrome |
+| `app/` | `npm test` | Installed Node/npm dependencies |
 
-All three should finish with zero failures. In Git Bash, put Maven on the `PATH` first if it isn't already: `export PATH="$PATH:/c/tools/apache-maven-3.9.9/bin"`.
+All three should finish with zero failures. Do not rely on historical test counts; report the command, revision, and current runner result.
 
-### Backend (124)
+### Backend
 - **Unit tests** (no Spring context, apart from one lightweight settings check):
   - **`HelpRequestTest` (19), the entity rules:**
     - a new request starts as Request received; only the first three statuses count as open
@@ -63,7 +63,7 @@ All three should finish with zero failures. In Git Bash, put Maven on the `PATH`
   - Idle requests expire, after which the member can call staff again. A staff response keeps a request from expiring.
 - **Mutation-checked:** temporarily breaking the placeholder logic makes these tests fail. The breaks tried were: flagging a real GIF as a placeholder, ignoring a real GIF, ignoring the video setting, dropping the placeholder flag, and not treating a blank setting as off.
 
-> A plain `mvn test` also runs the existing `UrecLiveBackendApplicationTests.contextLoads`. That test connects to the real database, so it fails unless the `.env` variables are loaded in your shell. This was already the case before this feature. To run the whole suite, load the variables first, as TERMINAL 1 in `commands.txt` does, then run `mvn test`.
+> A plain `mvn test` also runs the existing `UrecLiveBackendApplicationTests.contextLoads`. That test does not activate the H2 test profile, so it needs the normal database/JWT environment. Load a development `.env` as described in `TEAM_WORKFLOW.md`, then run the full suite.
 
 ---
 
@@ -79,9 +79,9 @@ This script runs 33 checks over real HTTP against a **running** backend:
 - 409s on closed requests, and the Recently closed list
 
 ```bash
-# Terminal 1: start the backend with your .env loaded (TERMINAL 1 in commands.txt)
+# Terminal 1: load a development .env as described in TEAM_WORKFLOW.md, then start the backend
 
-# Terminal 2, from urec-live-backend (passwords are in test-accounts.txt)
+# Terminal 2, from backend/ (supply development test-account credentials locally)
 MEMBER_USER=urecuser MEMBER_PASS='<password>' \
 ADMIN_USER=urecadmin ADMIN_PASS='<password>' \
 ./scripts/smoke-test-help-requests.sh
@@ -100,8 +100,8 @@ ADMIN_USER=urecadmin ADMIN_PASS='<password>' \
 
 ### Setup
 1. **Backend.** Run TERMINAL 1 from `commands.txt`. On first start, Hibernate creates the `help_requests` table. This only adds a table.
-2. **Admin dashboard** (`urec-live-admin`). Run TERMINAL 2 (`npx ng serve`), open http://localhost:4200 and log in as `urecadmin`.
-3. **App** (`urec-live-app`). Run TERMINAL 3 and log in as `urecuser`.
+2. **Admin dashboard** (`admin/`). Run TERMINAL 2 (`npm start`), open http://localhost:4200 and log in as an admin.
+3. **App** (`app/`). Run TERMINAL 3 and log in as a member.
    - **No dev-build rebuild is needed.** The demo player only uses `expo-image` and `expo-web-browser`, which are already in the build, so `npx expo start --dev-client --android` is enough.
 
 ### Member: call staff
