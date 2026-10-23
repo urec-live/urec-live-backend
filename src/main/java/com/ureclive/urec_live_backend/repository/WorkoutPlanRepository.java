@@ -12,4 +12,6 @@ public interface WorkoutPlanRepository extends JpaRepository<WorkoutPlan, Long> 
     Optional<WorkoutPlan> findByUserAndActiveTrue(User user);
 
     List<WorkoutPlan> findByUser(User user);
+
+    List<WorkoutPlan> findByUserAndVisibility(User user, WorkoutPlan.PlanVisibility visibility);
 }

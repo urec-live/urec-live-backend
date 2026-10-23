@@ -3,6 +3,7 @@ package com.ureclive.urec_live_backend.dto;
 import com.ureclive.urec_live_backend.entity.DayPlan;
 import com.ureclive.urec_live_backend.entity.DayPlanItem;
 import com.ureclive.urec_live_backend.entity.WorkoutPlan;
+import com.ureclive.urec_live_backend.entity.WorkoutPlan.PlanVisibility;
 
 import java.time.Instant;
 import java.util.List;
@@ -13,6 +14,7 @@ public class WorkoutPlanResponse {
     private Long id;
     private String name;
     private Boolean active;
+    private String visibility;
     private List<DayPlanDto> days;
     private Instant createdAt;
     private Instant updatedAt;
@@ -66,6 +68,7 @@ public class WorkoutPlanResponse {
         dto.id = plan.getId();
         dto.name = plan.getName();
         dto.active = plan.getActive();
+        dto.visibility = plan.getVisibility() != null ? plan.getVisibility().name() : "PRIVATE";
         dto.createdAt = plan.getCreatedAt();
         dto.updatedAt = plan.getUpdatedAt();
 
@@ -102,6 +105,9 @@ public class WorkoutPlanResponse {
 
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+
+    public String getVisibility() { return visibility; }
+    public void setVisibility(String visibility) { this.visibility = visibility; }
 
     public List<DayPlanDto> getDays() { return days; }
     public void setDays(List<DayPlanDto> days) { this.days = days; }

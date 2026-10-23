@@ -9,6 +9,7 @@ import com.ureclive.urec_live_backend.repository.EquipmentRepository;
 import com.ureclive.urec_live_backend.repository.ExerciseRepository;
 import com.ureclive.urec_live_backend.repository.FloorPlanRepository;
 import com.ureclive.urec_live_backend.service.ActivityLogService;
+import com.ureclive.urec_live_backend.service.CvAvailabilityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,18 +34,21 @@ public class MachineController {
     private final FloorPlanRepository floorPlanRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final ActivityLogService activityLogService;
+    private final CvAvailabilityService cvAvailabilityService;
 
     @Autowired
     public MachineController(EquipmentRepository equipmentRepository,
                              ExerciseRepository exerciseRepository,
                              FloorPlanRepository floorPlanRepository,
                              SimpMessagingTemplate messagingTemplate,
-                             ActivityLogService activityLogService) {
+                             ActivityLogService activityLogService,
+                             CvAvailabilityService cvAvailabilityService) {
         this.equipmentRepository = equipmentRepository;
         this.exerciseRepository = exerciseRepository;
         this.floorPlanRepository = floorPlanRepository;
         this.messagingTemplate = messagingTemplate;
         this.activityLogService = activityLogService;
+        this.cvAvailabilityService = cvAvailabilityService;
     }
 
     // ✅ Get all machines
@@ -53,7 +57,7 @@ public class MachineController {
         logger.info("[GET /api/machines] Fetching all machines");
         List<Equipment> equipment = equipmentRepository.findAllByDeletedFalse();
         List<MachineDTO> dtos = equipment.stream()
-            .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
+            .map(this::toMachineDto)
             .collect(Collectors.toList());
         logger.info("[GET /api/machines] Returned {} machines", dtos.size());
         return dtos;
@@ -117,7 +121,7 @@ public class MachineController {
         logger.info("[GET /api/machines/exercise/{}] Fetching machines for exercise: {}", exercise, exercise);
         List<Equipment> equipment = equipmentRepository.findByExerciseName(exercise);
         List<MachineDTO> dtos = equipment.stream()
-            .map(e -> new MachineDTO(e, exercise))
+            .map(e -> toMachineDto(e, exercise))
             .collect(Collectors.toList());
         logger.info("[GET /api/machines/exercise/{}] Returned {} machines", exercise, dtos.size());
         return dtos;
@@ -132,7 +136,7 @@ public class MachineController {
             logger.error("[GET /api/machines/{}] Machine not found with ID: {}", id, id);
             return new RuntimeException("Machine not found with ID: " + id);
         });
-        MachineDTO dto = new MachineDTO(eq, getPrimaryExerciseName(eq));
+        MachineDTO dto = toMachineDto(eq);
         logger.info("[GET /api/machines/{}] Returned machine: {} ({})", id, dto.getName(), dto.getStatus());
         return dto;
     }
@@ -152,13 +156,14 @@ public class MachineController {
             logger.error("[PUT /api/machines/{}/status] Missing 'status' in request body", id);
             throw new RuntimeException("Missing 'status' in request body");
         }
+        status = statusToApply(equipment, status);
 
         String oldStatus = equipment.getStatus();
         equipment.setStatus(status);
         Equipment updated = equipmentRepository.save(equipment);
         logger.info("[PUT /api/machines/{}/status] Updated machine {} from '{}' to '{}'", id, equipment.getName(), oldStatus, status);
         
-        MachineDTO dto = new MachineDTO(updated, getPrimaryExerciseName(updated));
+        MachineDTO dto = toMachineDto(updated);
 
         // Broadcast update to all WebSocket clients
         messagingTemplate.convertAndSend("/topic/machines", dto);
@@ -183,7 +188,7 @@ public class MachineController {
             logger.error("[GET /api/machines/code/{}] Machine not found with code: {}", code, code);
             return new RuntimeException("Machine not found with code: " + code);
         });
-        MachineDTO dto = new MachineDTO(eq, getPrimaryExerciseName(eq));
+        MachineDTO dto = toMachineDto(eq);
         logger.info("[GET /api/machines/code/{}] Returned machine: {} ({})", code, dto.getName(), dto.getStatus());
         return dto;
     }
@@ -203,13 +208,14 @@ public class MachineController {
             logger.error("[PUT /api/machines/code/{}/status] Missing 'status' in request body", code);
             throw new RuntimeException("Missing 'status' in request body");
         }
+        status = statusToApply(equipment, status);
 
         String oldStatus = equipment.getStatus();
         equipment.setStatus(status);
         Equipment updated = equipmentRepository.save(equipment);
         logger.info("[PUT /api/machines/code/{}/status] Updated machine {} from '{}' to '{}'", code, equipment.getName(), oldStatus, status);
         
-        MachineDTO dto = new MachineDTO(updated, getPrimaryExerciseName(updated));
+        MachineDTO dto = toMachineDto(updated);
 
         // Broadcast update to all WebSocket clients
         messagingTemplate.convertAndSend("/topic/machines", dto);
@@ -223,6 +229,26 @@ public class MachineController {
                 equipment.getName());
 
         return dto;
+    }
+
+    /**
+     * Out-of-order machines are controlled by admins: members can't mark a machine out of order (403)
+     * or check in to one (409). Checking out still succeeds, so a workout that was already in progress
+     * can end, but the machine stays out of order.
+     */
+    private String statusToApply(Equipment equipment, String requested) {
+        if (com.ureclive.urec_live_backend.entity.EquipmentStatuses.isOutOfOrder(requested)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Only admins can mark machines out of order");
+        }
+        if (!com.ureclive.urec_live_backend.entity.EquipmentStatuses.isOutOfOrder(equipment.getStatus())) {
+            return requested;
+        }
+        if (com.ureclive.urec_live_backend.entity.EquipmentStatuses.IN_USE.equalsIgnoreCase(requested.trim())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT, "Machine is out of order");
+        }
+        return equipment.getStatus();
     }
 
     // ✅ Get all floor plans with equipment grouped by floor
@@ -242,7 +268,7 @@ public class MachineController {
             defaultPlan.setActive(true);
 
             List<MachineDTO> allEquipment = equipmentRepository.findAllByDeletedFalse().stream()
-                    .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
+                    .map(this::toMachineDto)
                     .collect(Collectors.toList());
             return List.of(FloorPlanResponse.from(defaultPlan, allEquipment));
         }
@@ -251,7 +277,7 @@ public class MachineController {
             List<MachineDTO> equipment = equipmentRepository
                     .findAllByDeletedFalseAndFloorPlanId(plan.getId())
                     .stream()
-                    .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
+                    .map(this::toMachineDto)
                     .collect(Collectors.toList());
             return FloorPlanResponse.from(plan, equipment);
         }).collect(Collectors.toList());
@@ -271,5 +297,15 @@ public class MachineController {
             .findFirst()
             .map(Exercise::getName)
             .orElse("Unknown");
+    }
+
+    private MachineDTO toMachineDto(Equipment equipment) {
+        MachineDTO dto = new MachineDTO(equipment, getPrimaryExerciseName(equipment));
+        return cvAvailabilityService.applySecondaryStatus(dto);
+    }
+
+    private MachineDTO toMachineDto(Equipment equipment, String exerciseName) {
+        MachineDTO dto = new MachineDTO(equipment, exerciseName);
+        return cvAvailabilityService.applySecondaryStatus(dto);
     }
 }

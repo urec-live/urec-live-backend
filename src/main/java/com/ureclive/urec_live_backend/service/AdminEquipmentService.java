@@ -19,10 +19,13 @@ import java.util.UUID;
 public class AdminEquipmentService {
 
     private final EquipmentRepository equipmentRepository;
+    private final MachineStatusService machineStatusService;
 
     @Autowired
-    public AdminEquipmentService(EquipmentRepository equipmentRepository) {
+    public AdminEquipmentService(EquipmentRepository equipmentRepository,
+                                 MachineStatusService machineStatusService) {
         this.equipmentRepository = equipmentRepository;
+        this.machineStatusService = machineStatusService;
     }
 
     /**
@@ -50,23 +53,24 @@ public class AdminEquipmentService {
     }
 
     /**
-     * Updates mutable fields on an existing equipment record.
+     * Updates mutable fields on an existing equipment record. A status change goes through
+     * {@link MachineStatusService} so open app screens update live and out-of-order changes are logged.
      */
-    public AdminEquipmentResponse update(Long id, UpdateEquipmentRequest request) {
+    public AdminEquipmentResponse update(Long id, UpdateEquipmentRequest request, String adminUsername) {
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found with id: " + id));
 
         if (request.getName() != null && !request.getName().isBlank()) {
             equipment.setName(request.getName());
         }
-        if (request.getStatus() != null && !request.getStatus().isBlank()) {
-            equipment.setStatus(request.getStatus());
-        }
         if (request.getImageUrl() != null) {
             equipment.setImageUrl(request.getImageUrl());
         }
 
         equipment = equipmentRepository.save(equipment);
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            equipment = machineStatusService.changeStatus(equipment, request.getStatus(), adminUsername, null);
+        }
         return AdminEquipmentResponse.from(equipment);
     }
 
