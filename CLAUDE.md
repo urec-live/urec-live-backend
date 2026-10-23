@@ -1,3 +1,7 @@
+## Shared team workflow
+
+Read `TEAM_WORKFLOW.md` before making changes. It defines the shared setup, task ownership, verification, and handoff rules for Codex and Claude Code. Verify architecture notes against source and stay within the current task. Work priorities come from current task instructions.
+
 # CLAUDE.md — UREC Live Backend
 
 ## Project Overview
@@ -249,24 +253,9 @@ Help requests (defaults live in the `@Value` annotations, so nothing is needed i
 - `app.help-requests.expire-after-minutes` (30) and `app.help-requests.expiry-check-ms` (60000)
 - `app.help-requests.placeholder-video-url` and `app.help-requests.placeholder-gif-url`: the placeholder demo media (an MDN sample MP4 and a "Coming soon" GIF). A blank value switches that placeholder off. As environment variables: `APP_HELPREQUESTS_PLACEHOLDERVIDEOURL`, `APP_HELPREQUESTS_PLACEHOLDERGIFURL`.
 
----
+## Testing
 
-## What Needs to Be Built Next
-
-### Priority 1: Multi-Tenancy Foundation (Phase 3 prep)
-Not urgent, but for new tables consider adding a `gym_id` column now to avoid a painful migration later. Eventually equipment, exercises, and users will be scoped to a gym tenant.
-
-### Priority 2: Export Endpoints
-- `GET /api/admin/equipment/export` — CSV export of equipment list (planned, not yet built)
-
-### Priority 3: Push Notification Infrastructure (Phase 2)
-- Device token registration endpoint for push notifications
-
----
-
-## Project Roadmap
-
-- **Phase 1 (NOW — mostly complete)**: MVP backend is feature-complete
-- **Phase 2**: AI workout plans (Claude API), smartwatch sync, push notifications
-- **Phase 3**: Multi-tenant SaaS, billing (Stripe), chatbot
-- **Phase 4**: CCTV computer vision, trainer marketplace, API platform
+- Unit tests: Mockito, no Spring context (e.g. `service/HelpRequestServiceTest`)
+- Integration tests extend `controller/HelpRequestApiTestSupport` (`@SpringBootTest @AutoConfigureMockMvc @ActiveProfiles("test")`). The `test` profile (`src/test/resources/application-test.properties`) uses in-memory H2, so no database or `.env` is needed. The base class mints real JWTs (`tokenFor(username, role)`), finds or creates test machines (`machine(...)`), and has request helpers. Test data outlives each test, so give a test that changes shared data its own machine/exercise.
+- `mvn test -Dtest='HelpRequest*,HelpDemoLinksTest,AdminHelpRequestServiceTest'` runs the help request suite; `UrecLiveBackendApplicationTests.contextLoads` still needs the real DB env vars.
+- API smoke test against a running server: `scripts/smoke-test-help-requests.sh` (see `HELP_REQUESTS_TESTING.md`)
