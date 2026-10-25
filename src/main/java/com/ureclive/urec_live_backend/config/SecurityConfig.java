@@ -69,6 +69,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     AntPathRequestMatcher.antMatcher("/api/auth/register"),
                     AntPathRequestMatcher.antMatcher("/api/auth/login"),
+                    AntPathRequestMatcher.antMatcher("/api/auth/google"),
                     AntPathRequestMatcher.antMatcher("/api/auth/refresh"),
                     AntPathRequestMatcher.antMatcher("/api/auth/test")
                 ).permitAll()

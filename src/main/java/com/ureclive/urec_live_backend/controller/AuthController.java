@@ -2,9 +2,13 @@ package com.ureclive.urec_live_backend.controller;
 
 import com.ureclive.urec_live_backend.dto.AuthResponse;
 import com.ureclive.urec_live_backend.dto.LoginRequest;
+import com.ureclive.urec_live_backend.dto.GoogleAuthRequest;
 import com.ureclive.urec_live_backend.dto.RefreshTokenRequest;
 import com.ureclive.urec_live_backend.dto.RegisterRequest;
 import com.ureclive.urec_live_backend.service.AuthService;
+import com.ureclive.urec_live_backend.service.GoogleAuthService;
+import com.ureclive.urec_live_backend.security.GoogleSignInException;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +23,9 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private GoogleAuthService googleAuthService;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest) {
@@ -37,6 +44,20 @@ public class AuthController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<?> googleLogin(@Valid @RequestBody GoogleAuthRequest request) {
+        try {
+            return ResponseEntity.ok(googleAuthService.login(request.getIdToken()));
+        } catch (GoogleSignInException exception) {
+            HttpStatus status = switch (exception.getReason()) {
+                case NOT_CONFIGURED -> HttpStatus.SERVICE_UNAVAILABLE;
+                case ACCOUNT_CONFLICT -> HttpStatus.CONFLICT;
+                case REJECTED -> HttpStatus.UNAUTHORIZED;
+            };
+            return ResponseEntity.status(status).body(Map.of("error", exception.getMessage()));
         }
     }
 
