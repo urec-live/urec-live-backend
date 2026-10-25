@@ -34,6 +34,9 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(unique = true)
+    private String googleSubject;
+
     @ManyToMany(fetch = jakarta.persistence.FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
         name = "user_roles",
@@ -96,6 +99,14 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getGoogleSubject() {
+        return googleSubject;
+    }
+
+    public void setGoogleSubject(String googleSubject) {
+        this.googleSubject = googleSubject;
     }
 
     public Set<Role> getRoles() {
