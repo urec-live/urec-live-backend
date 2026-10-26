@@ -24,7 +24,14 @@ Branch `minor-fixes-and-speed-ups`, here and in `urec-live-app`. The app side (s
 mvn test
 ```
 
-You should see `Tests run: 213, Failures: 0`, including 9 from this branch. The branch now includes main as of PR #16 (equipment issue reports). As before, `UrecLiveBackendApplicationTests.contextLoads` connects to the database in `application.properties`; everything else runs on in-memory H2. Run it in a terminal where `.env` isn't loaded: TERMINAL 1's `SPRING_DATASOURCE_URL` overrides the tests' H2 database, and the integration tests then fail to start.
+You should see `Tests run: 213, Failures: 0`, including 9 from this branch. The branch now includes main as of PR #20. Everything but `UrecLiveBackendApplicationTests.contextLoads` runs on in-memory H2. Since main stopped keeping database defaults in `application.properties`, that one test needs the `.env` values, while the others need them *not* set (TERMINAL 1's `SPRING_DATASOURCE_URL` overrides the tests' H2 database). So run the two parts separately:
+
+```bash
+# A Git Bash window that hasn't loaded .env: 212 tests
+mvn test -Dtest='!UrecLiveBackendApplicationTests' -Dsurefire.failIfNoSpecifiedTests=false
+# Then with .env loaded (as in TERMINAL 1): the 1 remaining test
+mvn test -Dtest=UrecLiveBackendApplicationTests
+```
 
 | File | What it covers |
 |---|---|

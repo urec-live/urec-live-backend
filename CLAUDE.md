@@ -1,3 +1,7 @@
+## Shared team workflow
+
+Read `TEAM_WORKFLOW.md` before making changes. It defines the shared setup, task ownership, verification, and handoff rules for Codex and Claude Code. Verify architecture notes against source and stay within the current task. Work priorities come from current task instructions.
+
 # CLAUDE.md — UREC Live Backend
 
 ## Project Overview
@@ -14,7 +18,7 @@ UREC Live is a cross-platform gym management and fitness tracking platform targe
 - **Revenue model**: B2B SaaS — gyms pay monthly, users use for free
 - **First customer target**: University rec center (free pilot to prove value)
 - **Competitive moat**: Real-time equipment availability via QR scanning
-- **Current stage**: MVP feature-complete. Admin dashboard API, session persistence, and analytics are all built.
+- **Current source scope**: Core member/admin APIs plus help requests, equipment issues, plans, progress, floor maps, social profiles, badges, leagues, and messaging. Source presence is not proof of deployed or end-to-end client support.
 
 ---
 
@@ -31,7 +35,7 @@ UREC Live is a cross-platform gym management and fitness tracking platform targe
 
 ### Database Schema
 
-Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exercise`, `workout_sessions`, `workout_sets`, `activity_log`, `equipment_issue_reports`, `help_requests`
+Core tables include `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exercise`, `workout_sessions`, `workout_sets`, `workout_plans`, `day_plans`, `day_plan_items`, `floor_plans`, `activity_log`, `equipment_issue_reports`, `help_requests`, `user_badges`, `user_league_scores`, `community_messages`, and `direct_messages`.
 
 - Schema auto-managed via `spring.jpa.hibernate.ddl-auto=update`
 - `DataInitializer` seeds 40+ exercises across all muscle groups on first startup
@@ -39,7 +43,7 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 
 ### Entities
 
-- **User** — username, email, password (BCrypt), roles (M2M)
+- **User** — username, email, password (BCrypt), roles (M2M), bio, and profile visibility
 - **Equipment** — name, code (QR), status (Available/In Use/Reserved/Out of Order — constants in `EquipmentStatuses`, compare case-insensitively), exercises (M2M), deleted flag. Only admins set Out of Order; it blocks check-ins.
 - **Exercise** — name, muscleGroup, gifUrl, equipment (M2M)
 - **Role** — ROLE_ADMIN, ROLE_USER
@@ -48,6 +52,10 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 - **ActivityLog** — eventType (CHECK_IN/CHECK_OUT, … ISSUE_REPORTED/ISSUE_STATUS_CHANGED/ISSUE_WITHDRAWN, HELP_REQUESTED/HELP_STATUS_CHANGED/HELP_CLOSED), username, description, equipmentName, timestamp
 - **EquipmentIssueReport** — equipment, reporter (User), severity (`IssueSeverity`: OUT_OF_ORDER/DAMAGED), description (10–1000 chars), status (`IssueStatus`: REPORTED → ACKNOWLEDGED → IN_PROGRESS → RESOLVED), reportedAt, updatedAt, resolvedAt, withdrawnAt (set when the member withdrew it as a mistake; it's then RESOLVED for good). One open report per member per machine (409 otherwise). Reports don't change `Equipment.status`, except that resolving the last open report on an Out of Order machine puts it back to Available.
 - **HelpRequest** — a member's "Call staff" at a machine: member, equipment, optional exercise, status (`HelpRequestStatus`: open REQUEST_RECEIVED/ON_THE_WAY/TOO_BUSY, closed RESOLVED/CANCELLED/EXPIRED), staff (who last responded), createdAt, updatedAt, firstResponseAt, closedAt, closedBy (`HelpRequestClosedBy`: STAFF/MEMBER/SYSTEM), `@Version`. One open request per member (409 otherwise). `HelpRequestExpiryJob` expires requests idle for 30 min.
+- **WorkoutPlan / DayPlan / DayPlanItem** — reusable weekly plans and ordered muscle-group targets
+- **FloorPlan** — floor metadata and equipment positions
+- **UserBadge / UserLeagueScore** — achievement and leaderboard state
+- **CommunityMessage / DirectMessage** — persisted community and one-to-one chat messages
 
 ---
 
@@ -79,6 +87,13 @@ Tables: `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exer
 | POST | `/api/sessions` | Save a completed workout session |
 | GET | `/api/sessions/me` | User's session history (paginated, default 20/page) |
 | GET | `/api/sessions/me/stats` | Aggregated stats (total sessions, duration, top exercises, sessions/week) |
+| GET | `/api/sessions/me/prs` | Personal records |
+| GET | `/api/sessions/me/prs/{exercise}/history` | Weight progression for one exercise |
+| GET | `/api/sessions/me/calendar` | Calendar activity |
+
+### Workout Plan Endpoints (Authenticated)
+
+`/api/plans` supports create, current-user listing, update, delete, today's plan, public-plan discovery, copying, and visibility changes. See `WorkoutPlanController` for the exact request contract.
 
 ### Equipment Issue Endpoints (Authenticated)
 
@@ -105,6 +120,16 @@ Members only ever see their own requests (someone else's id → 404), and the me
 
 `demos` (`HelpDemoLinks`): one entry per exercise (the member's, else up to 3 of the machine's, else the machine itself), each with `videoUrl`/`gifUrl` and `videoPlaceholder`/`gifPlaceholder` flags. Until real how-to media exist, every demo gets the placeholder video, and the placeholder GIF unless an admin set a real one (see Configuration).
 
+### Social, Achievement, and Messaging Endpoints
+
+- `/api/social/*` — public profiles, user search, and authenticated profile updates. The current `GET /api/social/users/*` security matcher also permits `/users/search`; narrow it if search should require authentication.
+- `/api/badges/me` — the authenticated user's badges.
+- `/api/league/me` and `/api/league/leaderboard` — league and leaderboard views.
+- `/api/messaging/*` — community history, direct-message history/inbox, and read state.
+- STOMP sends use `/app/chat.community.send` and `/app/chat.dm.send`; delivery uses `/topic/chat.community` and user queues.
+
+The checked-out mobile app does not yet consume these social/achievement/messaging APIs. It also calls `POST /api/chat` for an AI chatbot, but this backend has no matching endpoint.
+
 ### Admin Endpoints (ROLE_ADMIN only, `@PreAuthorize`)
 
 | Method | Endpoint | Description |
@@ -126,8 +151,9 @@ Members only ever see their own requests (someone else's id → 404), and the me
 | GET | `/api/admin/analytics/users?period=week\|month` | User activity metrics |
 | GET | `/api/admin/activity-log?page=0&size=20` | Recent activity feed |
 | GET | `/api/admin/users` | List all users (paginated) |
-| GET | `/api/admin/users/{id}` | User detail |
-| PUT | `/api/admin/users/{id}/role` | Change user role |
+| POST | `/api/admin/users` | Create user |
+| PUT | `/api/admin/users/{id}/roles` | Change user roles |
+| DELETE | `/api/admin/users/{id}` | Delete user |
 | GET | `/api/admin/equipment-issues?includeResolved=false` | Reports grouped by machine (not-working first) |
 | GET | `/api/admin/equipment-issues/summary` | Counts: reported, acknowledged, inProgress, affectedMachines |
 | PUT | `/api/admin/equipment-issues/{id}/status` | Set one report's status; 409 if the member withdrew it |
@@ -138,15 +164,17 @@ Members only ever see their own requests (someone else's id → 404), and the me
 | PUT | `/api/admin/help-requests/{id}/status` | `{status: ON_THE_WAY \| TOO_BUSY}`; other statuses → 400; closed → 409 |
 | POST | `/api/admin/help-requests/{id}/done` | "Done helping": closes it as RESOLVED by staff |
 
+`/api/admin/floor-plans` supports floor-plan CRUD, unassigned-equipment listing, bulk position updates, and removing equipment from a floor. `PUT /api/admin/equipment/{id}/position` updates one equipment position.
+
 Admin-made status changes (the out-of-order endpoint, `PUT /api/admin/equipment/{id}`, and the automatic return to service) go through `MachineStatusService`, which broadcasts to `/topic/machines` (after the same `CvAvailabilityService` pass as the machine endpoints) and logs `EQUIPMENT_OUT_OF_ORDER` / `EQUIPMENT_BACK_IN_SERVICE`.
 
 Role names are stored verbatim (the admin UI assigns `ADMIN`), so `hasRole('ADMIN')` only matches `ROLE_ADMIN`. `AdminUserController`, `AdminEquipmentIssueController` and `AdminHelpRequestController` accept both via `hasAuthority('ADMIN') or hasAuthority('ROLE_ADMIN')`. Clients poll the help request endpoints (every 5 s) rather than use the WebSocket.
 
 ### WebSocket
 
-- STOMP broker over SockJS at `/ws`
-- Broadcasts the updated machine (one `MachineDTO`, same shape as a `GET /api/machines` entry) to `/topic/machines` on every status change
-- All connected clients receive real-time equipment updates
+- STOMP broker over SockJS at `/ws`; `/topic` and `/queue` are broker prefixes.
+- Machine changes publish to `/topic/machines`, one `MachineDTO` per change (same shape as a `GET /api/machines` entry); community messages publish to `/topic/chat.community`; direct messages use user queues.
+- The HTTP handshake is public. A Bearer token on the STOMP `CONNECT` frame is validated by `StompAuthChannelInterceptor` and establishes the messaging principal.
 
 ---
 
@@ -158,6 +186,7 @@ src/main/java/com/ureclive/urec_live_backend/
 │   ├── AuthController.java
 │   ├── MachineController.java
 │   ├── WorkoutSessionController.java
+│   ├── WorkoutPlanController.java
 │   ├── AdminEquipmentController.java
 │   ├── AdminExerciseController.java
 │   ├── AdminAnalyticsController.java
@@ -165,7 +194,10 @@ src/main/java/com/ureclive/urec_live_backend/
 │   ├── EquipmentIssueController.java       # member issue reporting
 │   ├── AdminEquipmentIssueController.java  # admin Equipment Issues view
 │   ├── HelpRequestController.java          # member "Call staff"
-│   └── AdminHelpRequestController.java     # staff queue
+│   ├── AdminHelpRequestController.java     # staff queue
+│   ├── AdminFloorPlanController.java
+│   ├── SocialController.java, BadgeController.java, LeagueController.java
+│   └── ChatMessagingController.java
 ├── service/
 │   ├── AuthService.java
 │   ├── AdminEquipmentService.java
@@ -178,26 +210,33 @@ src/main/java/com/ureclive/urec_live_backend/
 │   ├── MachineStatusService.java   # admin status changes: save + broadcast + log
 │   ├── HelpRequestService.java, AdminHelpRequestService.java
 │   ├── HelpDemoLinks.java          # demo media (placeholders for now)
-│   └── HelpRequestExpiryJob.java   # @Scheduled: expires idle requests
+│   ├── HelpRequestExpiryJob.java   # @Scheduled: expires idle requests
+│   ├── WorkoutPlanService.java, BadgeService.java, LeagueService.java
+│   └── CvAvailabilityService.java
 ├── entity/
 │   ├── User.java, Equipment.java, Exercise.java, Role.java
 │   ├── WorkoutSession.java, WorkoutSet.java, ActivityLog.java
 │   ├── EquipmentIssueReport.java, IssueSeverity.java, IssueStatus.java
 │   ├── EquipmentStatuses.java      # Equipment.status values, isOutOfOrder()
 │   ├── HelpRequest.java, HelpRequestStatus.java, HelpRequestClosedBy.java
+│   ├── WorkoutPlan.java, DayPlan.java, DayPlanItem.java, FloorPlan.java
+│   ├── UserBadge.java, UserLeagueScore.java
+│   └── CommunityMessage.java, DirectMessage.java
 ├── repository/
 │   ├── UserRepository.java, EquipmentRepository.java
 │   ├── ExerciseRepository.java, RoleRepository.java
 │   ├── WorkoutSessionRepository.java, WorkoutSetRepository.java
 │   ├── ActivityLogRepository.java
 │   ├── EquipmentIssueReportRepository.java
-│   └── HelpRequestRepository.java
+│   ├── HelpRequestRepository.java
+│   └── plan, floor-plan, badge, league, and messaging repositories
 ├── dto/              # Request + response objects for every endpoint
 ├── security/
 │   ├── JwtUtil.java, JwtAuthenticationFilter.java
 │   └── CustomUserDetailsService.java
 ├── config/
 │   ├── WebSocketConfig.java, SecurityConfig.java, CorsConfig.java
+│   ├── StompAuthChannelInterceptor.java
 │   └── SchedulingConfig.java   # @EnableScheduling
 └── DataInitializer.java
 ```
@@ -235,40 +274,18 @@ mvn spring-boot:run
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-Connects to Neon PostgreSQL (see `application.properties`). DataInitializer seeds exercise data on first run.
+Connects through the configured PostgreSQL environment values. `DataInitializer` seeds exercise data on first run. Do not point local startup at production.
 
 ---
 
 ## Configuration
 
-`src/main/resources/application.properties`:
-- DB: `jdbc:postgresql://ep-twilight-surf-adiwldgq-pooler.c-2.us-east-1.aws.neon.tech/...` (Neon)
-- `server.address=0.0.0.0`, `server.port=8080`
-- JWT: 24h access token expiry, 7d refresh token expiry
-- `spring.jpa.properties.hibernate.default_batch_fetch_size=100`: lazy collections (each machine's exercises) load for up to 100 parents in one query. Without it, listing machines ran one Neon round trip per machine (~1.7 s for 95). `MachineApiIntegrationTest` fails if that comes back.
+`src/main/resources/application.properties` expects database and JWT values from the environment, binds to `0.0.0.0:8080` by default, and configures 24-hour access tokens plus seven-day refresh tokens. Check `.env.example` for variable names; never document or print values.
+
+The CV adapter is controlled by `APP_CV_SECONDARY_ENABLED`, `APP_CV_SECONDARY_BASE_URL`, `APP_CV_SECONDARY_CONFIDENCE_THRESHOLD`, and `APP_CV_SECONDARY_CACHE_TTL_MS`.
+
+`spring.jpa.properties.hibernate.default_batch_fetch_size=100`: lazy collections (each machine's exercises) load for up to 100 parents in one query. Without it, listing machines ran one database round trip per machine (~1.7 s for 95 on Neon). `MachineApiIntegrationTest` fails if that comes back.
 
 Help requests (defaults live in the `@Value` annotations, so nothing is needed in `application.properties`):
 - `app.help-requests.expire-after-minutes` (30) and `app.help-requests.expiry-check-ms` (60000)
 - `app.help-requests.placeholder-video-url` and `app.help-requests.placeholder-gif-url`: the placeholder demo media (an MDN sample MP4 and a "Coming soon" GIF). A blank value switches that placeholder off. As environment variables: `APP_HELPREQUESTS_PLACEHOLDERVIDEOURL`, `APP_HELPREQUESTS_PLACEHOLDERGIFURL`.
-
----
-
-## What Needs to Be Built Next
-
-### Priority 1: Multi-Tenancy Foundation (Phase 3 prep)
-Not urgent, but for new tables consider adding a `gym_id` column now to avoid a painful migration later. Eventually equipment, exercises, and users will be scoped to a gym tenant.
-
-### Priority 2: Export Endpoints
-- `GET /api/admin/equipment/export` — CSV export of equipment list (planned, not yet built)
-
-### Priority 3: Push Notification Infrastructure (Phase 2)
-- Device token registration endpoint for push notifications
-
----
-
-## Project Roadmap
-
-- **Phase 1 (NOW — mostly complete)**: MVP backend is feature-complete
-- **Phase 2**: AI workout plans (Claude API), smartwatch sync, push notifications
-- **Phase 3**: Multi-tenant SaaS, billing (Stripe), chatbot
-- **Phase 4**: CCTV computer vision, trainer marketplace, API platform
