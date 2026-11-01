@@ -1,18 +1,19 @@
 package com.ureclive.urec_live_backend.controller;
 
-import com.ureclive.urec_live_backend.entity.Equipment;
-import com.ureclive.urec_live_backend.entity.EquipmentStatuses;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.test.web.servlet.ResultActions;
-
-import java.util.Map;
-
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.ureclive.urec_live_backend.entity.Equipment;
+import com.ureclive.urec_live_backend.entity.EquipmentStatuses;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.web.servlet.ResultActions;
+
+import java.util.Map;
 
 /**
  * Out-of-order machines end to end: the admin switch, the Equipment page, the member check-in rules
@@ -28,8 +29,8 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
 
     private String memberToken;
     private String otherMemberToken;
-    private String adminToken;          // role "ADMIN", which the admin dashboard assigns
-    private String prefixedAdminToken;  // role "ROLE_ADMIN"
+    private String adminToken; // role "ADMIN", which the admin dashboard assigns
+    private String prefixedAdminToken; // role "ROLE_ADMIN"
 
     @BeforeEach
     void setUp() {
@@ -52,8 +53,11 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(legPress.getId().intValue()))
                 .andExpect(jsonPath("$.status").value(OUT_OF_ORDER));
-        // Members see it on the public machine endpoints
-        mvc.perform(get("/api/machines/" + legPress.getId())).andExpect(jsonPath("$.status").value(OUT_OF_ORDER));
+        // Connected members see it on the authenticated machine endpoints
+        mvc.perform(
+                        get("/api/machines/" + legPress.getId())
+                                .header("Authorization", bearer(memberToken)))
+                .andExpect(jsonPath("$.status").value(OUT_OF_ORDER));
 
         setOutOfOrder(prefixedAdminToken, legPress, false)
                 .andExpect(status().isOk())
@@ -64,7 +68,8 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
     @Test
     void membersCantUseTheAdminSwitch() throws Exception {
         setOutOfOrder(memberToken, legPress, true).andExpect(status().isForbidden());
-        putJsonAs(null, outOfOrderUrl(legPress), Map.of("outOfOrder", true)).andExpect(status().isUnauthorized());
+        putJsonAs(null, outOfOrderUrl(legPress), Map.of("outOfOrder", true))
+                .andExpect(status().isUnauthorized());
 
         assertEquals(AVAILABLE, storedStatus(legPress));
     }
@@ -72,7 +77,10 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
     @Test
     void theSwitchRejectsBadRequestsAndUnknownMachines() throws Exception {
         putJsonAs(adminToken, outOfOrderUrl(legPress), Map.of()).andExpect(status().isBadRequest());
-        putJsonAs(adminToken, ADMIN_API + "/equipment/999999/out-of-order", Map.of("outOfOrder", true))
+        putJsonAs(
+                        adminToken,
+                        ADMIN_API + "/equipment/999999/out-of-order",
+                        Map.of("outOfOrder", true))
                 .andExpect(status().isNotFound());
         Equipment removed = machine("OO-RM", "OO Removed Rower", true);
         setOutOfOrder(adminToken, removed, true).andExpect(status().isNotFound());
@@ -97,9 +105,12 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
 
         memberSetsStatus("/" + legPress.getId(), "In Use").andExpect(status().isConflict());
         memberSetsStatus("/code/" + legPress.getCode(), "In Use").andExpect(status().isConflict());
-        // These endpoints don't require a login, so check that path too (and the case-insensitive match)
-        putJsonAs(null, "/api/machines/code/" + legPress.getCode() + "/status", Map.of("status", "in use"))
-                .andExpect(status().isConflict());
+        // Anonymous callers cannot mutate equipment.
+        putJsonAs(
+                        null,
+                        "/api/machines/code/" + legPress.getCode() + "/status",
+                        Map.of("status", "in use"))
+                .andExpect(status().isUnauthorized());
 
         assertEquals(OUT_OF_ORDER, storedStatus(legPress));
     }
@@ -119,9 +130,13 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
     @Test
     void membersCantMarkAMachineOutOfOrderThemselves() throws Exception {
         memberSetsStatus("/" + legPress.getId(), "Out of Order").andExpect(status().isForbidden());
-        memberSetsStatus("/code/" + legPress.getCode(), "  out of order ").andExpect(status().isForbidden());
-        putJsonAs(null, "/api/machines/" + legPress.getId() + "/status", Map.of("status", "OUT OF ORDER"))
+        memberSetsStatus("/code/" + legPress.getCode(), "  out of order ")
                 .andExpect(status().isForbidden());
+        putJsonAs(
+                        null,
+                        "/api/machines/" + legPress.getId() + "/status",
+                        Map.of("status", "OUT OF ORDER"))
+                .andExpect(status().isUnauthorized());
 
         assertEquals(AVAILABLE, storedStatus(legPress));
     }
@@ -140,12 +155,18 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
 
     @Test
     void theEquipmentPageCanTakeAMachineOutOfServiceAndBringItBack() throws Exception {
-        putJsonAs(prefixedAdminToken, "/api/admin/equipment/" + bench.getId(), Map.of("status", OUT_OF_ORDER))
+        putJsonAs(
+                        prefixedAdminToken,
+                        "/api/admin/equipment/" + bench.getId(),
+                        Map.of("status", OUT_OF_ORDER))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(OUT_OF_ORDER));
         memberSetsStatus("/" + bench.getId(), "In Use").andExpect(status().isConflict());
 
-        putJsonAs(prefixedAdminToken, "/api/admin/equipment/" + bench.getId(), Map.of("status", AVAILABLE))
+        putJsonAs(
+                        prefixedAdminToken,
+                        "/api/admin/equipment/" + bench.getId(),
+                        Map.of("status", AVAILABLE))
                 .andExpect(status().isOk());
         memberSetsStatus("/" + bench.getId(), "In Use").andExpect(status().isOk());
     }
@@ -157,7 +178,8 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
         long reportId = fileReport(memberToken, legPress, "OUT_OF_ORDER");
         setOutOfOrder(adminToken, legPress, true).andExpect(status().isOk());
 
-        putStatusAs(adminToken, ADMIN_API + "/" + reportId + "/status", "RESOLVED").andExpect(status().isOk());
+        putStatusAs(adminToken, ADMIN_API + "/" + reportId + "/status", "RESOLVED")
+                .andExpect(status().isOk());
 
         assertEquals(AVAILABLE, storedStatus(legPress));
         memberSetsStatus("/" + legPress.getId(), "In Use").andExpect(status().isOk());
@@ -183,10 +205,12 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
         long second = fileReport(otherMemberToken, legPress, "DAMAGED");
         setOutOfOrder(adminToken, legPress, true).andExpect(status().isOk());
 
-        putStatusAs(adminToken, ADMIN_API + "/" + first + "/status", "RESOLVED").andExpect(status().isOk());
+        putStatusAs(adminToken, ADMIN_API + "/" + first + "/status", "RESOLVED")
+                .andExpect(status().isOk());
         assertEquals(OUT_OF_ORDER, storedStatus(legPress));
 
-        putStatusAs(adminToken, ADMIN_API + "/" + second + "/status", "RESOLVED").andExpect(status().isOk());
+        putStatusAs(adminToken, ADMIN_API + "/" + second + "/status", "RESOLVED")
+                .andExpect(status().isOk());
         assertEquals(AVAILABLE, storedStatus(legPress));
     }
 
@@ -196,7 +220,10 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
         fileReport(otherMemberToken, legPress, "DAMAGED");
         setOutOfOrder(adminToken, legPress, true).andExpect(status().isOk());
 
-        putStatusAs(adminToken, ADMIN_API + "/equipment/" + legPress.getId() + "/status", "RESOLVED")
+        putStatusAs(
+                        adminToken,
+                        ADMIN_API + "/equipment/" + legPress.getId() + "/status",
+                        "RESOLVED")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.openReportCount").value(0))
                 .andExpect(jsonPath("$.equipmentStatus").value(AVAILABLE));
@@ -209,7 +236,8 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
         long reportId = fileReport(memberToken, legPress, "DAMAGED");
         memberSetsStatus("/" + legPress.getId(), "In Use").andExpect(status().isOk());
 
-        putStatusAs(adminToken, ADMIN_API + "/" + reportId + "/status", "RESOLVED").andExpect(status().isOk());
+        putStatusAs(adminToken, ADMIN_API + "/" + reportId + "/status", "RESOLVED")
+                .andExpect(status().isOk());
 
         assertEquals("In Use", storedStatus(legPress));
     }
@@ -217,9 +245,11 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
     @Test
     void reopeningAReportDoesNotTakeTheMachineOutOfService() throws Exception {
         long reportId = fileReport(memberToken, legPress, "OUT_OF_ORDER");
-        putStatusAs(adminToken, ADMIN_API + "/" + reportId + "/status", "RESOLVED").andExpect(status().isOk());
+        putStatusAs(adminToken, ADMIN_API + "/" + reportId + "/status", "RESOLVED")
+                .andExpect(status().isOk());
 
-        putStatusAs(adminToken, ADMIN_API + "/" + reportId + "/status", "IN_PROGRESS").andExpect(status().isOk());
+        putStatusAs(adminToken, ADMIN_API + "/" + reportId + "/status", "IN_PROGRESS")
+                .andExpect(status().isOk());
 
         assertEquals(AVAILABLE, storedStatus(legPress));
     }
@@ -253,17 +283,23 @@ class OutOfOrderIntegrationTest extends ApiIntegrationTestSupport {
         return ADMIN_API + "/equipment/" + equipment.getId() + "/out-of-order";
     }
 
-    private ResultActions setOutOfOrder(String token, Equipment equipment, boolean outOfOrder) throws Exception {
+    private ResultActions setOutOfOrder(String token, Equipment equipment, boolean outOfOrder)
+            throws Exception {
         return putJsonAs(token, outOfOrderUrl(equipment), Map.of("outOfOrder", outOfOrder));
     }
 
     /** The member-facing check-in/check-out endpoint, as the app calls it. */
     private ResultActions memberSetsStatus(String machinePath, String status) throws Exception {
-        return putJsonAs(memberToken, "/api/machines" + machinePath + "/status", Map.of("status", status));
+        return putJsonAs(
+                memberToken, "/api/machines" + machinePath + "/status", Map.of("status", status));
     }
 
     private long outOfOrderMachines() throws Exception {
-        String summary = getAs(adminToken, ADMIN_API + "/summary").andReturn().getResponse().getContentAsString();
+        String summary =
+                getAs(adminToken, ADMIN_API + "/summary")
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
         return objectMapper.readTree(summary).get("outOfOrderMachines").asLong();
     }
 }

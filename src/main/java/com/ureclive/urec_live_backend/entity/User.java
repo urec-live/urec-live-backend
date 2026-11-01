@@ -1,9 +1,5 @@
 package com.ureclive.urec_live_backend.entity;
 
-import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,9 +14,34 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "users")
 public class User {
+    @jakarta.persistence.ElementCollection
+    @jakarta.persistence.CollectionTable(
+            name = "user_gym_connections",
+            joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "gym_id")
+    private Set<Long> previousGymIds = new HashSet<>();
+
+    public Set<Long> getPreviousGymIds() {
+        return previousGymIds;
+    }
+
+    private Long connectedGymId;
+
+    public Long getConnectedGymId() {
+        return connectedGymId;
+    }
+
+    public void setConnectedGymId(Long value) {
+        connectedGymId = value;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -37,12 +58,13 @@ public class User {
     @Column(unique = true)
     private String googleSubject;
 
-    @ManyToMany(fetch = jakarta.persistence.FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany(
+            fetch = jakarta.persistence.FetchType.EAGER,
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
-        name = "user_roles",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles = new HashSet<>();
 
     @Column(nullable = false)
@@ -59,7 +81,9 @@ public class User {
     private Instant createdAt;
 
     @PrePersist
-    void onCreate() { this.createdAt = Instant.now(); }
+    void onCreate() {
+        this.createdAt = Instant.now();
+    }
 
     public User() {}
 
@@ -129,13 +153,28 @@ public class User {
         this.enabled = enabled;
     }
 
-    public ProfileVisibility getProfileVisibility() { return profileVisibility; }
-    public void setProfileVisibility(ProfileVisibility profileVisibility) { this.profileVisibility = profileVisibility; }
+    public ProfileVisibility getProfileVisibility() {
+        return profileVisibility;
+    }
 
-    public String getBio() { return bio; }
-    public void setBio(String bio) { this.bio = bio; }
+    public void setProfileVisibility(ProfileVisibility profileVisibility) {
+        this.profileVisibility = profileVisibility;
+    }
 
-    public Instant getCreatedAt() { return createdAt; }
+    public String getBio() {
+        return bio;
+    }
 
-    public enum ProfileVisibility { PRIVATE, PUBLIC }
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public enum ProfileVisibility {
+        PRIVATE,
+        PUBLIC
+    }
 }

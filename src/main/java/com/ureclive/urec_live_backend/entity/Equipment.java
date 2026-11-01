@@ -1,24 +1,35 @@
 package com.ureclive.urec_live_backend.entity;
 
 import jakarta.persistence.*;
+
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "equipment")
 public class Equipment {
+    private Long gymId;
+
+    public Long getGymId() {
+        return gymId;
+    }
+
+    public void setGymId(Long value) {
+        gymId = value;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(unique = true)
-    private String code;  // Unique code for QR scanning
+    private String code; // Unique code for QR scanning
 
     @Column(nullable = false)
     private String name;
 
     @Column(nullable = false)
-    private String status;  // Available, In Use, Reserved
+    private String status; // Available, In Use, Reserved
 
     @Column(length = 500)
     private String imageUrl;
@@ -41,10 +52,9 @@ public class Equipment {
 
     @ManyToMany
     @JoinTable(
-        name = "equipment_exercise",
-        joinColumns = @JoinColumn(name = "equipment_id"),
-        inverseJoinColumns = @JoinColumn(name = "exercise_id")
-    )
+            name = "equipment_exercise",
+            joinColumns = @JoinColumn(name = "equipment_id"),
+            inverseJoinColumns = @JoinColumn(name = "exercise_id"))
     private Set<Exercise> exercises = new HashSet<>();
 
     public Equipment() {}
@@ -57,23 +67,53 @@ public class Equipment {
     }
 
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getCode() {
+        return code;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public void setCode(String code) {
+        this.code = code;
+    }
 
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getName() {
+        return name;
+    }
 
-    public Set<Exercise> getExercises() { return exercises; }
-    public void setExercises(Set<Exercise> exercises) { this.exercises = exercises; }
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public Set<Exercise> getExercises() {
+        return exercises;
+    }
+
+    public void setExercises(Set<Exercise> exercises) {
+        this.exercises = exercises;
+    }
 
     public void addExercise(Exercise exercise) {
         this.exercises.add(exercise);
@@ -85,18 +125,43 @@ public class Equipment {
         exercise.getEquipment().remove(this);
     }
 
-    public boolean isDeleted() { return deleted; }
-    public void setDeleted(boolean deleted) { this.deleted = deleted; }
+    public boolean isDeleted() {
+        return deleted;
+    }
 
-    public Double getFloorX() { return floorX; }
-    public void setFloorX(Double floorX) { this.floorX = floorX; }
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
 
-    public Double getFloorY() { return floorY; }
-    public void setFloorY(Double floorY) { this.floorY = floorY; }
+    public Double getFloorX() {
+        return floorX;
+    }
 
-    public String getFloorLabel() { return floorLabel; }
-    public void setFloorLabel(String floorLabel) { this.floorLabel = floorLabel; }
+    public void setFloorX(Double floorX) {
+        this.floorX = floorX;
+    }
 
-    public FloorPlan getFloorPlan() { return floorPlan; }
-    public void setFloorPlan(FloorPlan floorPlan) { this.floorPlan = floorPlan; }
+    public Double getFloorY() {
+        return floorY;
+    }
+
+    public void setFloorY(Double floorY) {
+        this.floorY = floorY;
+    }
+
+    public String getFloorLabel() {
+        return floorLabel;
+    }
+
+    public void setFloorLabel(String floorLabel) {
+        this.floorLabel = floorLabel;
+    }
+
+    public FloorPlan getFloorPlan() {
+        return floorPlan;
+    }
+
+    public void setFloorPlan(FloorPlan floorPlan) {
+        this.floorPlan = floorPlan;
+    }
 }

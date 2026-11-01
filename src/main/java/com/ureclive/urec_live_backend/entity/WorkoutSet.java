@@ -23,18 +23,63 @@ public class WorkoutSet {
 
     public WorkoutSet() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    private Integer durationSeconds;
 
-    public WorkoutSession getSession() { return session; }
-    public void setSession(WorkoutSession session) { this.session = session; }
+    public Integer getDurationSeconds() {
+        return durationSeconds;
+    }
 
-    public Integer getSetNumber() { return setNumber; }
-    public void setSetNumber(Integer setNumber) { this.setNumber = setNumber; }
+    public void setDurationSeconds(Integer v) {
+        durationSeconds = v;
+    }
 
-    public Integer getReps() { return reps; }
-    public void setReps(Integer reps) { this.reps = reps; }
+    private Double distanceMeters;
 
-    public Double getWeightLbs() { return weightLbs; }
-    public void setWeightLbs(Double weightLbs) { this.weightLbs = weightLbs; }
+    public Double getDistanceMeters() {
+        return distanceMeters;
+    }
+
+    public void setDistanceMeters(Double v) {
+        distanceMeters = v;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public WorkoutSession getSession() {
+        return session;
+    }
+
+    public void setSession(WorkoutSession session) {
+        this.session = session;
+    }
+
+    public Integer getSetNumber() {
+        return setNumber;
+    }
+
+    public void setSetNumber(Integer setNumber) {
+        this.setNumber = setNumber;
+    }
+
+    public Integer getReps() {
+        return reps;
+    }
+
+    public void setReps(Integer reps) {
+        this.reps = reps;
+    }
+
+    public Double getWeightLbs() {
+        return weightLbs;
+    }
+
+    public void setWeightLbs(Double weightLbs) {
+        this.weightLbs = weightLbs;
+    }
 }

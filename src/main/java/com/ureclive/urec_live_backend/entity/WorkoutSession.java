@@ -1,12 +1,15 @@
 package com.ureclive.urec_live_backend.entity;
 
 import jakarta.persistence.*;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "workout_sessions")
+@Table(
+        name = "workout_sessions",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "client_session_id"}))
 public class WorkoutSession {
 
     @Id
@@ -38,39 +41,104 @@ public class WorkoutSession {
     @Column(length = 1000)
     private String notes;
 
-    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(
+            mappedBy = "session",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.EAGER)
     @OrderBy("setNumber ASC")
     private List<WorkoutSet> sets = new ArrayList<>();
 
     public WorkoutSession() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    @Column(name = "client_session_id", length = 80)
+    private String clientSessionId;
 
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public String getClientSessionId() {
+        return clientSessionId;
+    }
 
-    public Equipment getMachine() { return machine; }
-    public void setMachine(Equipment machine) { this.machine = machine; }
+    public void setClientSessionId(String v) {
+        clientSessionId = v;
+    }
 
-    public Exercise getExercise() { return exercise; }
-    public void setExercise(Exercise exercise) { this.exercise = exercise; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getMuscleGroup() { return muscleGroup; }
-    public void setMuscleGroup(String muscleGroup) { this.muscleGroup = muscleGroup; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public Instant getStartedAt() { return startedAt; }
-    public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
+    public User getUser() {
+        return user;
+    }
 
-    public Instant getEndedAt() { return endedAt; }
-    public void setEndedAt(Instant endedAt) { this.endedAt = endedAt; }
+    public void setUser(User user) {
+        this.user = user;
+    }
 
-    public Integer getDurationSeconds() { return durationSeconds; }
-    public void setDurationSeconds(Integer durationSeconds) { this.durationSeconds = durationSeconds; }
+    public Equipment getMachine() {
+        return machine;
+    }
 
-    public String getNotes() { return notes; }
-    public void setNotes(String notes) { this.notes = notes; }
+    public void setMachine(Equipment machine) {
+        this.machine = machine;
+    }
 
-    public List<WorkoutSet> getSets() { return sets; }
-    public void setSets(List<WorkoutSet> sets) { this.sets = sets; }
+    public Exercise getExercise() {
+        return exercise;
+    }
+
+    public void setExercise(Exercise exercise) {
+        this.exercise = exercise;
+    }
+
+    public String getMuscleGroup() {
+        return muscleGroup;
+    }
+
+    public void setMuscleGroup(String muscleGroup) {
+        this.muscleGroup = muscleGroup;
+    }
+
+    public Instant getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(Instant startedAt) {
+        this.startedAt = startedAt;
+    }
+
+    public Instant getEndedAt() {
+        return endedAt;
+    }
+
+    public void setEndedAt(Instant endedAt) {
+        this.endedAt = endedAt;
+    }
+
+    public Integer getDurationSeconds() {
+        return durationSeconds;
+    }
+
+    public void setDurationSeconds(Integer durationSeconds) {
+        this.durationSeconds = durationSeconds;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public List<WorkoutSet> getSets() {
+        return sets;
+    }
+
+    public void setSets(List<WorkoutSet> sets) {
+        this.sets = sets;
+    }
 }

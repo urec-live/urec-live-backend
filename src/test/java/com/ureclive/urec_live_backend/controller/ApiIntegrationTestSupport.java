@@ -1,5 +1,10 @@
 package com.ureclive.urec_live_backend.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ureclive.urec_live_backend.entity.Equipment;
 import com.ureclive.urec_live_backend.entity.EquipmentStatuses;
@@ -11,6 +16,7 @@ import com.ureclive.urec_live_backend.repository.RoleRepository;
 import com.ureclive.urec_live_backend.repository.UserRepository;
 import com.ureclive.urec_live_backend.security.CustomUserDetailsService;
 import com.ureclive.urec_live_backend.security.JwtUtil;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,11 +32,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 /**
  * Shared setup for API integration tests: boots the whole app (real controllers, JWT filter,
  * {@code @PreAuthorize}, validation and JPA queries) on in-memory H2 via the "test" profile, and
@@ -44,6 +45,7 @@ abstract class ApiIntegrationTestSupport {
     protected static final String MEMBER_API = "/api/equipment-issues";
     protected static final String ADMIN_API = "/api/admin/equipment-issues";
 
+    @Autowired private com.ureclive.urec_live_backend.repository.GymRepository gyms;
     @Autowired protected MockMvc mvc;
     @Autowired protected ObjectMapper objectMapper;
     @Autowired protected EquipmentIssueReportRepository issueReportRepository;
@@ -57,10 +59,14 @@ abstract class ApiIntegrationTestSupport {
 
     /** Finds or creates a machine and resets it to Available, removed or not as asked. */
     protected Equipment machine(String code, String name, boolean deleted) {
-        Equipment equipment = equipmentRepository.findByCode(code)
-                .orElseGet(() -> new Equipment(code, name, EquipmentStatuses.AVAILABLE, null));
+        Equipment equipment =
+                equipmentRepository
+                        .findByCode(code)
+                        .orElseGet(
+                                () -> new Equipment(code, name, EquipmentStatuses.AVAILABLE, null));
         equipment.setStatus(EquipmentStatuses.AVAILABLE);
         equipment.setDeleted(deleted);
+        equipment.setGymId(gyms.findByName("UREC").orElseThrow().getId());
         return equipmentRepository.save(equipment);
     }
 
@@ -71,15 +77,23 @@ abstract class ApiIntegrationTestSupport {
 
     protected String tokenFor(String username, String roleName) {
         // One transaction so an existing Role stays managed when the new User cascades to it
-        transactionTemplate.executeWithoutResult(tx -> {
-            if (userRepository.findByUsername(username).isEmpty()) {
-                Role role = roleRepository.findByName(roleName)
-                        .orElseGet(() -> roleRepository.save(new Role(roleName)));
-                User user = new User(username, username + "@example.com", passwordEncoder.encode("password"));
-                user.addRole(role);
-                userRepository.save(user);
-            }
-        });
+        transactionTemplate.executeWithoutResult(
+                tx -> {
+                    if (userRepository.findByUsername(username).isEmpty()) {
+                        Role role =
+                                roleRepository
+                                        .findByName(roleName)
+                                        .orElseGet(() -> roleRepository.save(new Role(roleName)));
+                        User user =
+                                new User(
+                                        username,
+                                        username + "@example.com",
+                                        passwordEncoder.encode("password"));
+                        user.addRole(role);
+                        user.setConnectedGymId(gyms.findByName("UREC").orElseThrow().getId());
+                        userRepository.save(user);
+                    }
+                });
         return jwtUtil.generateToken(userDetailsService.loadUserByUsername(username));
     }
 
@@ -96,22 +110,32 @@ abstract class ApiIntegrationTestSupport {
     }
 
     protected Map<String, Object> validReport(Equipment equipment) {
-        return fields("equipmentId", equipment.getId(),
-                      "severity", "DAMAGED",
-                      "description", "Something is clearly wrong with it");
+        return fields(
+                "equipmentId", equipment.getId(),
+                "severity", "DAMAGED",
+                "description", "Something is clearly wrong with it");
     }
 
-    protected MockHttpServletRequestBuilder json(MockHttpServletRequestBuilder request, Object body) throws Exception {
-        return request.contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(body));
+    protected MockHttpServletRequestBuilder json(MockHttpServletRequestBuilder request, Object body)
+            throws Exception {
+        return request.contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(body));
     }
 
     /** Files a report as the given member and returns its id. */
     protected long fileReport(String token, Equipment equipment, String severity) throws Exception {
         Map<String, Object> body = validReport(equipment);
         body.put("severity", severity);
-        String response = mvc.perform(json(post(MEMBER_API).header(HttpHeaders.AUTHORIZATION, bearer(token)), body))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
+        String response =
+                mvc.perform(
+                                json(
+                                        post(MEMBER_API)
+                                                .header(HttpHeaders.AUTHORIZATION, bearer(token)),
+                                        body))
+                        .andExpect(status().isCreated())
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
         return objectMapper.readTree(response).get("id").asLong();
     }
 
@@ -121,8 +145,9 @@ abstract class ApiIntegrationTestSupport {
 
     /** POST /api/equipment-issues/{id}/withdraw as the given member. */
     protected ResultActions withdrawAs(String token, long reportId) throws Exception {
-        return mvc.perform(post(MEMBER_API + "/" + reportId + "/withdraw")
-                .header(HttpHeaders.AUTHORIZATION, bearer(token)));
+        return mvc.perform(
+                post(MEMBER_API + "/" + reportId + "/withdraw")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(token)));
     }
 
     protected ResultActions putStatusAs(String token, String url, String status) throws Exception {

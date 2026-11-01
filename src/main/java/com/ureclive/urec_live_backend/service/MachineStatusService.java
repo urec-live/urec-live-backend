@@ -5,6 +5,7 @@ import com.ureclive.urec_live_backend.entity.Equipment;
 import com.ureclive.urec_live_backend.entity.EquipmentStatuses;
 import com.ureclive.urec_live_backend.entity.Exercise;
 import com.ureclive.urec_live_backend.repository.EquipmentRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -19,10 +20,11 @@ public class MachineStatusService {
     private final CvAvailabilityService cvAvailabilityService;
 
     @Autowired
-    public MachineStatusService(EquipmentRepository equipmentRepository,
-                                SimpMessagingTemplate messagingTemplate,
-                                ActivityLogService activityLogService,
-                                CvAvailabilityService cvAvailabilityService) {
+    public MachineStatusService(
+            EquipmentRepository equipmentRepository,
+            SimpMessagingTemplate messagingTemplate,
+            ActivityLogService activityLogService,
+            CvAvailabilityService cvAvailabilityService) {
         this.equipmentRepository = equipmentRepository;
         this.messagingTemplate = messagingTemplate;
         this.activityLogService = activityLogService;
@@ -30,31 +32,42 @@ public class MachineStatusService {
     }
 
     /**
-     * Saves the new status, pushes the machine to /topic/machines so open app and admin screens update
-     * live, and logs EQUIPMENT_OUT_OF_ORDER / EQUIPMENT_BACK_IN_SERVICE when the machine goes out of or
-     * comes back into service. Does nothing if the status is unchanged.
+     * Saves the new status, pushes the machine to /topic/machines so open app and admin screens
+     * update live, and logs EQUIPMENT_OUT_OF_ORDER / EQUIPMENT_BACK_IN_SERVICE when the machine
+     * goes out of or comes back into service. Does nothing if the status is unchanged.
      *
      * @param reason optional note for the activity log, e.g. "last open report resolved"
      */
-    public Equipment changeStatus(Equipment equipment, String newStatus, String actor, String reason) {
+    public Equipment changeStatus(
+            Equipment equipment, String newStatus, String actor, String reason) {
         String oldStatus = equipment.getStatus();
         if (newStatus.equals(oldStatus)) return equipment;
 
         equipment.setStatus(newStatus);
         Equipment saved = equipmentRepository.save(equipment);
-        // Same camera-availability pass as MachineController's machine endpoints, so live screens don't lose it
-        MachineDTO dto = cvAvailabilityService.applySecondaryStatus(new MachineDTO(saved, primaryExerciseName(saved)));
+        // Same camera-availability pass as MachineController's machine endpoints, so live screens
+        // don't lose it
+        MachineDTO dto =
+                cvAvailabilityService.applySecondaryStatus(
+                        new MachineDTO(saved, primaryExerciseName(saved)));
         messagingTemplate.convertAndSend("/topic/machines", dto);
+        messagingTemplate.convertAndSend("/topic/gyms/" + equipment.getGymId() + "/machines", dto);
 
         boolean wasOutOfOrder = EquipmentStatuses.isOutOfOrder(oldStatus);
         boolean isOutOfOrder = EquipmentStatuses.isOutOfOrder(newStatus);
         String note = reason != null ? " (" + reason + ")" : "";
         if (!wasOutOfOrder && isOutOfOrder) {
-            activityLogService.log("EQUIPMENT_OUT_OF_ORDER", actor,
-                    saved.getName() + " marked out of order" + note, saved.getName());
+            activityLogService.log(
+                    "EQUIPMENT_OUT_OF_ORDER",
+                    actor,
+                    saved.getName() + " marked out of order" + note,
+                    saved.getName());
         } else if (wasOutOfOrder && !isOutOfOrder) {
-            activityLogService.log("EQUIPMENT_BACK_IN_SERVICE", actor,
-                    saved.getName() + " back in service" + note, saved.getName());
+            activityLogService.log(
+                    "EQUIPMENT_BACK_IN_SERVICE",
+                    actor,
+                    saved.getName() + " back in service" + note,
+                    saved.getName());
         }
         return saved;
     }

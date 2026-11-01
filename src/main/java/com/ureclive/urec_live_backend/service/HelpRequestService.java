@@ -12,6 +12,7 @@ import com.ureclive.urec_live_backend.repository.EquipmentRepository;
 import com.ureclive.urec_live_backend.repository.ExerciseRepository;
 import com.ureclive.urec_live_backend.repository.HelpRequestRepository;
 import com.ureclive.urec_live_backend.repository.UserRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ import java.util.Optional;
 /** Member-facing side of "call staff" help requests. Members only ever see their own requests. */
 @Service
 public class HelpRequestService {
+    @org.springframework.beans.factory.annotation.Autowired private GymAccessService gymAccess;
 
     private final HelpRequestRepository helpRequestRepository;
     private final EquipmentRepository equipmentRepository;
@@ -35,12 +37,13 @@ public class HelpRequestService {
     private final HelpDemoLinks helpDemoLinks;
 
     @Autowired
-    public HelpRequestService(HelpRequestRepository helpRequestRepository,
-                              EquipmentRepository equipmentRepository,
-                              ExerciseRepository exerciseRepository,
-                              UserRepository userRepository,
-                              ActivityLogService activityLogService,
-                              HelpDemoLinks helpDemoLinks) {
+    public HelpRequestService(
+            HelpRequestRepository helpRequestRepository,
+            EquipmentRepository equipmentRepository,
+            ExerciseRepository exerciseRepository,
+            UserRepository userRepository,
+            ActivityLogService activityLogService,
+            HelpDemoLinks helpDemoLinks) {
         this.helpRequestRepository = helpRequestRepository;
         this.equipmentRepository = equipmentRepository;
         this.exerciseRepository = exerciseRepository;
@@ -50,23 +53,29 @@ public class HelpRequestService {
     }
 
     /**
-     * Calls staff to a machine. A member can have only one open request at a time, so a second
-     * one (or an accidental double tap) is rejected with 409.
+     * Calls staff to a machine. A member can have only one open request at a time, so a second one
+     * (or an accidental double tap) is rejected with 409.
      */
     @Transactional
     public HelpRequestResponse create(CreateHelpRequestRequest request, String username) {
         User member = findUser(username);
         Equipment equipment = findMachine(request);
+        if (gymAccess != null) gymAccess.require(equipment.getGymId());
 
         if (helpRequestRepository.existsByMemberAndStatusIn(member, HelpRequestStatus.OPEN)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "You already have an open help request");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "You already have an open help request");
         }
 
         Exercise exercise = resolveExercise(equipment, request.getExerciseName());
-        HelpRequest saved = helpRequestRepository.save(new HelpRequest(member, equipment, exercise));
+        HelpRequest saved =
+                helpRequestRepository.save(new HelpRequest(member, equipment, exercise));
 
-        activityLogService.log("HELP_REQUESTED", username,
-                "Asked for help at " + equipment.getName(), equipment.getName());
+        activityLogService.log(
+                "HELP_REQUESTED",
+                username,
+                "Asked for help at " + equipment.getName(),
+                equipment.getName());
         return toResponse(saved);
     }
 
@@ -89,7 +98,9 @@ public class HelpRequestService {
     @Transactional
     public HelpRequestResponse confirmReceived(Long id, String username) {
         HelpRequest request = closeOwned(id, username, HelpRequestStatus.RESOLVED);
-        activityLogService.log("HELP_CLOSED", username,
+        activityLogService.log(
+                "HELP_CLOSED",
+                username,
                 "Confirmed they received help at " + request.getEquipment().getName(),
                 request.getEquipment().getName());
         return toResponse(request);
@@ -99,7 +110,9 @@ public class HelpRequestService {
     @Transactional
     public HelpRequestResponse cancel(Long id, String username) {
         HelpRequest request = closeOwned(id, username, HelpRequestStatus.CANCELLED);
-        activityLogService.log("HELP_CLOSED", username,
+        activityLogService.log(
+                "HELP_CLOSED",
+                username,
                 "Cancelled their help request at " + request.getEquipment().getName(),
                 request.getEquipment().getName());
         return toResponse(request);
@@ -108,7 +121,8 @@ public class HelpRequestService {
     private HelpRequest closeOwned(Long id, String username, HelpRequestStatus finalStatus) {
         HelpRequest request = findOwned(id, findUser(username));
         if (!request.isOpen()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "This help request is already closed");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "This help request is already closed");
         }
         request.close(finalStatus, HelpRequestClosedBy.MEMBER, null, Instant.now());
         return saveOrConflict(request);
@@ -121,10 +135,14 @@ public class HelpRequestService {
         } else if (request.getEquipmentCode() != null && !request.getEquipmentCode().isBlank()) {
             found = equipmentRepository.findByCode(request.getEquipmentCode().trim());
         } else {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "equipmentId or equipmentCode is required");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "equipmentId or equipmentCode is required");
         }
         return found.filter(e -> !e.isDeleted())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Machine not found"));
+                .orElseThrow(
+                        () ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND, "Machine not found"));
     }
 
     /**
@@ -140,28 +158,44 @@ public class HelpRequestService {
                 .orElseGet(() -> exerciseRepository.findByNameIgnoreCase(wanted).orElse(null));
     }
 
-    /** Someone else's request is reported as missing (404) rather than forbidden, so ids reveal nothing. */
+    /**
+     * Someone else's request is reported as missing (404) rather than forbidden, so ids reveal
+     * nothing.
+     */
     private HelpRequest findOwned(Long id, User member) {
-        return helpRequestRepository.findWithDetailsById(id)
+        return helpRequestRepository
+                .findWithDetailsById(id)
                 .filter(r -> Objects.equals(r.getMember().getId(), member.getId()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Help request not found"));
+                .orElseThrow(
+                        () ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND, "Help request not found"));
     }
 
     private User findUser(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + username));
+        return userRepository
+                .findByUsername(username)
+                .orElseThrow(
+                        () ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND, "User not found: " + username));
     }
 
-    /** Flushes now so a concurrent change (e.g. staff responding at the same moment) surfaces as 409. */
+    /**
+     * Flushes now so a concurrent change (e.g. staff responding at the same moment) surfaces as
+     * 409.
+     */
     private HelpRequest saveOrConflict(HelpRequest request) {
         try {
             return helpRequestRepository.saveAndFlush(request);
         } catch (OptimisticLockingFailureException e) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "This help request was just updated; reload it");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "This help request was just updated; reload it");
         }
     }
 
     private HelpRequestResponse toResponse(HelpRequest request) {
-        return HelpRequestResponse.from(request, helpDemoLinks.forRequest(request.getEquipment(), request.getExercise()));
+        return HelpRequestResponse.from(
+                request, helpDemoLinks.forRequest(request.getEquipment(), request.getExercise()));
     }
 }
