@@ -24,6 +24,10 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins = "*")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminFloorPlanController {
+    @Autowired private com.ureclive.urec_live_backend.service.UrecAdminScope facility;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.ureclive.urec_live_backend.repository.GymRepository gymRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(AdminFloorPlanController.class);
 
@@ -31,8 +35,8 @@ public class AdminFloorPlanController {
     private final EquipmentRepository equipmentRepository;
 
     @Autowired
-    public AdminFloorPlanController(FloorPlanRepository floorPlanRepository,
-                                     EquipmentRepository equipmentRepository) {
+    public AdminFloorPlanController(
+            FloorPlanRepository floorPlanRepository, EquipmentRepository equipmentRepository) {
         this.floorPlanRepository = floorPlanRepository;
         this.equipmentRepository = equipmentRepository;
     }
@@ -42,21 +46,27 @@ public class AdminFloorPlanController {
         logger.info("[GET /api/admin/floor-plans] Fetching all floor plans");
         List<FloorPlan> plans = floorPlanRepository.findAllByActiveTrueOrderByFloorNumberAsc();
 
-        return plans.stream().map(plan -> {
-            List<MachineDTO> equipment = equipmentRepository
-                    .findAllByDeletedFalseAndFloorPlanId(plan.getId())
-                    .stream()
-                    .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
-                    .collect(Collectors.toList());
-            return FloorPlanResponse.from(plan, equipment);
-        }).collect(Collectors.toList());
+        return plans.stream()
+                .filter(f -> facility.includes(f.getGymId()))
+                .map(
+                        plan -> {
+                            List<MachineDTO> equipment =
+                                    equipmentRepository
+                                            .findAllByDeletedFalseAndFloorPlanId(plan.getId())
+                                            .stream()
+                                            .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
+                                            .collect(Collectors.toList());
+                            return FloorPlanResponse.from(plan, equipment);
+                        })
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/unassigned-equipment")
     public List<MachineDTO> getUnassignedEquipment() {
-        logger.info("[GET /api/admin/floor-plans/unassigned-equipment] Fetching unassigned equipment");
-        return equipmentRepository.findAllByDeletedFalseAndFloorPlanIsNull()
-                .stream()
+        logger.info(
+                "[GET /api/admin/floor-plans/unassigned-equipment] Fetching unassigned equipment");
+        return equipmentRepository.findAllByDeletedFalseAndFloorPlanIsNull().stream()
+                .filter(e -> facility.includes(e.getGymId()))
                 .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
                 .collect(Collectors.toList());
     }
@@ -66,12 +76,18 @@ public class AdminFloorPlanController {
     public FloorPlanResponse create(@RequestBody Map<String, Object> body) {
         String name = (String) body.get("name");
         Integer width = body.containsKey("width") ? ((Number) body.get("width")).intValue() : 800;
-        Integer height = body.containsKey("height") ? ((Number) body.get("height")).intValue() : 600;
-        Integer floorNumber = body.containsKey("floorNumber") ? ((Number) body.get("floorNumber")).intValue() : 1;
+        Integer height =
+                body.containsKey("height") ? ((Number) body.get("height")).intValue() : 600;
+        Integer floorNumber =
+                body.containsKey("floorNumber") ? ((Number) body.get("floorNumber")).intValue() : 1;
 
-        logger.info("[POST /api/admin/floor-plans] Creating floor plan: {} (floor {})", name, floorNumber);
+        logger.info(
+                "[POST /api/admin/floor-plans] Creating floor plan: {} (floor {})",
+                name,
+                floorNumber);
 
         FloorPlan plan = new FloorPlan();
+        plan.setGymId(gymRepository.findByName("UREC").orElseThrow().getId());
         plan.setName(name);
         plan.setWidth(width);
         plan.setHeight(height);
@@ -85,21 +101,24 @@ public class AdminFloorPlanController {
     @PutMapping("/{id}")
     public FloorPlanResponse update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         logger.info("[PUT /api/admin/floor-plans/{}] Updating floor plan", id);
-        FloorPlan plan = floorPlanRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Floor plan not found: " + id));
+        FloorPlan plan =
+                floorPlanRepository
+                        .findById(id)
+                        .filter(f -> facility.includes(f.getGymId()))
+                        .orElseThrow(() -> new RuntimeException("Floor plan not found: " + id));
 
         if (body.containsKey("name")) plan.setName((String) body.get("name"));
         if (body.containsKey("width")) plan.setWidth(((Number) body.get("width")).intValue());
         if (body.containsKey("height")) plan.setHeight(((Number) body.get("height")).intValue());
-        if (body.containsKey("floorNumber")) plan.setFloorNumber(((Number) body.get("floorNumber")).intValue());
+        if (body.containsKey("floorNumber"))
+            plan.setFloorNumber(((Number) body.get("floorNumber")).intValue());
 
         FloorPlan saved = floorPlanRepository.save(plan);
 
-        List<MachineDTO> equipment = equipmentRepository
-                .findAllByDeletedFalseAndFloorPlanId(saved.getId())
-                .stream()
-                .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
-                .collect(Collectors.toList());
+        List<MachineDTO> equipment =
+                equipmentRepository.findAllByDeletedFalseAndFloorPlanId(saved.getId()).stream()
+                        .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
+                        .collect(Collectors.toList());
 
         return FloorPlanResponse.from(saved, equipment);
     }
@@ -108,8 +127,11 @@ public class AdminFloorPlanController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         logger.info("[DELETE /api/admin/floor-plans/{}] Soft-deleting floor plan", id);
-        FloorPlan plan = floorPlanRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Floor plan not found: " + id));
+        FloorPlan plan =
+                floorPlanRepository
+                        .findById(id)
+                        .filter(f -> facility.includes(f.getGymId()))
+                        .orElseThrow(() -> new RuntimeException("Floor plan not found: " + id));
         plan.setActive(false);
 
         // Unassign equipment from this floor
@@ -124,20 +146,33 @@ public class AdminFloorPlanController {
     }
 
     @PutMapping("/{id}/equipment")
-    public FloorPlanResponse updateEquipmentPositions(@PathVariable Long id,
-                                                       @RequestBody List<Map<String, Object>> positions) {
-        logger.info("[PUT /api/admin/floor-plans/{}/equipment] Bulk updating {} positions", id, positions.size());
-        FloorPlan plan = floorPlanRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Floor plan not found: " + id));
+    public FloorPlanResponse updateEquipmentPositions(
+            @PathVariable Long id, @RequestBody List<Map<String, Object>> positions) {
+        logger.info(
+                "[PUT /api/admin/floor-plans/{}/equipment] Bulk updating {} positions",
+                id,
+                positions.size());
+        FloorPlan plan =
+                floorPlanRepository
+                        .findById(id)
+                        .filter(f -> facility.includes(f.getGymId()))
+                        .orElseThrow(() -> new RuntimeException("Floor plan not found: " + id));
 
         for (Map<String, Object> pos : positions) {
             Long equipmentId = ((Number) pos.get("equipmentId")).longValue();
             Double floorX = ((Number) pos.get("floorX")).doubleValue();
             Double floorY = ((Number) pos.get("floorY")).doubleValue();
-            String floorLabel = pos.containsKey("floorLabel") ? (String) pos.get("floorLabel") : null;
+            String floorLabel =
+                    pos.containsKey("floorLabel") ? (String) pos.get("floorLabel") : null;
 
-            Equipment equipment = equipmentRepository.findById(equipmentId)
-                    .orElseThrow(() -> new RuntimeException("Equipment not found: " + equipmentId));
+            Equipment equipment =
+                    equipmentRepository
+                            .findById(equipmentId)
+                            .filter(e -> facility.includes(e.getGymId()))
+                            .orElseThrow(
+                                    () ->
+                                            new RuntimeException(
+                                                    "Equipment not found: " + equipmentId));
             equipment.setFloorPlan(plan);
             equipment.setFloorX(floorX);
             equipment.setFloorY(floorY);
@@ -145,20 +180,27 @@ public class AdminFloorPlanController {
             equipmentRepository.save(equipment);
         }
 
-        List<MachineDTO> equipment = equipmentRepository
-                .findAllByDeletedFalseAndFloorPlanId(plan.getId())
-                .stream()
-                .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
-                .collect(Collectors.toList());
+        List<MachineDTO> equipment =
+                equipmentRepository.findAllByDeletedFalseAndFloorPlanId(plan.getId()).stream()
+                        .map(e -> new MachineDTO(e, getPrimaryExerciseName(e)))
+                        .collect(Collectors.toList());
 
         return FloorPlanResponse.from(plan, equipment);
     }
 
     @DeleteMapping("/{floorId}/equipment/{equipmentId}")
-    public void removeEquipmentFromFloor(@PathVariable Long floorId, @PathVariable Long equipmentId) {
-        logger.info("[DELETE /api/admin/floor-plans/{}/equipment/{}] Removing equipment from floor", floorId, equipmentId);
-        Equipment equipment = equipmentRepository.findById(equipmentId)
-                .orElseThrow(() -> new RuntimeException("Equipment not found: " + equipmentId));
+    public void removeEquipmentFromFloor(
+            @PathVariable Long floorId, @PathVariable Long equipmentId) {
+        logger.info(
+                "[DELETE /api/admin/floor-plans/{}/equipment/{}] Removing equipment from floor",
+                floorId,
+                equipmentId);
+        Equipment equipment =
+                equipmentRepository
+                        .findById(equipmentId)
+                        .filter(e -> facility.includes(e.getGymId()))
+                        .orElseThrow(
+                                () -> new RuntimeException("Equipment not found: " + equipmentId));
         equipment.setFloorPlan(null);
         equipment.setFloorX(null);
         equipment.setFloorY(null);

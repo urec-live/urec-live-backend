@@ -1,7 +1,6 @@
 package com.ureclive.urec_live_backend.dto;
 
 import com.ureclive.urec_live_backend.entity.WorkoutSession;
-import com.ureclive.urec_live_backend.entity.WorkoutSet;
 
 import java.time.Instant;
 import java.util.List;
@@ -10,6 +9,26 @@ import java.util.stream.Collectors;
 public class SessionResponse {
 
     private Long id;
+    private Long exerciseId;
+
+    public Long getExerciseId() {
+        return exerciseId;
+    }
+
+    public void setExerciseId(Long v) {
+        exerciseId = v;
+    }
+
+    private String clientSessionId;
+
+    public String getClientSessionId() {
+        return clientSessionId;
+    }
+
+    public void setClientSessionId(String v) {
+        clientSessionId = v;
+    }
+
     private String exerciseName;
     private String machineName;
     private String machineCode;
@@ -26,6 +45,24 @@ public class SessionResponse {
         private Integer setNumber;
         private Integer reps;
         private Double weightLbs;
+        private Integer durationSeconds;
+        private Double distanceMeters;
+
+        public Integer getDurationSeconds() {
+            return durationSeconds;
+        }
+
+        public void setDurationSeconds(Integer v) {
+            durationSeconds = v;
+        }
+
+        public Double getDistanceMeters() {
+            return distanceMeters;
+        }
+
+        public void setDistanceMeters(Double v) {
+            distanceMeters = v;
+        }
 
         public SetDetailDto() {}
 
@@ -35,19 +72,36 @@ public class SessionResponse {
             this.weightLbs = weightLbs;
         }
 
-        public Integer getSetNumber() { return setNumber; }
-        public void setSetNumber(Integer setNumber) { this.setNumber = setNumber; }
+        public Integer getSetNumber() {
+            return setNumber;
+        }
 
-        public Integer getReps() { return reps; }
-        public void setReps(Integer reps) { this.reps = reps; }
+        public void setSetNumber(Integer setNumber) {
+            this.setNumber = setNumber;
+        }
 
-        public Double getWeightLbs() { return weightLbs; }
-        public void setWeightLbs(Double weightLbs) { this.weightLbs = weightLbs; }
+        public Integer getReps() {
+            return reps;
+        }
+
+        public void setReps(Integer reps) {
+            this.reps = reps;
+        }
+
+        public Double getWeightLbs() {
+            return weightLbs;
+        }
+
+        public void setWeightLbs(Double weightLbs) {
+            this.weightLbs = weightLbs;
+        }
     }
 
     public static SessionResponse from(WorkoutSession session) {
         SessionResponse dto = new SessionResponse();
         dto.id = session.getId();
+        dto.exerciseId = session.getExercise() == null ? null : session.getExercise().getId();
+        dto.clientSessionId = session.getClientSessionId();
         dto.exerciseName = session.getExercise() != null ? session.getExercise().getName() : null;
         dto.machineName = session.getMachine() != null ? session.getMachine().getName() : null;
         dto.machineCode = session.getMachine() != null ? session.getMachine().getCode() : null;
@@ -58,41 +112,102 @@ public class SessionResponse {
         dto.notes = session.getNotes();
 
         if (session.getSets() != null && !session.getSets().isEmpty()) {
-            dto.setDetails = session.getSets().stream()
-                    .map(s -> new SetDetailDto(s.getSetNumber(), s.getReps(), s.getWeightLbs()))
-                    .collect(Collectors.toList());
+            dto.setDetails =
+                    session.getSets().stream()
+                            .map(
+                                    s -> {
+                                        var set =
+                                                new SetDetailDto(
+                                                        s.getSetNumber(),
+                                                        s.getReps(),
+                                                        s.getWeightLbs());
+                                        set.setDurationSeconds(s.getDurationSeconds());
+                                        set.setDistanceMeters(s.getDistanceMeters());
+                                        return set;
+                                    })
+                            .collect(Collectors.toList());
         }
 
         return dto;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getExerciseName() { return exerciseName; }
-    public void setExerciseName(String exerciseName) { this.exerciseName = exerciseName; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getMachineName() { return machineName; }
-    public void setMachineName(String machineName) { this.machineName = machineName; }
+    public String getExerciseName() {
+        return exerciseName;
+    }
 
-    public String getMachineCode() { return machineCode; }
-    public void setMachineCode(String machineCode) { this.machineCode = machineCode; }
+    public void setExerciseName(String exerciseName) {
+        this.exerciseName = exerciseName;
+    }
 
-    public String getMuscleGroup() { return muscleGroup; }
-    public void setMuscleGroup(String muscleGroup) { this.muscleGroup = muscleGroup; }
+    public String getMachineName() {
+        return machineName;
+    }
 
-    public Instant getStartedAt() { return startedAt; }
-    public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
+    public void setMachineName(String machineName) {
+        this.machineName = machineName;
+    }
 
-    public Instant getEndedAt() { return endedAt; }
-    public void setEndedAt(Instant endedAt) { this.endedAt = endedAt; }
+    public String getMachineCode() {
+        return machineCode;
+    }
 
-    public Integer getDurationSeconds() { return durationSeconds; }
-    public void setDurationSeconds(Integer durationSeconds) { this.durationSeconds = durationSeconds; }
+    public void setMachineCode(String machineCode) {
+        this.machineCode = machineCode;
+    }
 
-    public String getNotes() { return notes; }
-    public void setNotes(String notes) { this.notes = notes; }
+    public String getMuscleGroup() {
+        return muscleGroup;
+    }
 
-    public List<SetDetailDto> getSetDetails() { return setDetails; }
-    public void setSetDetails(List<SetDetailDto> setDetails) { this.setDetails = setDetails; }
+    public void setMuscleGroup(String muscleGroup) {
+        this.muscleGroup = muscleGroup;
+    }
+
+    public Instant getStartedAt() {
+        return startedAt;
+    }
+
+    public void setStartedAt(Instant startedAt) {
+        this.startedAt = startedAt;
+    }
+
+    public Instant getEndedAt() {
+        return endedAt;
+    }
+
+    public void setEndedAt(Instant endedAt) {
+        this.endedAt = endedAt;
+    }
+
+    public Integer getDurationSeconds() {
+        return durationSeconds;
+    }
+
+    public void setDurationSeconds(Integer durationSeconds) {
+        this.durationSeconds = durationSeconds;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public List<SetDetailDto> getSetDetails() {
+        return setDetails;
+    }
+
+    public void setSetDetails(List<SetDetailDto> setDetails) {
+        this.setDetails = setDetails;
+    }
 }

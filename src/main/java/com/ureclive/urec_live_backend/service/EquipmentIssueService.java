@@ -11,6 +11,7 @@ import com.ureclive.urec_live_backend.entity.User;
 import com.ureclive.urec_live_backend.repository.EquipmentIssueReportRepository;
 import com.ureclive.urec_live_backend.repository.EquipmentRepository;
 import com.ureclive.urec_live_backend.repository.UserRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 /** Member-facing side of equipment issue reporting. */
 @Service
 public class EquipmentIssueService {
+    @org.springframework.beans.factory.annotation.Autowired private GymAccessService gymAccess;
 
     private final EquipmentIssueReportRepository issueReportRepository;
     private final EquipmentRepository equipmentRepository;
@@ -30,10 +32,11 @@ public class EquipmentIssueService {
     private final ActivityLogService activityLogService;
 
     @Autowired
-    public EquipmentIssueService(EquipmentIssueReportRepository issueReportRepository,
-                                 EquipmentRepository equipmentRepository,
-                                 UserRepository userRepository,
-                                 ActivityLogService activityLogService) {
+    public EquipmentIssueService(
+            EquipmentIssueReportRepository issueReportRepository,
+            EquipmentRepository equipmentRepository,
+            UserRepository userRepository,
+            ActivityLogService activityLogService) {
         this.issueReportRepository = issueReportRepository;
         this.equipmentRepository = equipmentRepository;
         this.userRepository = userRepository;
@@ -41,35 +44,57 @@ public class EquipmentIssueService {
     }
 
     /**
-     * Files a new issue report. A member can have only one unresolved report per machine,
-     * so repeat reports (and accidental double-submits) are rejected with 409.
+     * Files a new issue report. A member can have only one unresolved report per machine, so repeat
+     * reports (and accidental double-submits) are rejected with 409.
      */
     public IssueReportResponse createReport(CreateIssueReportRequest request, String username) {
-        User reporter = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + username));
+        User reporter =
+                userRepository
+                        .findByUsername(username)
+                        .orElseThrow(
+                                () ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "User not found: " + username));
 
-        Equipment equipment = equipmentRepository.findById(request.getEquipmentId())
-                .filter(e -> !e.isDeleted())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Equipment not found with id: " + request.getEquipmentId()));
+        Equipment equipment =
+                equipmentRepository
+                        .findById(request.getEquipmentId())
+                        .filter(e -> !e.isDeleted())
+                        .orElseThrow(
+                                () ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Equipment not found with id: "
+                                                        + request.getEquipmentId()));
 
         // @Size counts surrounding whitespace, so re-check once trimmed
         String description = request.getDescription().trim();
+        if (gymAccess != null) gymAccess.require(equipment.getGymId());
         if (description.length() < CreateIssueReportRequest.MIN_DESCRIPTION_LENGTH) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Description must be at least " + CreateIssueReportRequest.MIN_DESCRIPTION_LENGTH + " characters");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Description must be at least "
+                            + CreateIssueReportRequest.MIN_DESCRIPTION_LENGTH
+                            + " characters");
         }
 
-        if (issueReportRepository.existsByReporterAndEquipmentAndStatusNot(reporter, equipment, IssueStatus.RESOLVED)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "You already have an open report for this machine");
+        if (issueReportRepository.existsByReporterAndEquipmentAndStatusNot(
+                reporter, equipment, IssueStatus.RESOLVED)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "You already have an open report for this machine");
         }
 
-        EquipmentIssueReport report = issueReportRepository.save(
-                new EquipmentIssueReport(equipment, reporter, request.getSeverity(), description));
+        EquipmentIssueReport report =
+                issueReportRepository.save(
+                        new EquipmentIssueReport(
+                                equipment, reporter, request.getSeverity(), description));
 
-        String severityText = request.getSeverity() == IssueSeverity.OUT_OF_ORDER ? "not working" : "damaged";
-        activityLogService.log("ISSUE_REPORTED", username,
+        String severityText =
+                request.getSeverity() == IssueSeverity.OUT_OF_ORDER ? "not working" : "damaged";
+        activityLogService.log(
+                "ISSUE_REPORTED",
+                username,
                 "Reported " + equipment.getName() + " as " + severityText,
                 equipment.getName());
 
@@ -78,43 +103,66 @@ public class EquipmentIssueService {
 
     /** The member's own reports, newest first. */
     public List<IssueReportResponse> getMyReports(String username) {
-        User reporter = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + username));
+        User reporter =
+                userRepository
+                        .findByUsername(username)
+                        .orElseThrow(
+                                () ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "User not found: " + username));
         return issueReportRepository.findByReporterOrderByReportedAtDesc(reporter).stream()
                 .map(IssueReportResponse::from)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Takes back a report the member filed by mistake. Only the member who filed it can withdraw it, and
-     * only while it's open; anyone else gets 404, as if it didn't exist. A withdrawn report is closed for
-     * good and no longer counts as open. The machine's status is left alone: if staff took it out of
-     * service, they decide when it goes back.
+     * Takes back a report the member filed by mistake. Only the member who filed it can withdraw
+     * it, and only while it's open; anyone else gets 404, as if it didn't exist. A withdrawn report
+     * is closed for good and no longer counts as open. The machine's status is left alone: if staff
+     * took it out of service, they decide when it goes back.
      */
     @Transactional
     public IssueReportResponse withdrawReport(Long reportId, String username) {
-        EquipmentIssueReport report = issueReportRepository.findById(reportId)
-                .filter(r -> r.getReporter().getUsername().equals(username))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Issue report not found with id: " + reportId));
+        EquipmentIssueReport report =
+                issueReportRepository
+                        .findById(reportId)
+                        .filter(r -> r.getReporter().getUsername().equals(username))
+                        .orElseThrow(
+                                () ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Issue report not found with id: " + reportId));
 
         if (!report.withdraw()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, report.isWithdrawn()
-                    ? "You've already withdrawn this report"
-                    : "This report is already resolved");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    report.isWithdrawn()
+                            ? "You've already withdrawn this report"
+                            : "This report is already resolved");
         }
         report = issueReportRepository.save(report);
 
         String machineName = report.getEquipment().getName();
-        activityLogService.log("ISSUE_WITHDRAWN", username,
-                "Withdrew their report on " + machineName + " (reported by mistake)", machineName);
+        activityLogService.log(
+                "ISSUE_WITHDRAWN",
+                username,
+                "Withdrew their report on " + machineName + " (reported by mistake)",
+                machineName);
         return IssueReportResponse.from(report);
     }
 
     /** Open-issue summary for a machine; openReportCount is 0 when nothing is open. */
     public MachineIssueStatusResponse getMachineIssueStatus(Long equipmentId) {
-        List<EquipmentIssueReport> openReports = issueReportRepository
-                .findByEquipmentIdAndStatusNotOrderByReportedAtDesc(equipmentId, IssueStatus.RESOLVED);
+        if (gymAccess != null)
+            gymAccess.require(
+                    equipmentRepository
+                            .findById(equipmentId)
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND))
+                            .getGymId());
+        List<EquipmentIssueReport> openReports =
+                issueReportRepository.findByEquipmentIdAndStatusNotOrderByReportedAtDesc(
+                        equipmentId, IssueStatus.RESOLVED);
         return MachineIssueStatusResponse.from(equipmentId, openReports);
     }
 }

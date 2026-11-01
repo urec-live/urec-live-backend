@@ -5,6 +5,7 @@ import com.ureclive.urec_live_backend.dto.CreateEquipmentRequest;
 import com.ureclive.urec_live_backend.dto.UpdateEquipmentRequest;
 import com.ureclive.urec_live_backend.entity.Equipment;
 import com.ureclive.urec_live_backend.repository.EquipmentRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,48 +18,63 @@ import java.util.UUID;
 
 @Service
 public class AdminEquipmentService {
+    @Autowired private com.ureclive.urec_live_backend.service.UrecAdminScope facility;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.ureclive.urec_live_backend.repository.GymRepository gymRepository;
 
     private final EquipmentRepository equipmentRepository;
     private final MachineStatusService machineStatusService;
 
     @Autowired
-    public AdminEquipmentService(EquipmentRepository equipmentRepository,
-                                 MachineStatusService machineStatusService) {
+    public AdminEquipmentService(
+            EquipmentRepository equipmentRepository, MachineStatusService machineStatusService) {
         this.equipmentRepository = equipmentRepository;
         this.machineStatusService = machineStatusService;
     }
 
-    /**
-     * Returns paginated equipment list. Optionally filters by name.
-     */
+    /** Returns paginated equipment list. Optionally filters by name. */
     public Page<AdminEquipmentResponse> getAll(int page, int size, String name) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by("id").ascending());
         if (name != null && !name.isBlank()) {
-            return equipmentRepository.findAllByDeletedFalseAndNameContainingIgnoreCase(name, pageable)
+            return equipmentRepository
+                    .findAllByDeletedFalseAndGymIdAndNameContainingIgnoreCase(
+                            facility.id(), name, pageable)
                     .map(AdminEquipmentResponse::from);
         }
-        return equipmentRepository.findAllByDeletedFalse(pageable)
+        return equipmentRepository
+                .findAllByDeletedFalseAndGymId(facility.id(), pageable)
                 .map(AdminEquipmentResponse::from);
     }
 
-    /**
-     * Creates a new equipment record with status "Available" by default.
-     */
+    /** Creates a new equipment record with status "Available" by default. */
     public AdminEquipmentResponse create(CreateEquipmentRequest request) {
-        String status = (request.getStatus() != null && !request.getStatus().isBlank())
-                ? request.getStatus() : "Available";
+        String status =
+                (request.getStatus() != null && !request.getStatus().isBlank())
+                        ? request.getStatus()
+                        : "Available";
         Equipment equipment = new Equipment(null, request.getName(), status, request.getImageUrl());
+        if (equipment.getGymId() == null)
+            equipment.setGymId(gymRepository.findByName("UREC").orElseThrow().getId());
         equipment = equipmentRepository.save(equipment);
         return AdminEquipmentResponse.from(equipment);
     }
 
     /**
-     * Updates mutable fields on an existing equipment record. A status change goes through
-     * {@link MachineStatusService} so open app screens update live and out-of-order changes are logged.
+     * Updates mutable fields on an existing equipment record. A status change goes through {@link
+     * MachineStatusService} so open app screens update live and out-of-order changes are logged.
      */
-    public AdminEquipmentResponse update(Long id, UpdateEquipmentRequest request, String adminUsername) {
-        Equipment equipment = equipmentRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found with id: " + id));
+    public AdminEquipmentResponse update(
+            Long id, UpdateEquipmentRequest request, String adminUsername) {
+        Equipment equipment =
+                equipmentRepository
+                        .findById(id)
+                        .filter(e -> facility == null || facility.includes(e.getGymId()))
+                        .orElseThrow(
+                                () ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Equipment not found with id: " + id));
 
         if (request.getName() != null && !request.getName().isBlank()) {
             equipment.setName(request.getName());
@@ -67,33 +83,51 @@ public class AdminEquipmentService {
             equipment.setImageUrl(request.getImageUrl());
         }
 
+        if (equipment.getGymId() == null)
+            equipment.setGymId(gymRepository.findByName("UREC").orElseThrow().getId());
         equipment = equipmentRepository.save(equipment);
         if (request.getStatus() != null && !request.getStatus().isBlank()) {
-            equipment = machineStatusService.changeStatus(equipment, request.getStatus(), adminUsername, null);
+            equipment =
+                    machineStatusService.changeStatus(
+                            equipment, request.getStatus(), adminUsername, null);
         }
         return AdminEquipmentResponse.from(equipment);
     }
 
-    /**
-     * Soft-deletes equipment by setting deleted = true.
-     */
+    /** Soft-deletes equipment by setting deleted = true. */
     public void softDelete(Long id) {
-        Equipment equipment = equipmentRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found with id: " + id));
+        Equipment equipment =
+                equipmentRepository
+                        .findById(id)
+                        .filter(e -> facility == null || facility.includes(e.getGymId()))
+                        .orElseThrow(
+                                () ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Equipment not found with id: " + id));
         equipment.setDeleted(true);
         equipmentRepository.save(equipment);
     }
 
     /**
-     * Generates a unique QR code string and assigns it to the equipment record.
-     * Returns a short uppercase alphanumeric code the frontend can render as a QR image.
+     * Generates a unique QR code string and assigns it to the equipment record. Returns a short
+     * uppercase alphanumeric code the frontend can render as a QR image.
      */
     public AdminEquipmentResponse generateQrCode(Long id) {
-        Equipment equipment = equipmentRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found with id: " + id));
+        Equipment equipment =
+                equipmentRepository
+                        .findById(id)
+                        .filter(e -> facility == null || facility.includes(e.getGymId()))
+                        .orElseThrow(
+                                () ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Equipment not found with id: " + id));
 
         String code = generateUniqueCode();
         equipment.setCode(code);
+        if (equipment.getGymId() == null)
+            equipment.setGymId(gymRepository.findByName("UREC").orElseThrow().getId());
         equipment = equipmentRepository.save(equipment);
         return AdminEquipmentResponse.from(equipment);
     }

@@ -1,32 +1,35 @@
 package com.ureclive.urec_live_backend.controller;
 
+import com.ureclive.urec_live_backend.dto.FloorPlanResponse;
+import com.ureclive.urec_live_backend.dto.MachineDTO;
 import com.ureclive.urec_live_backend.entity.Equipment;
 import com.ureclive.urec_live_backend.entity.Exercise;
 import com.ureclive.urec_live_backend.entity.FloorPlan;
-import com.ureclive.urec_live_backend.dto.FloorPlanResponse;
-import com.ureclive.urec_live_backend.dto.MachineDTO;
 import com.ureclive.urec_live_backend.repository.EquipmentRepository;
 import com.ureclive.urec_live_backend.repository.ExerciseRepository;
 import com.ureclive.urec_live_backend.repository.FloorPlanRepository;
 import com.ureclive.urec_live_backend.service.ActivityLogService;
 import com.ureclive.urec_live_backend.service.CvAvailabilityService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.lang.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/machines")
 @CrossOrigin(origins = "*")
 public class MachineController {
+
+    @Autowired private com.ureclive.urec_live_backend.service.GymAccessService gymAccess;
 
     private static final Logger logger = LoggerFactory.getLogger(MachineController.class);
     private final EquipmentRepository equipmentRepository;
@@ -37,12 +40,13 @@ public class MachineController {
     private final CvAvailabilityService cvAvailabilityService;
 
     @Autowired
-    public MachineController(EquipmentRepository equipmentRepository,
-                             ExerciseRepository exerciseRepository,
-                             FloorPlanRepository floorPlanRepository,
-                             SimpMessagingTemplate messagingTemplate,
-                             ActivityLogService activityLogService,
-                             CvAvailabilityService cvAvailabilityService) {
+    public MachineController(
+            EquipmentRepository equipmentRepository,
+            ExerciseRepository exerciseRepository,
+            FloorPlanRepository floorPlanRepository,
+            SimpMessagingTemplate messagingTemplate,
+            ActivityLogService activityLogService,
+            CvAvailabilityService cvAvailabilityService) {
         this.equipmentRepository = equipmentRepository;
         this.exerciseRepository = exerciseRepository;
         this.floorPlanRepository = floorPlanRepository;
@@ -55,10 +59,13 @@ public class MachineController {
     @GetMapping
     public List<MachineDTO> getAllMachines() {
         logger.info("[GET /api/machines] Fetching all machines");
-        List<Equipment> equipment = equipmentRepository.findAllByDeletedFalse();
-        List<MachineDTO> dtos = equipment.stream()
-            .map(this::toMachineDto)
-            .collect(Collectors.toList());
+        List<Equipment> equipment =
+                equipmentRepository.findAllByDeletedFalse().stream()
+                        .filter(e -> gymAccess.visible(e.getGymId()))
+                        .filter(e -> gymAccess.visible(e.getGymId()))
+                        .toList();
+        List<MachineDTO> dtos =
+                equipment.stream().map(this::toMachineDto).collect(Collectors.toList());
         logger.info("[GET /api/machines] Returned {} machines", dtos.size());
         return dtos;
     }
@@ -67,35 +74,57 @@ public class MachineController {
     @GetMapping("/muscle-groups")
     public List<String> getMuscleGroups() {
         logger.info("[GET /api/machines/muscle-groups] Fetching all unique muscle groups");
-        List<String> muscleGroups = exerciseRepository.findAll().stream()
-            .map(Exercise::getMuscleGroup)
-            .distinct()
-            .sorted()
-            .collect(Collectors.toList());
-        logger.info("[GET /api/machines/muscle-groups] Returned {} muscle groups", muscleGroups.size());
+        List<String> muscleGroups =
+                exerciseRepository.findAll().stream()
+                        .filter(e -> e.getOwnerId() == null && !e.getArchived())
+                        .map(Exercise::getMuscleGroup)
+                        .distinct()
+                        .sorted()
+                        .collect(Collectors.toList());
+        logger.info(
+                "[GET /api/machines/muscle-groups] Returned {} muscle groups", muscleGroups.size());
         return muscleGroups;
     }
 
     // ✅ Get exercises by muscle group
     @GetMapping("/exercises/muscle/{muscleGroup}")
     public List<Exercise> getExercisesByMuscleGroup(@PathVariable String muscleGroup) {
-        logger.info("[GET /api/machines/exercises/muscle/{}] Fetching exercises for muscle group: {}", muscleGroup, muscleGroup);
-        List<Exercise> exercises = exerciseRepository.findAll().stream()
-            .filter(e -> e.getMuscleGroup().equalsIgnoreCase(muscleGroup))
-            .collect(Collectors.toList());
-        logger.info("[GET /api/machines/exercises/muscle/{}] Returned {} exercises", muscleGroup, exercises.size());
+        logger.info(
+                "[GET /api/machines/exercises/muscle/{}] Fetching exercises for muscle group: {}",
+                muscleGroup,
+                muscleGroup);
+        List<Exercise> exercises =
+                exerciseRepository.findAll().stream()
+                        .filter(
+                                e ->
+                                        e.getOwnerId() == null
+                                                && !e.getArchived()
+                                                && e.getMuscleGroup().equalsIgnoreCase(muscleGroup))
+                        .collect(Collectors.toList());
+        logger.info(
+                "[GET /api/machines/exercises/muscle/{}] Returned {} exercises",
+                muscleGroup,
+                exercises.size());
         return exercises;
     }
 
     // ✅ Get exercises for a specific equipment by ID
     @GetMapping("/{id}/exercises")
     public List<Exercise> getExercisesByEquipmentId(@PathVariable Long id) {
-        logger.info("[GET /api/machines/{}/exercises] Fetching exercises for equipment ID: {}", id, id);
+        logger.info(
+                "[GET /api/machines/{}/exercises] Fetching exercises for equipment ID: {}", id, id);
         Optional<Equipment> equipment = equipmentRepository.findById(id);
-        Equipment eq = equipment.orElseThrow(() -> {
-            logger.error("[GET /api/machines/{}/exercises] Equipment not found with ID: {}", id, id);
-            return new RuntimeException("Equipment not found with ID: " + id);
-        });
+        Equipment eq =
+                equipment.orElseThrow(
+                        () -> {
+                            logger.error(
+                                    "[GET /api/machines/{}/exercises] Equipment not found with ID:"
+                                            + " {}",
+                                    id,
+                                    id);
+                            return new RuntimeException("Equipment not found with ID: " + id);
+                        });
+        gymAccess.require(eq.getGymId());
         List<Exercise> exercises = new java.util.ArrayList<>(eq.getExercises());
         logger.info("[GET /api/machines/{}/exercises] Returned {} exercises", id, exercises.size());
         return exercises;
@@ -104,25 +133,43 @@ public class MachineController {
     // ✅ Get exercises for a specific equipment by code
     @GetMapping("/code/{code}/exercises")
     public List<Exercise> getExercisesByEquipmentCode(@PathVariable String code) {
-        logger.info("[GET /api/machines/code/{}/exercises] Fetching exercises for equipment code: {}", code, code);
+        logger.info(
+                "[GET /api/machines/code/{}/exercises] Fetching exercises for equipment code: {}",
+                code,
+                code);
         Optional<Equipment> equipment = equipmentRepository.findByCode(code);
-        Equipment eq = equipment.orElseThrow(() -> {
-            logger.error("[GET /api/machines/code/{}/exercises] Equipment not found with code: {}", code, code);
-            return new RuntimeException("Equipment not found with code: " + code);
-        });
+        Equipment eq =
+                equipment.orElseThrow(
+                        () -> {
+                            logger.error(
+                                    "[GET /api/machines/code/{}/exercises] Equipment not found with"
+                                            + " code: {}",
+                                    code,
+                                    code);
+                            return new RuntimeException("Equipment not found with code: " + code);
+                        });
+        gymAccess.require(eq.getGymId());
         List<Exercise> exercises = new java.util.ArrayList<>(eq.getExercises());
-        logger.info("[GET /api/machines/code/{}/exercises] Returned {} exercises", code, exercises.size());
+        logger.info(
+                "[GET /api/machines/code/{}/exercises] Returned {} exercises",
+                code,
+                exercises.size());
         return exercises;
     }
 
     // ✅ Get machines by exercise (e.g., Bench Press)
     @GetMapping("/exercise/{exercise}")
     public List<MachineDTO> getMachinesByExercise(@PathVariable String exercise) {
-        logger.info("[GET /api/machines/exercise/{}] Fetching machines for exercise: {}", exercise, exercise);
-        List<Equipment> equipment = equipmentRepository.findByExerciseName(exercise);
-        List<MachineDTO> dtos = equipment.stream()
-            .map(e -> toMachineDto(e, exercise))
-            .collect(Collectors.toList());
+        logger.info(
+                "[GET /api/machines/exercise/{}] Fetching machines for exercise: {}",
+                exercise,
+                exercise);
+        List<Equipment> equipment =
+                equipmentRepository.findByExerciseName(exercise).stream()
+                        .filter(e -> !e.isDeleted() && gymAccess.visible(e.getGymId()))
+                        .toList();
+        List<MachineDTO> dtos =
+                equipment.stream().map(e -> toMachineDto(e, exercise)).collect(Collectors.toList());
         logger.info("[GET /api/machines/exercise/{}] Returned {} machines", exercise, dtos.size());
         return dtos;
     }
@@ -132,25 +179,42 @@ public class MachineController {
     public MachineDTO getMachineById(@PathVariable @NonNull Long id) {
         logger.info("[GET /api/machines/{}] Fetching machine by ID: {}", id, id);
         Optional<Equipment> equipment = equipmentRepository.findById(id);
-        Equipment eq = equipment.orElseThrow(() -> {
-            logger.error("[GET /api/machines/{}] Machine not found with ID: {}", id, id);
-            return new RuntimeException("Machine not found with ID: " + id);
-        });
+        Equipment eq =
+                equipment.orElseThrow(
+                        () -> {
+                            logger.error(
+                                    "[GET /api/machines/{}] Machine not found with ID: {}", id, id);
+                            return new RuntimeException("Machine not found with ID: " + id);
+                        });
+        gymAccess.require(eq.getGymId());
         MachineDTO dto = toMachineDto(eq);
-        logger.info("[GET /api/machines/{}] Returned machine: {} ({})", id, dto.getName(), dto.getStatus());
+        logger.info(
+                "[GET /api/machines/{}] Returned machine: {} ({})",
+                id,
+                dto.getName(),
+                dto.getStatus());
         return dto;
     }
 
     // ✅ Update machine status (accept JSON body)
     @PutMapping("/{id}/status")
-    public MachineDTO updateMachineStatus(@PathVariable @NonNull Long id, @RequestBody Map<String, String> body) {
+    public MachineDTO updateMachineStatus(
+            @PathVariable @NonNull Long id, @RequestBody Map<String, String> body) {
         logger.info("[PUT /api/machines/{}/status] Updating machine status for ID: {}", id, id);
-        Equipment equipment = equipmentRepository.findById(id)
-                .orElseThrow(() -> {
-                    logger.error("[PUT /api/machines/{}/status] Machine not found with ID: {}", id, id);
-                    return new RuntimeException("Machine not found with ID: " + id);
-                });
+        Equipment equipment =
+                equipmentRepository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> {
+                                    logger.error(
+                                            "[PUT /api/machines/{}/status] Machine not found with"
+                                                    + " ID: {}",
+                                            id,
+                                            id);
+                                    return new RuntimeException("Machine not found with ID: " + id);
+                                });
 
+        gymAccess.require(equipment.getGymId());
         String status = body.get("status");
         if (status == null || status.isBlank()) {
             logger.error("[PUT /api/machines/{}/status] Missing 'status' in request body", id);
@@ -161,18 +225,28 @@ public class MachineController {
         String oldStatus = equipment.getStatus();
         equipment.setStatus(status);
         Equipment updated = equipmentRepository.save(equipment);
-        logger.info("[PUT /api/machines/{}/status] Updated machine {} from '{}' to '{}'", id, equipment.getName(), oldStatus, status);
-        
+        logger.info(
+                "[PUT /api/machines/{}/status] Updated machine {} from '{}' to '{}'",
+                id,
+                equipment.getName(),
+                oldStatus,
+                status);
+
         MachineDTO dto = toMachineDto(updated);
 
         // Broadcast update to all WebSocket clients
         messagingTemplate.convertAndSend("/topic/machines", dto);
+        messagingTemplate.convertAndSend("/topic/gyms/" + updated.getGymId() + "/machines", dto);
         logger.info("[WebSocket] Broadcasted machine update for ID: {}", id);
 
-        String username = SecurityContextHolder.getContext().getAuthentication() != null
-                ? SecurityContextHolder.getContext().getAuthentication().getName() : "anonymous";
+        String username =
+                SecurityContextHolder.getContext().getAuthentication() != null
+                        ? SecurityContextHolder.getContext().getAuthentication().getName()
+                        : "anonymous";
         String eventType = "In Use".equalsIgnoreCase(status) ? "CHECK_IN" : "CHECK_OUT";
-        activityLogService.log(eventType, username,
+        activityLogService.log(
+                eventType,
+                username,
                 eventType + " on " + equipment.getName() + " (status: " + status + ")",
                 equipment.getName());
 
@@ -184,28 +258,52 @@ public class MachineController {
     public MachineDTO getMachineByCode(@PathVariable @NonNull String code) {
         logger.info("[GET /api/machines/code/{}] Fetching machine by code: {}", code, code);
         Optional<Equipment> equipment = equipmentRepository.findByCode(code);
-        Equipment eq = equipment.orElseThrow(() -> {
-            logger.error("[GET /api/machines/code/{}] Machine not found with code: {}", code, code);
-            return new RuntimeException("Machine not found with code: " + code);
-        });
+        Equipment eq =
+                equipment.orElseThrow(
+                        () -> {
+                            logger.error(
+                                    "[GET /api/machines/code/{}] Machine not found with code: {}",
+                                    code,
+                                    code);
+                            return new RuntimeException("Machine not found with code: " + code);
+                        });
+        gymAccess.require(eq.getGymId());
         MachineDTO dto = toMachineDto(eq);
-        logger.info("[GET /api/machines/code/{}] Returned machine: {} ({})", code, dto.getName(), dto.getStatus());
+        logger.info(
+                "[GET /api/machines/code/{}] Returned machine: {} ({})",
+                code,
+                dto.getName(),
+                dto.getStatus());
         return dto;
     }
 
     // ✅ Update machine status by code
     @PutMapping("/code/{code}/status")
-    public MachineDTO updateMachineStatusByCode(@PathVariable @NonNull String code, @RequestBody Map<String, String> body) {
-        logger.info("[PUT /api/machines/code/{}/status] Updating machine status for code: {}", code, code);
-        Equipment equipment = equipmentRepository.findByCode(code)
-                .orElseThrow(() -> {
-                    logger.error("[PUT /api/machines/code/{}/status] Machine not found with code: {}", code, code);
-                    return new RuntimeException("Machine not found with code: " + code);
-                });
+    public MachineDTO updateMachineStatusByCode(
+            @PathVariable @NonNull String code, @RequestBody Map<String, String> body) {
+        logger.info(
+                "[PUT /api/machines/code/{}/status] Updating machine status for code: {}",
+                code,
+                code);
+        Equipment equipment =
+                equipmentRepository
+                        .findByCode(code)
+                        .orElseThrow(
+                                () -> {
+                                    logger.error(
+                                            "[PUT /api/machines/code/{}/status] Machine not found"
+                                                    + " with code: {}",
+                                            code,
+                                            code);
+                                    return new RuntimeException(
+                                            "Machine not found with code: " + code);
+                                });
 
+        gymAccess.require(equipment.getGymId());
         String status = body.get("status");
         if (status == null || status.isBlank()) {
-            logger.error("[PUT /api/machines/code/{}/status] Missing 'status' in request body", code);
+            logger.error(
+                    "[PUT /api/machines/code/{}/status] Missing 'status' in request body", code);
             throw new RuntimeException("Missing 'status' in request body");
         }
         status = statusToApply(equipment, status);
@@ -213,18 +311,28 @@ public class MachineController {
         String oldStatus = equipment.getStatus();
         equipment.setStatus(status);
         Equipment updated = equipmentRepository.save(equipment);
-        logger.info("[PUT /api/machines/code/{}/status] Updated machine {} from '{}' to '{}'", code, equipment.getName(), oldStatus, status);
-        
+        logger.info(
+                "[PUT /api/machines/code/{}/status] Updated machine {} from '{}' to '{}'",
+                code,
+                equipment.getName(),
+                oldStatus,
+                status);
+
         MachineDTO dto = toMachineDto(updated);
 
         // Broadcast update to all WebSocket clients
         messagingTemplate.convertAndSend("/topic/machines", dto);
+        messagingTemplate.convertAndSend("/topic/gyms/" + updated.getGymId() + "/machines", dto);
         logger.info("[WebSocket] Broadcasted machine update for code: {}", code);
 
-        String username = SecurityContextHolder.getContext().getAuthentication() != null
-                ? SecurityContextHolder.getContext().getAuthentication().getName() : "anonymous";
+        String username =
+                SecurityContextHolder.getContext().getAuthentication() != null
+                        ? SecurityContextHolder.getContext().getAuthentication().getName()
+                        : "anonymous";
         String eventType = "In Use".equalsIgnoreCase(status) ? "CHECK_IN" : "CHECK_OUT";
-        activityLogService.log(eventType, username,
+        activityLogService.log(
+                eventType,
+                username,
                 eventType + " on " + equipment.getName() + " (status: " + status + ")",
                 equipment.getName());
 
@@ -232,19 +340,22 @@ public class MachineController {
     }
 
     /**
-     * Out-of-order machines are controlled by admins: members can't mark a machine out of order (403)
-     * or check in to one (409). Checking out still succeeds, so a workout that was already in progress
-     * can end, but the machine stays out of order.
+     * Out-of-order machines are controlled by admins: members can't mark a machine out of order
+     * (403) or check in to one (409). Checking out still succeeds, so a workout that was already in
+     * progress can end, but the machine stays out of order.
      */
     private String statusToApply(Equipment equipment, String requested) {
         if (com.ureclive.urec_live_backend.entity.EquipmentStatuses.isOutOfOrder(requested)) {
             throw new org.springframework.web.server.ResponseStatusException(
-                    org.springframework.http.HttpStatus.FORBIDDEN, "Only admins can mark machines out of order");
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "Only admins can mark machines out of order");
         }
-        if (!com.ureclive.urec_live_backend.entity.EquipmentStatuses.isOutOfOrder(equipment.getStatus())) {
+        if (!com.ureclive.urec_live_backend.entity.EquipmentStatuses.isOutOfOrder(
+                equipment.getStatus())) {
             return requested;
         }
-        if (com.ureclive.urec_live_backend.entity.EquipmentStatuses.IN_USE.equalsIgnoreCase(requested.trim())) {
+        if (com.ureclive.urec_live_backend.entity.EquipmentStatuses.IN_USE.equalsIgnoreCase(
+                requested.trim())) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.CONFLICT, "Machine is out of order");
         }
@@ -255,7 +366,10 @@ public class MachineController {
     @GetMapping("/floor-plans")
     public List<FloorPlanResponse> getFloorPlans() {
         logger.info("[GET /api/machines/floor-plans] Fetching all floor plans with equipment");
-        List<FloorPlan> plans = floorPlanRepository.findAllByActiveTrueOrderByFloorNumberAsc();
+        List<FloorPlan> plans =
+                floorPlanRepository.findAllByActiveTrueOrderByFloorNumberAsc().stream()
+                        .filter(f -> gymAccess.visible(f.getGymId()))
+                        .toList();
 
         if (plans.isEmpty()) {
             // Return a default virtual floor plan with all equipment
@@ -267,20 +381,27 @@ public class MachineController {
             defaultPlan.setFloorNumber(1);
             defaultPlan.setActive(true);
 
-            List<MachineDTO> allEquipment = equipmentRepository.findAllByDeletedFalse().stream()
-                    .map(this::toMachineDto)
-                    .collect(Collectors.toList());
+            List<MachineDTO> allEquipment =
+                    equipmentRepository.findAllByDeletedFalse().stream()
+                            .filter(e -> gymAccess.visible(e.getGymId()))
+                            .map(this::toMachineDto)
+                            .collect(Collectors.toList());
             return List.of(FloorPlanResponse.from(defaultPlan, allEquipment));
         }
 
-        return plans.stream().map(plan -> {
-            List<MachineDTO> equipment = equipmentRepository
-                    .findAllByDeletedFalseAndFloorPlanId(plan.getId())
-                    .stream()
-                    .map(this::toMachineDto)
-                    .collect(Collectors.toList());
-            return FloorPlanResponse.from(plan, equipment);
-        }).collect(Collectors.toList());
+        return plans.stream()
+                .map(
+                        plan -> {
+                            List<MachineDTO> equipment =
+                                    equipmentRepository
+                                            .findAllByDeletedFalseAndFloorPlanId(plan.getId())
+                                            .stream()
+                                            .filter(e -> gymAccess.visible(e.getGymId()))
+                                            .map(this::toMachineDto)
+                                            .collect(Collectors.toList());
+                            return FloorPlanResponse.from(plan, equipment);
+                        })
+                .collect(Collectors.toList());
     }
 
     // Backward-compatible single floor plan endpoint
@@ -294,9 +415,9 @@ public class MachineController {
     // Helper method to get primary exercise name
     private String getPrimaryExerciseName(Equipment equipment) {
         return equipment.getExercises().stream()
-            .findFirst()
-            .map(Exercise::getName)
-            .orElse("Unknown");
+                .findFirst()
+                .map(Exercise::getName)
+                .orElse("Unknown");
     }
 
     private MachineDTO toMachineDto(Equipment equipment) {

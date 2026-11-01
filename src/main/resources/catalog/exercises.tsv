@@ -1,0 +1,213 @@
+name	muscleGroup	equipmentType	trainingType	loggingMode	instructions	aliases
+Bench Press	Chest	BARBELL	STRENGTH	WEIGHT_REPS	Press the load upward with wrists stacked over elbows; lower with control.	
+Incline Bench Press	Chest	BARBELL	STRENGTH	WEIGHT_REPS	Press the load upward with wrists stacked over elbows; lower with control.	Incline Press
+Decline Bench Press	Chest	BARBELL	STRENGTH	WEIGHT_REPS	Press the load upward with wrists stacked over elbows; lower with control.	Decline Press
+Close Grip Bench Press	Chest	BARBELL	STRENGTH	WEIGHT_REPS	Press the load upward with wrists stacked over elbows; lower with control.	Close Grip Bench
+Floor Press	Chest	BARBELL	STRENGTH	WEIGHT_REPS	Press the load upward with wrists stacked over elbows; lower with control.	
+Dumbbell Bench Press	Chest	DUMBBELL	STRENGTH	WEIGHT_REPS	Press the dumbbells upward; lower to a comfortable depth while keeping shoulders stable.	
+Incline Dumbbell Press	Chest	DUMBBELL	STRENGTH	WEIGHT_REPS	Press the dumbbells upward; lower to a comfortable depth while keeping shoulders stable.	
+Decline Dumbbell Press	Chest	DUMBBELL	STRENGTH	WEIGHT_REPS	Press the dumbbells upward; lower to a comfortable depth while keeping shoulders stable.	
+Dumbbell Floor Press	Chest	DUMBBELL	STRENGTH	WEIGHT_REPS	Press the dumbbells upward; lower to a comfortable depth while keeping shoulders stable.	
+Dumbbell Squeeze Press	Chest	DUMBBELL	STRENGTH	WEIGHT_REPS	Press the dumbbells upward; lower to a comfortable depth while keeping shoulders stable.	
+Dumbbell Fly	Chest	DUMBBELL	STRENGTH	WEIGHT_REPS	Bring the arms together in an arc with softly bent elbows; return slowly.	Chest Fly
+Incline Dumbbell Fly	Chest	DUMBBELL	STRENGTH	WEIGHT_REPS	Bring the arms together in an arc with softly bent elbows; return slowly.	
+Decline Dumbbell Fly	Chest	DUMBBELL	STRENGTH	WEIGHT_REPS	Bring the arms together in an arc with softly bent elbows; return slowly.	
+Cable Fly	Chest	CABLE	STRENGTH	WEIGHT_REPS	Bring handles together in front of the chest; control the return without forcing shoulder range.	Cable Crossover
+Low Cable Fly	Chest	CABLE	STRENGTH	WEIGHT_REPS	Bring handles together in front of the chest; control the return without forcing shoulder range.	
+High Cable Fly	Chest	CABLE	STRENGTH	WEIGHT_REPS	Bring handles together in front of the chest; control the return without forcing shoulder range.	
+Single Arm Cable Fly	Chest	CABLE	STRENGTH	WEIGHT_REPS	Bring handles together in front of the chest; control the return without forcing shoulder range.	
+Standing Cable Chest Press	Chest	CABLE	STRENGTH	WEIGHT_REPS	Stand with a stable stance and handles at chest height; press forward and return with control.	
+Machine Chest Press	Chest	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the seat so handles align with your chest; move through a comfortable controlled range.	
+Incline Chest Press Machine	Chest	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the seat so handles align with your chest; move through a comfortable controlled range.	
+Pec Deck Fly	Chest	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the seat so handles align with your chest; move through a comfortable controlled range.	
+Seated Chest Press	Chest	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the seat so handles align with your chest; move through a comfortable controlled range.	
+Push Up	Chest	BODYWEIGHT	STRENGTH	REPS	Keep a straight trunk; bend the elbows to lower, then press away from the support.	Push-ups
+Incline Push Up	Chest	BODYWEIGHT	STRENGTH	REPS	Keep a straight trunk; bend the elbows to lower, then press away from the support.	
+Decline Push Up	Chest	BODYWEIGHT	STRENGTH	REPS	Keep a straight trunk; bend the elbows to lower, then press away from the support.	
+Diamond Push Up	Chest	BODYWEIGHT	STRENGTH	REPS	Keep a straight trunk; bend the elbows to lower, then press away from the support.	
+Wide Push Up	Chest	BODYWEIGHT	STRENGTH	REPS	Keep a straight trunk; bend the elbows to lower, then press away from the support.	
+Knee Push Up	Chest	BODYWEIGHT	STRENGTH	REPS	Keep a straight trunk; bend the elbows to lower, then press away from the support.	
+Barbell Row	Back	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk and pull toward the lower ribs; lower without rounding the back.	
+Pendlay Row	Back	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk and pull toward the lower ribs; lower without rounding the back.	
+Underhand Barbell Row	Back	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk and pull toward the lower ribs; lower without rounding the back.	
+Meadows Row	Back	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk and pull toward the lower ribs; lower without rounding the back.	
+T Bar Row	Back	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk and pull toward the lower ribs; lower without rounding the back.	T-Bar Row
+One Arm Dumbbell Row	Back	DUMBBELL	STRENGTH	WEIGHT_REPS	Support the trunk as needed; pull the elbow toward the hip and lower with control.	
+Chest Supported Dumbbell Row	Back	DUMBBELL	STRENGTH	WEIGHT_REPS	Support the trunk as needed; pull the elbow toward the hip and lower with control.	
+Incline Dumbbell Row	Back	DUMBBELL	STRENGTH	WEIGHT_REPS	Support the trunk as needed; pull the elbow toward the hip and lower with control.	
+Dumbbell Pullover	Back	DUMBBELL	STRENGTH	WEIGHT_REPS	Lie supported on a bench; lower the dumbbell behind the head only within a comfortable shoulder range and return above the chest.	
+Renegade Row	Back	DUMBBELL	STRENGTH	WEIGHT_REPS	Support the trunk as needed; pull the elbow toward the hip and lower with control.	
+Seated Cable Row	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.	
+Wide Grip Cable Row	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.	
+Single Arm Cable Row	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.	
+Straight Arm Pulldown	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.	
+Lat Pulldown	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.	
+Close Grip Lat Pulldown	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.	
+Wide Grip Lat Pulldown	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.	
+Reverse Grip Lat Pulldown	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.	
+Machine Row	Back	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the pads and handles; pull smoothly while keeping the torso supported.	
+High Row Machine	Back	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the pads and handles; pull smoothly while keeping the torso supported.	
+Assisted Pull Up	Back	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the pads and handles; pull smoothly while keeping the torso supported.	
+Machine Pullover	Back	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the pads and handles; pull smoothly while keeping the torso supported.	
+Pull Up	Back	BODYWEIGHT	STRENGTH	REPS	Start from a controlled hang; pull your chest toward the bar and lower slowly.	
+Chin Up	Back	BODYWEIGHT	STRENGTH	REPS	Start from a controlled hang; pull your chest toward the bar and lower slowly.	
+Neutral Grip Pull Up	Back	BODYWEIGHT	STRENGTH	REPS	Start from a controlled hang; pull your chest toward the bar and lower slowly.	
+Inverted Row	Back	BODYWEIGHT	STRENGTH	REPS	Start from a controlled hang; pull your chest toward the bar and lower slowly.	
+Scapular Pull Up	Back	BODYWEIGHT	STRENGTH	REPS	Start from a controlled hang; pull your chest toward the bar and lower slowly.	
+Overhead Press	Shoulders	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk; press overhead within a comfortable range without leaning backward.	
+Seated Barbell Press	Shoulders	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk; press overhead within a comfortable range without leaning backward.	
+Push Press	Shoulders	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk; press overhead within a comfortable range without leaning backward.	
+Landmine Press	Shoulders	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk; press overhead within a comfortable range without leaning backward.	
+Dumbbell Shoulder Press	Shoulders	DUMBBELL	STRENGTH	WEIGHT_REPS	Press the dumbbells upward while keeping your ribs and pelvis aligned.	Shoulder Press
+Arnold Press	Shoulders	DUMBBELL	STRENGTH	WEIGHT_REPS	Press the dumbbells upward while keeping your ribs and pelvis aligned.	
+Seated Dumbbell Press	Shoulders	DUMBBELL	STRENGTH	WEIGHT_REPS	Press the dumbbells upward while keeping your ribs and pelvis aligned.	
+Dumbbell Lateral Raise	Shoulders	DUMBBELL	STRENGTH	WEIGHT_REPS	Raise the arms with softly bent elbows; avoid shrugging and lower slowly.	Lateral Raise
+Dumbbell Front Raise	Shoulders	DUMBBELL	STRENGTH	WEIGHT_REPS	Raise the arms with softly bent elbows; avoid shrugging and lower slowly.	Front Raise
+Bent Over Reverse Fly	Shoulders	DUMBBELL	STRENGTH	WEIGHT_REPS	Raise the arms with softly bent elbows; avoid shrugging and lower slowly.	Rear Delt Fly
+Incline Reverse Fly	Shoulders	DUMBBELL	STRENGTH	WEIGHT_REPS	Raise the arms with softly bent elbows; avoid shrugging and lower slowly.	
+Cable Lateral Raise	Shoulders	CABLE	STRENGTH	WEIGHT_REPS	Move the cable through a controlled shoulder range; keep the trunk still.	
+Cable Front Raise	Shoulders	CABLE	STRENGTH	WEIGHT_REPS	Move the cable through a controlled shoulder range; keep the trunk still.	
+Cable Reverse Fly	Shoulders	CABLE	STRENGTH	WEIGHT_REPS	Move the cable through a controlled shoulder range; keep the trunk still.	
+Face Pull	Shoulders	CABLE	STRENGTH	WEIGHT_REPS	Move the cable through a controlled shoulder range; keep the trunk still.	
+Machine Shoulder Press	Shoulders	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the seat and move through a comfortable range without lifting the shoulders.	
+Machine Lateral Raise	Shoulders	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the seat and move through a comfortable range without lifting the shoulders.	
+Reverse Pec Deck	Shoulders	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the seat and move through a comfortable range without lifting the shoulders.	
+Barbell Curl	Biceps	BARBELL	STRENGTH	WEIGHT_REPS	Keep the upper arms still; bend the elbows and lower without swinging.	Bicep Curl
+EZ Bar Curl	Biceps	BARBELL	STRENGTH	WEIGHT_REPS	Keep the upper arms still; bend the elbows and lower without swinging.	
+Reverse Barbell Curl	Biceps	BARBELL	STRENGTH	WEIGHT_REPS	Keep the upper arms still; bend the elbows and lower without swinging.	
+Drag Curl	Biceps	BARBELL	STRENGTH	WEIGHT_REPS	Keep the upper arms still; bend the elbows and lower without swinging.	
+Dumbbell Curl	Biceps	DUMBBELL	STRENGTH	WEIGHT_REPS	Keep elbows near the torso or supported; curl and lower with control.	
+Hammer Curl	Biceps	DUMBBELL	STRENGTH	WEIGHT_REPS	Keep elbows near the torso or supported; curl and lower with control.	
+Incline Dumbbell Curl	Biceps	DUMBBELL	STRENGTH	WEIGHT_REPS	Keep elbows near the torso or supported; curl and lower with control.	
+Concentration Curl	Biceps	DUMBBELL	STRENGTH	WEIGHT_REPS	Keep elbows near the torso or supported; curl and lower with control.	
+Preacher Dumbbell Curl	Biceps	DUMBBELL	STRENGTH	WEIGHT_REPS	Keep elbows near the torso or supported; curl and lower with control.	Preacher Curl
+Spider Curl	Biceps	DUMBBELL	STRENGTH	WEIGHT_REPS	Keep elbows near the torso or supported; curl and lower with control.	
+Zottman Curl	Biceps	DUMBBELL	STRENGTH	WEIGHT_REPS	Keep elbows near the torso or supported; curl and lower with control.	
+Cable Curl	Biceps	CABLE	STRENGTH	WEIGHT_REPS	Keep the upper arms steady; curl the handle against cable resistance and return slowly.	
+Rope Hammer Curl	Biceps	CABLE	STRENGTH	WEIGHT_REPS	Keep the upper arms steady; curl the handle against cable resistance and return slowly.	
+High Cable Curl	Biceps	CABLE	STRENGTH	WEIGHT_REPS	Keep the upper arms steady; curl the handle against cable resistance and return slowly.	
+Single Arm Cable Curl	Biceps	CABLE	STRENGTH	WEIGHT_REPS	Keep the upper arms steady; curl the handle against cable resistance and return slowly.	
+Machine Preacher Curl	Biceps	MACHINE	STRENGTH	WEIGHT_REPS	Align the elbows with the machine pivot; curl without lifting off the pad.	
+Biceps Curl Machine	Biceps	MACHINE	STRENGTH	WEIGHT_REPS	Align the elbows with the machine pivot; curl without lifting off the pad.	
+Triceps Pushdown	Triceps	CABLE	STRENGTH	WEIGHT_REPS	Keep the upper arms steady; straighten the elbows and return without forcing the joint.	Tricep Pushdown
+Rope Triceps Pushdown	Triceps	CABLE	STRENGTH	WEIGHT_REPS	Keep the upper arms steady; straighten the elbows and return without forcing the joint.	
+Overhead Cable Extension	Triceps	CABLE	STRENGTH	WEIGHT_REPS	Keep the upper arms steady; straighten the elbows and return without forcing the joint.	
+Single Arm Cable Extension	Triceps	CABLE	STRENGTH	WEIGHT_REPS	Keep the upper arms steady; straighten the elbows and return without forcing the joint.	
+Reverse Grip Pushdown	Triceps	CABLE	STRENGTH	WEIGHT_REPS	Keep the upper arms steady; straighten the elbows and return without forcing the joint.	
+Dumbbell Overhead Extension	Triceps	DUMBBELL	STRENGTH	WEIGHT_REPS	Support the upper arms; bend and extend the elbows through a comfortable range.	Overhead Tricep Extension
+Dumbbell Skull Crusher	Triceps	DUMBBELL	STRENGTH	WEIGHT_REPS	Support the upper arms; bend and extend the elbows through a comfortable range.	
+Dumbbell Kickback	Triceps	DUMBBELL	STRENGTH	WEIGHT_REPS	Support the upper arms; bend and extend the elbows through a comfortable range.	
+EZ Bar Skull Crusher	Triceps	BARBELL	STRENGTH	WEIGHT_REPS	Keep the upper arms stable and lower the bar with control before extending.	Skull Crusher
+Barbell Triceps Extension	Triceps	BARBELL	STRENGTH	WEIGHT_REPS	Keep the upper arms stable and lower the bar with control before extending.	
+Parallel Bar Dip	Triceps	BODYWEIGHT	STRENGTH	REPS	Use stable supports; lower by bending the elbows and press upward with control.	Tricep Dips
+Bench Dip	Triceps	BODYWEIGHT	STRENGTH	REPS	Use stable supports; lower by bending the elbows and press upward with control.	
+Back Squat	Quads	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk; bend hips and knees to a comfortable depth, then stand with control.	Squat
+Front Squat	Quads	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk; bend hips and knees to a comfortable depth, then stand with control.	
+Zercher Squat	Quads	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk; bend hips and knees to a comfortable depth, then stand with control.	
+Box Squat	Quads	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk; bend hips and knees to a comfortable depth, then stand with control.	
+Barbell Split Squat	Quads	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk; bend hips and knees to a comfortable depth, then stand with control.	
+Goblet Squat	Quads	DUMBBELL	STRENGTH	WEIGHT_REPS	Hold the weight securely; lower with balanced foot pressure, then stand.	
+Dumbbell Squat	Quads	DUMBBELL	STRENGTH	WEIGHT_REPS	Hold the weight securely; lower with balanced foot pressure, then stand.	
+Dumbbell Split Squat	Quads	DUMBBELL	STRENGTH	WEIGHT_REPS	Hold the weight securely; lower with balanced foot pressure, then stand.	
+Bulgarian Split Squat	Quads	DUMBBELL	STRENGTH	WEIGHT_REPS	Hold the weight securely; lower with balanced foot pressure, then stand.	
+Dumbbell Step Up	Quads	DUMBBELL	STRENGTH	WEIGHT_REPS	Hold the weight securely; lower with balanced foot pressure, then stand.	
+Dumbbell Walking Lunge	Quads	DUMBBELL	STRENGTH	WEIGHT_REPS	Hold the weight securely; lower with balanced foot pressure, then stand.	
+Dumbbell Reverse Lunge	Quads	DUMBBELL	STRENGTH	WEIGHT_REPS	Hold the weight securely; lower with balanced foot pressure, then stand.	
+Leg Press	Quads	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the machine; bend and extend the knees within a controlled comfortable range.	
+Hack Squat	Quads	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the machine; bend and extend the knees within a controlled comfortable range.	
+Leg Extension	Quads	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the machine; bend and extend the knees within a controlled comfortable range.	
+Single Leg Press	Quads	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the machine; bend and extend the knees within a controlled comfortable range.	
+Pendulum Squat	Quads	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the machine; bend and extend the knees within a controlled comfortable range.	
+Smith Machine Squat	Quads	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the machine; bend and extend the knees within a controlled comfortable range.	
+Bodyweight Squat	Quads	BODYWEIGHT	STRENGTH	REPS	Keep balance over your feet; lower with control and stand without bouncing.	
+Forward Lunge	Quads	BODYWEIGHT	STRENGTH	REPS	Keep balance over your feet; lower with control and stand without bouncing.	Lunges
+Reverse Lunge	Quads	BODYWEIGHT	STRENGTH	REPS	Keep balance over your feet; lower with control and stand without bouncing.	
+Walking Lunge	Quads	BODYWEIGHT	STRENGTH	REPS	Keep balance over your feet; lower with control and stand without bouncing.	
+Step Up	Quads	BODYWEIGHT	STRENGTH	REPS	Keep balance over your feet; lower with control and stand without bouncing.	
+Pistol Squat	Quads	BODYWEIGHT	STRENGTH	REPS	Keep balance over your feet; lower with control and stand without bouncing.	
+Romanian Deadlift	Hamstrings	BARBELL	STRENGTH	WEIGHT_REPS	Hinge at the hips with a braced trunk; keep the load close and stand tall.	
+Conventional Deadlift	Hamstrings	BARBELL	STRENGTH	WEIGHT_REPS	Hinge at the hips with a braced trunk; keep the load close and stand tall.	Deadlift
+Sumo Deadlift	Hamstrings	BARBELL	STRENGTH	WEIGHT_REPS	Hinge at the hips with a braced trunk; keep the load close and stand tall.	
+Good Morning	Hamstrings	BARBELL	STRENGTH	WEIGHT_REPS	Hinge at the hips with a braced trunk; keep the load close and stand tall.	
+Stiff Leg Deadlift	Hamstrings	BARBELL	STRENGTH	WEIGHT_REPS	Hinge at the hips with a braced trunk; keep the load close and stand tall.	
+Dumbbell Romanian Deadlift	Hamstrings	DUMBBELL	STRENGTH	WEIGHT_REPS	Push the hips backward with soft knees; stand by extending the hips.	
+Single Leg Romanian Deadlift	Hamstrings	DUMBBELL	STRENGTH	WEIGHT_REPS	Push the hips backward with soft knees; stand by extending the hips.	
+Dumbbell Deadlift	Hamstrings	DUMBBELL	STRENGTH	WEIGHT_REPS	Push the hips backward with soft knees; stand by extending the hips.	
+Seated Leg Curl	Hamstrings	MACHINE	STRENGTH	WEIGHT_REPS	Align knees with the pivot; curl the legs while keeping hips against the pad.	
+Lying Leg Curl	Hamstrings	MACHINE	STRENGTH	WEIGHT_REPS	Align knees with the pivot; curl the legs while keeping hips against the pad.	
+Standing Leg Curl	Hamstrings	MACHINE	STRENGTH	WEIGHT_REPS	Align knees with the pivot; curl the legs while keeping hips against the pad.	
+Barbell Hip Thrust	Glutes	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk; extend the hips without arching the lower back.	Hip Thrust
+Barbell Glute Bridge	Glutes	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk; extend the hips without arching the lower back.	
+Cable Kickback	Glutes	CABLE	STRENGTH	WEIGHT_REPS	Keep the trunk stable; extend or move the hip without rotating the pelvis.	
+Cable Pull Through	Glutes	CABLE	STRENGTH	WEIGHT_REPS	Keep the trunk stable; extend or move the hip without rotating the pelvis.	
+Cable Hip Abduction	Glutes	CABLE	STRENGTH	WEIGHT_REPS	Keep the trunk stable; extend or move the hip without rotating the pelvis.	
+Hip Abduction Machine	Glutes	MACHINE	STRENGTH	WEIGHT_REPS	Keep the pelvis steady; move through the machine range with control.	
+Hip Adduction Machine	Glutes	MACHINE	STRENGTH	WEIGHT_REPS	Keep the pelvis steady; move through the machine range with control.	
+Glute Drive Machine	Glutes	MACHINE	STRENGTH	WEIGHT_REPS	Keep the pelvis steady; move through the machine range with control.	
+Glute Bridge	Glutes	BODYWEIGHT	STRENGTH	REPS	Keep the ribs down; extend the hips while maintaining a stable pelvis.	
+Single Leg Glute Bridge	Glutes	BODYWEIGHT	STRENGTH	REPS	Keep the ribs down; extend the hips while maintaining a stable pelvis.	
+Donkey Kick	Glutes	BODYWEIGHT	STRENGTH	REPS	Keep the ribs down; extend the hips while maintaining a stable pelvis.	
+Fire Hydrant	Glutes	BODYWEIGHT	STRENGTH	REPS	Keep the ribs down; extend the hips while maintaining a stable pelvis.	
+Standing Calf Raise Machine	Calves	MACHINE	STRENGTH	WEIGHT_REPS	Rise onto the balls of the feet; pause and lower the heels with control.	Calf Raise
+Seated Calf Raise	Calves	MACHINE	STRENGTH	WEIGHT_REPS	Rise onto the balls of the feet; pause and lower the heels with control.	
+Leg Press Calf Raise	Calves	MACHINE	STRENGTH	WEIGHT_REPS	Rise onto the balls of the feet; pause and lower the heels with control.	
+Smith Machine Calf Raise	Calves	MACHINE	STRENGTH	WEIGHT_REPS	Rise onto the balls of the feet; pause and lower the heels with control.	
+Single Leg Calf Raise	Calves	BODYWEIGHT	STRENGTH	REPS	Balance with support if needed; raise and lower the heel slowly.	
+Bodyweight Calf Raise	Calves	BODYWEIGHT	STRENGTH	REPS	Balance with support if needed; raise and lower the heel slowly.	
+Crunch	Core	BODYWEIGHT	STRENGTH	REPS	Keep the movement controlled; move through the trunk without pulling on the neck.	
+Reverse Crunch	Core	BODYWEIGHT	STRENGTH	REPS	Keep the movement controlled; move through the trunk without pulling on the neck.	
+Bicycle Crunch	Core	BODYWEIGHT	STRENGTH	REPS	Keep the movement controlled; move through the trunk without pulling on the neck.	
+Hanging Knee Raise	Core	BODYWEIGHT	STRENGTH	REPS	Keep the movement controlled; move through the trunk without pulling on the neck.	
+Hanging Leg Raise	Core	BODYWEIGHT	STRENGTH	REPS	Keep the movement controlled; move through the trunk without pulling on the neck.	Leg Raise
+Dead Bug	Core	BODYWEIGHT	STRENGTH	REPS	Keep the movement controlled; move through the trunk without pulling on the neck.	
+Bird Dog	Core	BODYWEIGHT	STRENGTH	REPS	Keep the movement controlled; move through the trunk without pulling on the neck.	
+Russian Twist	Core	BODYWEIGHT	STRENGTH	REPS	Keep the movement controlled; move through the trunk without pulling on the neck.	
+Sit Up	Core	BODYWEIGHT	STRENGTH	REPS	Keep the movement controlled; move through the trunk without pulling on the neck.	
+Cable Crunch	Core	CABLE	STRENGTH	WEIGHT_REPS	Brace the trunk and move the cable without jerking or twisting beyond comfortable range.	
+Cable Wood Chop	Core	CABLE	STRENGTH	WEIGHT_REPS	Brace the trunk and move the cable without jerking or twisting beyond comfortable range.	
+Pallof Press	Core	CABLE	STRENGTH	WEIGHT_REPS	Brace the trunk and move the cable without jerking or twisting beyond comfortable range.	
+Dumbbell Wrist Curl	Forearms	DUMBBELL	STRENGTH	WEIGHT_REPS	Support the forearms; bend and extend the wrists slowly using a manageable load.	
+Reverse Dumbbell Wrist Curl	Forearms	DUMBBELL	STRENGTH	WEIGHT_REPS	Support the forearms; bend and extend the wrists slowly using a manageable load.	
+Kettlebell Swing	Full Body	KETTLEBELL	STRENGTH	WEIGHT_REPS	Use a stable stance; hinge and extend the hips, keeping the load under control.	
+Kettlebell Deadlift	Full Body	KETTLEBELL	STRENGTH	WEIGHT_REPS	Use a stable stance; hinge and extend the hips, keeping the load under control.	
+Kettlebell Goblet Squat	Full Body	KETTLEBELL	STRENGTH	WEIGHT_REPS	Use a stable stance; hinge and extend the hips, keeping the load under control.	
+Kettlebell Clean	Full Body	KETTLEBELL	STRENGTH	WEIGHT_REPS	From a controlled hip hinge, guide the kettlebell close to the body into the rack position without letting it strike the wrist.	
+Plank	Core	BODYWEIGHT	STRENGTH	DURATION	Hold a stable position while breathing normally; stop when you cannot maintain control.	
+Side Plank	Core	BODYWEIGHT	STRENGTH	DURATION	Hold a stable position while breathing normally; stop when you cannot maintain control.	
+Hollow Hold	Core	BODYWEIGHT	STRENGTH	DURATION	Hold a stable position while breathing normally; stop when you cannot maintain control.	
+Wall Sit	Quads	BODYWEIGHT	STRENGTH	DURATION	Hold a stable position while breathing normally; stop when you cannot maintain control.	
+Dead Hang	Back	BODYWEIGHT	STRENGTH	DURATION	Hold a stable position while breathing normally; stop when you cannot maintain control.	
+Outdoor Run	Full Body	NONE	CARDIO	DISTANCE_DURATION	Begin at an easy pace; maintain controlled breathing and record elapsed time and distance.	
+Outdoor Walk	Full Body	NONE	CARDIO	DISTANCE_DURATION	Begin at an easy pace; maintain controlled breathing and record elapsed time and distance.	
+Outdoor Cycling	Full Body	BICYCLE	CARDIO	DISTANCE_DURATION	Begin at an easy pace; maintain controlled breathing and record elapsed time and distance.	
+Treadmill Run	Full Body	MACHINE	CARDIO	DISTANCE_DURATION	Begin at an easy pace; maintain controlled breathing and record elapsed time and distance.	
+Treadmill Walk	Full Body	MACHINE	CARDIO	DISTANCE_DURATION	Begin at an easy pace; maintain controlled breathing and record elapsed time and distance.	
+Stationary Bike	Full Body	MACHINE	CARDIO	DISTANCE_DURATION	Begin at an easy pace; maintain controlled breathing and record elapsed time and distance.	
+Rowing Ergometer	Full Body	MACHINE	CARDIO	DISTANCE_DURATION	Begin at an easy pace; maintain controlled breathing and record elapsed time and distance.	Rowing
+Elliptical	Full Body	MACHINE	CARDIO	DISTANCE_DURATION	Begin at an easy pace; maintain controlled breathing and record elapsed time and distance.	
+Swimming	Full Body	POOL	CARDIO	DISTANCE_DURATION	Begin at an easy pace; maintain controlled breathing and record elapsed time and distance.	
+Jump Rope	Full Body	BODYWEIGHT	CARDIO	DURATION	Start gently; maintain a controlled rhythm and record elapsed time.	
+Stair Climber	Full Body	MACHINE	CARDIO	DURATION	Start gently; maintain a controlled rhythm and record elapsed time.	
+Jumping Jack	Full Body	BODYWEIGHT	CARDIO	DURATION	Start gently; maintain a controlled rhythm and record elapsed time.	
+High Knees	Full Body	BODYWEIGHT	CARDIO	DURATION	Start gently; maintain a controlled rhythm and record elapsed time.	
+Mountain Climber	Full Body	BODYWEIGHT	CARDIO	DURATION	Start gently; maintain a controlled rhythm and record elapsed time.	
+Standing Hamstring Stretch	Hamstrings	BODYWEIGHT	MOBILITY	DURATION	Hinge gently at the hips with soft knees; avoid rounding or bouncing.	
+Kneeling Hip Flexor Stretch	Glutes	BODYWEIGHT	MOBILITY	DURATION	Use a padded kneeling stance; tuck the pelvis and shift gently forward.	
+Standing Quad Stretch	Quads	BODYWEIGHT	MOBILITY	DURATION	Hold a stable support and bring the heel toward the hip without arching.	
+Calf Stretch	Calves	BODYWEIGHT	MOBILITY	DURATION	Keep the rear heel down and lean gently toward a support.	
+Doorway Chest Stretch	Chest	BODYWEIGHT	MOBILITY	DURATION	Place the forearm on a doorway and turn away gently.	
+Child Pose	Back	BODYWEIGHT	MOBILITY	DURATION	Kneel and reach forward while breathing comfortably.	
+Cat Cow	Back	BODYWEIGHT	MOBILITY	DURATION	On hands and knees, slowly alternate gentle spinal flexion and extension.	
+Thoracic Rotation	Back	BODYWEIGHT	MOBILITY	DURATION	Rotate gently through the upper back while keeping the hips stable.	
+Shoulder Cross Body Stretch	Shoulders	BODYWEIGHT	MOBILITY	DURATION	Bring one arm across the chest and support it gently.	
+Figure Four Stretch	Glutes	BODYWEIGHT	MOBILITY	DURATION	Cross one ankle over the other thigh and move into a comfortable stretch.	
+Chest Dips	Chest	BODYWEIGHT	STRENGTH	REPS	Use stable parallel bars; lower through a comfortable shoulder range with a slight forward lean, then press up.	
+Bent Over Row	Back	BARBELL	STRENGTH	WEIGHT_REPS	Brace the trunk in a hip hinge; row toward the lower ribs and lower with control.	
+Hyperextension	Back	BODYWEIGHT	STRENGTH	REPS	Secure the feet on a back extension bench; hinge at the hips and rise to a neutral trunk position.	
+Upright Row	Shoulders	BARBELL	STRENGTH	WEIGHT_REPS	Pull the bar upward close to the body only within a comfortable shoulder range; lower slowly.	
+Shrugs	Shoulders	DUMBBELL	STRENGTH	WEIGHT_REPS	Hold weights at the sides; raise the shoulders straight upward and lower without rolling them.	
+Leg Curl	Hamstrings	MACHINE	STRENGTH	WEIGHT_REPS	Align the knees with the machine pivot; curl the legs while keeping the hips supported.	
+Glute Kickback Machine	Glutes	MACHINE	STRENGTH	WEIGHT_REPS	Adjust the support pads; extend one hip without rotating or arching the trunk.	
+Ab Wheel	Abs	OTHER	STRENGTH	REPS	From a supported kneeling position, roll forward only as far as you can maintain a braced trunk; return slowly.	
+Running	Cardio	NONE	CARDIO	DISTANCE_DURATION	Start at an easy pace and record elapsed time and distance.	
+Cycling	Cardio	BICYCLE	CARDIO	DISTANCE_DURATION	Set a comfortable riding position; pedal steadily and record elapsed time and distance.	
