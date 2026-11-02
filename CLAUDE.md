@@ -69,7 +69,7 @@ Core tables include `users`, `roles`, `user_roles`, `equipment`, `exercise`, `eq
 | POST | `/api/auth/login` | Login → JWT tokens |
 | POST | `/api/auth/refresh` | Refresh access token |
 | GET | `/api/auth/test` | Health check |
-| GET | `/api/machines` | List all equipment |
+| GET | `/api/machines` | List all equipment. Every machine response (here, by id/code, by exercise, floor plans, status updates) includes `exerciseNames` and `muscleGroups` (sorted), so clients don't need `/{id}/exercises` per machine |
 | GET | `/api/machines/{id}` | Single machine |
 | GET | `/api/machines/code/{code}` | Machine by QR code |
 | GET | `/api/machines/{id}/exercises` | Exercises for a machine |
@@ -173,7 +173,7 @@ Role names are stored verbatim (the admin UI assigns `ADMIN`), so `hasRole('ADMI
 ### WebSocket
 
 - STOMP broker over SockJS at `/ws`; `/topic` and `/queue` are broker prefixes.
-- Machine changes publish to `/topic/machines`; community messages publish to `/topic/chat.community`; direct messages use user queues.
+- Machine changes publish to `/topic/machines`, one `MachineDTO` per change (same shape as a `GET /api/machines` entry); community messages publish to `/topic/chat.community`; direct messages use user queues.
 - The HTTP handshake is public. A Bearer token on the STOMP `CONNECT` frame is validated by `StompAuthChannelInterceptor` and establishes the messaging principal.
 
 ---
@@ -261,6 +261,7 @@ src/main/java/com/ureclive/urec_live_backend/
   - Test data outlives each test and is shared across classes, so give a test that changes shared data its own machine/exercise.
 - Suites: `mvn test -Dtest='*EquipmentIssue*,*OutOfOrder*,MachineStatusServiceTest'` (equipment issues / out of order) and `mvn test -Dtest='HelpRequest*,HelpDemoLinksTest,AdminHelpRequestServiceTest'` (help requests). `UrecLiveBackendApplicationTests.contextLoads` still needs the real DB env vars.
 - API smoke tests against a running server: `scripts/smoke-test-equipment-issues.sh` (see `EQUIPMENT_ISSUES_TESTING.md`) and `scripts/smoke-test-help-requests.sh` (see `HELP_REQUESTS_TESTING.md`)
+- `controller/MachineApiIntegrationTest` covers the public machine endpoints, including the SQL statement count per request (Hibernate statistics, switched on inside the test). Testing guide: `MINOR_FIXES_TESTING.md`
 
 ---
 
@@ -282,6 +283,8 @@ Connects through the configured PostgreSQL environment values. `DataInitializer`
 `src/main/resources/application.properties` expects database and JWT values from the environment, binds to `0.0.0.0:8080` by default, and configures 24-hour access tokens plus seven-day refresh tokens. Check `.env.example` for variable names; never document or print values.
 
 The CV adapter is controlled by `APP_CV_SECONDARY_ENABLED`, `APP_CV_SECONDARY_BASE_URL`, `APP_CV_SECONDARY_CONFIDENCE_THRESHOLD`, and `APP_CV_SECONDARY_CACHE_TTL_MS`.
+
+`spring.jpa.properties.hibernate.default_batch_fetch_size=100`: lazy collections (each machine's exercises) load for up to 100 parents in one query. Without it, listing machines ran one database round trip per machine (~1.7 s for 95 on Neon). `MachineApiIntegrationTest` fails if that comes back.
 
 Help requests (defaults live in the `@Value` annotations, so nothing is needed in `application.properties`):
 - `app.help-requests.expire-after-minutes` (30) and `app.help-requests.expiry-check-ms` (60000)
