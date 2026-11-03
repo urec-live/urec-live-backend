@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Objects;
+import java.util.function.Predicate;
 
 @Service
 public class GymAccessService {
@@ -30,7 +31,17 @@ public class GymAccessService {
     }
 
     public boolean visible(Long gymId) {
-        return !enabled || (gymId != null && Objects.equals(user().getConnectedGymId(), gymId));
+        return visibleFilter().test(gymId);
+    }
+
+    /**
+     * visible() for filtering a list: looks the user up once. Calling visible() per item runs a
+     * user query for each one (~95 machines on the Equipment tab).
+     */
+    public Predicate<Long> visibleFilter() {
+        if (!enabled) return gymId -> true;
+        Long connectedGymId = user().getConnectedGymId();
+        return gymId -> gymId != null && Objects.equals(connectedGymId, gymId);
     }
 
     public void require(Long gymId) {

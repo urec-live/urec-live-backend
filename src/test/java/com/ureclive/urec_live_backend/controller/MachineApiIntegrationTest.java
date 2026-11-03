@@ -5,6 +5,7 @@ import com.ureclive.urec_live_backend.entity.Equipment;
 import com.ureclive.urec_live_backend.entity.EquipmentStatuses;
 import com.ureclive.urec_live_backend.entity.Exercise;
 import com.ureclive.urec_live_backend.repository.ExerciseRepository;
+import com.ureclive.urec_live_backend.repository.GymRepository;
 import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -35,9 +37,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * The public machine endpoints behind the app's Equipment tab and workout screens. Boots the whole
- * app on in-memory H2 (the "test" profile, which also runs the DataInitializer's ~95 seeded
- * machines). Shares one cached Spring context with the other API tests.
+ * The machine endpoints behind the app's Equipment tab and workout screens, called as a member
+ * connected to the UREC gym (they need sign-in and only show the member's gym). Boots the whole app
+ * on in-memory H2 (the "test" profile, which also runs the DataInitializer's ~95 seeded machines,
+ * all in UREC). Shares one cached Spring context with the other API tests.
  */
 class MachineApiIntegrationTest extends ApiIntegrationTestSupport {
 
@@ -47,18 +50,22 @@ class MachineApiIntegrationTest extends ApiIntegrationTestSupport {
     private static final List<String> CABLE_EXERCISES = List.of("MF Cable Fly", "MF Crossover", "MF Pushdown");
 
     @Autowired private ExerciseRepository exerciseRepository;
+    @Autowired private GymRepository gymRepository;
     @Autowired private TransactionTemplate transactionTemplate;
     @Autowired private EntityManagerFactory entityManagerFactory;
     @Autowired @Qualifier("brokerChannel") private AbstractSubscribableChannel brokerChannel;
 
     private long cableId;
+    private String memberToken;
 
     @BeforeEach
     void cableStationWithAChestAndATricepsExercise() {
+        memberToken = tokenFor("mf_member", "USER");
         cableId = transactionTemplate.execute(tx -> {
             Equipment cable = equipmentRepository.findByCode(CABLE)
                     .orElseGet(() -> new Equipment(CABLE, "MF Cable Station", EquipmentStatuses.AVAILABLE, null));
             cable.setStatus(EquipmentStatuses.AVAILABLE);
+            cable.setGymId(gymRepository.findByName("UREC").orElseThrow().getId());
             link(cable, "MF Cable Fly", "Chest");
             link(cable, "MF Pushdown", "Triceps");
             link(cable, "MF Crossover", "Chest");
@@ -115,6 +122,7 @@ class MachineApiIntegrationTest extends ApiIntegrationTestSupport {
         List<JsonNode> responses = new ArrayList<>();
         List<JsonNode> broadcasts = machineBroadcastsDuring(() ->
                 responses.add(objectMapper.readTree(mvc.perform(put("/api/machines/code/{code}/status", CABLE)
+                                .header(HttpHeaders.AUTHORIZATION, bearer(memberToken))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{\"status\":\"In Use\"}"))
                         .andExpect(status().isOk())
@@ -155,10 +163,11 @@ class MachineApiIntegrationTest extends ApiIntegrationTestSupport {
 
     /**
      * Each machine's exercises are a lazy collection. Without batch fetching, listing N machines ran
-     * 1 + N queries, which on Neon took ~1.7 s for the 95 seeded machines.
+     * 1 + N queries, which on Neon took ~1.7 s for the 95 seeded machines. The gym check must not
+     * look the member up per machine either (it ran 2 per machine once, 197 queries).
      */
     @Test
-    void machineListAndFloorPlansUseAFixedNumberOfQueries() throws Exception {
+    void machineListsUseAFixedNumberOfQueries() throws Exception {
         long machines = equipmentRepository.count();
         assertTrue(machines >= 50, "needs the seeded machines to mean anything, found " + machines);
 
@@ -172,6 +181,10 @@ class MachineApiIntegrationTest extends ApiIntegrationTestSupport {
 
             long floorQueries = queriesFor(statistics, "/api/machines/floor-plans");
             assertTrue(floorQueries < 10, "GET /api/machines/floor-plans ran " + floorQueries + " queries for " + machines + " machines");
+
+            // The machine picker's list; Running has the 6 seeded treadmills
+            long pickerQueries = queriesFor(statistics, "/api/machines/exercise/Running");
+            assertTrue(pickerQueries < 8, "GET /api/machines/exercise/Running ran " + pickerQueries + " queries for 6 machines");
         } finally {
             statistics.setStatisticsEnabled(wasEnabled);
         }
@@ -208,12 +221,12 @@ class MachineApiIntegrationTest extends ApiIntegrationTestSupport {
 
     private long queriesFor(Statistics statistics, String url) throws Exception {
         statistics.clear();
-        mvc.perform(get(url)).andExpect(status().isOk());
+        getAs(memberToken, url).andExpect(status().isOk());
         return statistics.getPrepareStatementCount();
     }
 
     private JsonNode getJson(String urlTemplate, Object... uriVariables) throws Exception {
-        String json = mvc.perform(get(urlTemplate, uriVariables))
+        String json = mvc.perform(get(urlTemplate, uriVariables).header(HttpHeaders.AUTHORIZATION, bearer(memberToken)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(json);

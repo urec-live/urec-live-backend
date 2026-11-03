@@ -18,16 +18,18 @@ Branch `minor-fixes-and-speed-ups`, here and in `urec-live-app`. The app side (s
 - The app's Equipment tab used to send one `GET /api/machines/{id}/exercises` per machine (95) to show them. Now it sends one request.
 - The fields are only added, so clients that don't know them (the admin dashboard, older app builds) ignore them.
 
+**Since main's gym update (#23): one gym check per list.** The machine endpoints now need sign-in and only show the member's gym. That check looked the member up in the database for every machine, twice per machine on `GET /api/machines` (197 queries for 96 machines), which undid change 1. Branch `fix/machine-list-gym-check` looks the member up once per list (`GymAccessService.visibleFilter()`), for the list, the floor plans and the machine picker's `/exercise/{name}`.
+
 ## 1. Automated tests
 
 ```bash
 mvn test
 ```
 
-You should see `Tests run: 213, Failures: 0`, including 9 from this branch. The branch now includes main as of PR #20. Everything but `UrecLiveBackendApplicationTests.contextLoads` runs on in-memory H2. Since main stopped keeping database defaults in `application.properties`, that one test needs the `.env` values, while the others need them *not* set (TERMINAL 1's `SPRING_DATASOURCE_URL` overrides the tests' H2 database). So run the two parts separately:
+Every test should pass; report the runner's own result. Everything but `UrecLiveBackendApplicationTests.contextLoads` runs on in-memory H2. Since main stopped keeping database defaults in `application.properties`, that one test needs the `.env` values, while the others need them *not* set (TERMINAL 1's `SPRING_DATASOURCE_URL` overrides the tests' H2 database). So run the two parts separately:
 
 ```bash
-# A Git Bash window that hasn't loaded .env: 212 tests
+# A Git Bash window that hasn't loaded .env: all but one test
 mvn test -Dtest='!UrecLiveBackendApplicationTests' -Dsurefire.failIfNoSpecifiedTests=false
 # Then with .env loaded (as in TERMINAL 1): the 1 remaining test
 mvn test -Dtest=UrecLiveBackendApplicationTests
@@ -35,7 +37,7 @@ mvn test -Dtest=UrecLiveBackendApplicationTests
 
 | File | What it covers |
 |---|---|
-| `controller/MachineApiIntegrationTest` (6) | The list, by id, by code, by exercise and the floor plans include both fields. A machine listed under one of its other exercises keeps that exercise as `exercise`, and lists all of them in `exerciseNames`. The status update's response and its `/topic/machines` broadcast (captured on the broker channel) carry them, and so does the broadcast when an admin takes a machine out of service (main's switch, which goes through `MachineStatusService`). `GET /api/machines` and `/floor-plans` run fewer than 10 SQL statements with the ~96 seeded machines (counted with Hibernate statistics, switched on inside the test) |
+| `controller/MachineApiIntegrationTest` (6) | Called as a member connected to the seeded UREC gym. The list, by id, by code, by exercise and the floor plans include both fields. A machine listed under one of its other exercises keeps that exercise as `exercise`, and lists all of them in `exerciseNames`. The status update's response and its `/topic/machines` broadcast (captured on the broker channel) carry them, and so does the broadcast when an admin takes a machine out of service (main's switch, which goes through `MachineStatusService`). `GET /api/machines` and `/floor-plans` run fewer than 10 SQL statements with the ~96 seeded machines, and `/exercise/Running` (the 6 seeded treadmills) fewer than 8 (counted with Hibernate statistics, switched on inside the test) |
 | `dto/MachineDTOTest` (3) | Sorted and distinct; blank and missing values left out; empty lists, never null |
 
 **Mutation check.** Turning batching off makes the query test fail with `GET /api/machines ran 97 queries for 96 machines`:
@@ -43,6 +45,8 @@ mvn test -Dtest=UrecLiveBackendApplicationTests
 ```bash
 mvn test -Dtest=MachineApiIntegrationTest -Dspring.jpa.properties.hibernate.default_batch_fetch_size=1
 ```
+
+Looking the member up per machine again fails it too. In `MachineController`, change a list's `.filter(e -> visible.test(e.getGymId()))` back to `.filter(e -> gymAccess.visible(e.getGymId()))`: `getAllMachines` gives `GET /api/machines ran 102 queries for 96 machines`, and `getMachinesByExercise` gives `GET /api/machines/exercise/Running ran 12 queries for 6 machines`.
 
 ## 2. Measured
 
@@ -62,22 +66,38 @@ With the app branch too, the Equipment tab is down to 2 requests and 0.07 s.
 Switch to the branch and start the backend as usual (TERMINAL 1 in `commands.txt`):
 
 ```bash
-cd /c/Users/abelv/portfolio/getmefit/urec-live-backend && git switch minor-fixes-and-speed-ups
+cd /c/Users/abelv/portfolio/getmefit/urec-live-backend && git switch fix/machine-list-gym-check
 ```
+
+The machine endpoints need sign-in since #23, and only show the member's own gym. In another Git Bash window, sign in as a member. Put the account's own username and password in place of the placeholders:
+
+```bash
+TOKEN=$(curl -s -X POST http://127.0.0.1:8080/api/auth/login -H 'Content-Type: application/json' \
+  -d '{"username":"MEMBER","password":"PASSWORD"}' | python -c "import json,sys; print(json.load(sys.stdin)['accessToken'])")
+```
+
+Then connect that account to UREC. A member without a gym gets an empty list, and step 1 fails with `IndexError: list index out of range`. Running this again for an account that's already connected changes nothing. **Profile → Settings → Gym** in the app does the same.
+
+```bash
+UREC=$(curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8080/api/gyms | python -c "import json,sys; print(next(g['id'] for g in json.load(sys.stdin) if g['name']=='UREC'))")
+curl -s -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d "{\"gymId\":$UREC}" http://127.0.0.1:8080/api/users/me/gym; echo
+```
+
+It prints `{"id":1,"name":"UREC"}` (the id may differ).
 
 1. Each machine has the new fields. This prints the first machine:
 
    ```bash
-   curl -s http://127.0.0.1:8080/api/machines | python -c "import json,sys; print(json.dumps(json.load(sys.stdin)[0], indent=1))"
+   curl -s -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8080/api/machines | python -c "import json,sys; print(json.dumps(json.load(sys.stdin)[0], indent=1))"
    ```
 
    It should include `"exerciseNames"` and `"muscleGroups"`.
-2. The list is fast. This should print about 0.1 s (main takes 2–3 s):
+2. The list is fast. This should print about 0.1 s (main takes several seconds, mostly the per-machine gym check):
 
    ```bash
-   curl -s -o /dev/null -w "%{time_total}s\n" http://127.0.0.1:8080/api/machines
+   curl -s -o /dev/null -w "%{time_total}s\n" -H "Authorization: Bearer $TOKEN" http://127.0.0.1:8080/api/machines
    ```
 
-3. The query count. Start the backend with `export SPRING_JPA_SHOW_SQL=true` before `mvn spring-boot:run`, and call `/api/machines` once. The log shows 2 selects: the machines, then the exercises for all of them. On main it's about 96.
+3. The query count. Start the backend with `export SPRING_JPA_SHOW_SQL=true` before `mvn spring-boot:run`, and call `/api/machines` once as in step 2. The log shows 6 selects: the sign-in and the gym check looking the member up, the machines, then the exercises for all of them. On main it's about 200, two member lookups per machine.
 4. Check in to a machine from the app. The admin dashboard's **Live Monitor** still updates (it ignores the new fields), and the app's lists change without a refresh.
 5. On the admin dashboard's **Equipment** page, set a machine to **Out of Order**. The app's Equipment tab shows it as Out of order within a second or two, with its muscle groups still on the card. Set it back to **Available** afterwards. Use an admin account whose role is `ROLE_ADMIN`: the Equipment page returns 403 for one promoted through the dashboard (role `ADMIN`; see "Admin role naming" in `EQUIPMENT_ISSUES_TESTING.md`). The **Out of order** switch under **Equipment Issues** works for both, once the machine has a report.
