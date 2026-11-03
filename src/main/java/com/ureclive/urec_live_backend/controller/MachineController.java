@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @RestController
@@ -59,10 +60,10 @@ public class MachineController {
     @GetMapping
     public List<MachineDTO> getAllMachines() {
         logger.info("[GET /api/machines] Fetching all machines");
+        Predicate<Long> visible = gymAccess.visibleFilter();
         List<Equipment> equipment =
                 equipmentRepository.findAllByDeletedFalse().stream()
-                        .filter(e -> gymAccess.visible(e.getGymId()))
-                        .filter(e -> gymAccess.visible(e.getGymId()))
+                        .filter(e -> visible.test(e.getGymId()))
                         .toList();
         List<MachineDTO> dtos =
                 equipment.stream().map(this::toMachineDto).collect(Collectors.toList());
@@ -164,9 +165,10 @@ public class MachineController {
                 "[GET /api/machines/exercise/{}] Fetching machines for exercise: {}",
                 exercise,
                 exercise);
+        Predicate<Long> visible = gymAccess.visibleFilter();
         List<Equipment> equipment =
                 equipmentRepository.findByExerciseName(exercise).stream()
-                        .filter(e -> !e.isDeleted() && gymAccess.visible(e.getGymId()))
+                        .filter(e -> !e.isDeleted() && visible.test(e.getGymId()))
                         .toList();
         List<MachineDTO> dtos =
                 equipment.stream().map(e -> toMachineDto(e, exercise)).collect(Collectors.toList());
@@ -366,9 +368,10 @@ public class MachineController {
     @GetMapping("/floor-plans")
     public List<FloorPlanResponse> getFloorPlans() {
         logger.info("[GET /api/machines/floor-plans] Fetching all floor plans with equipment");
+        Predicate<Long> visible = gymAccess.visibleFilter();
         List<FloorPlan> plans =
                 floorPlanRepository.findAllByActiveTrueOrderByFloorNumberAsc().stream()
-                        .filter(f -> gymAccess.visible(f.getGymId()))
+                        .filter(f -> visible.test(f.getGymId()))
                         .toList();
 
         if (plans.isEmpty()) {
@@ -383,7 +386,7 @@ public class MachineController {
 
             List<MachineDTO> allEquipment =
                     equipmentRepository.findAllByDeletedFalse().stream()
-                            .filter(e -> gymAccess.visible(e.getGymId()))
+                            .filter(e -> visible.test(e.getGymId()))
                             .map(this::toMachineDto)
                             .collect(Collectors.toList());
             return List.of(FloorPlanResponse.from(defaultPlan, allEquipment));
@@ -396,7 +399,7 @@ public class MachineController {
                                     equipmentRepository
                                             .findAllByDeletedFalseAndFloorPlanId(plan.getId())
                                             .stream()
-                                            .filter(e -> gymAccess.visible(e.getGymId()))
+                                            .filter(e -> visible.test(e.getGymId()))
                                             .map(this::toMachineDto)
                                             .collect(Collectors.toList());
                             return FloorPlanResponse.from(plan, equipment);
