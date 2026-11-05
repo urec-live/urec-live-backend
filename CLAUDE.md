@@ -35,7 +35,7 @@ UREC Live is a cross-platform gym management and fitness tracking platform targe
 
 ### Database Schema
 
-Core tables include `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exercise`, `workout_sessions`, `workout_sets`, `workout_plans`, `day_plans`, `day_plan_items`, `floor_plans`, `activity_log`, `equipment_issue_reports`, `help_requests`, `user_badges`, `user_league_scores`, `community_messages`, and `direct_messages`.
+Core tables include `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exercise`, `workout_sessions`, `workout_sets`, `workout_plans`, `day_plans`, `day_plan_items`, `floor_plans`, `activity_log`, `equipment_issue_reports`, `help_requests`, `user_badges`, `user_league_scores`, `community_messages`, `direct_messages`, `chat_message_reactions`, and `chat_message_reports`.
 
 - Schema auto-managed via `spring.jpa.hibernate.ddl-auto=update`
 - `DataInitializer` seeds 40+ exercises across all muscle groups on first startup
@@ -55,7 +55,9 @@ Core tables include `users`, `roles`, `user_roles`, `equipment`, `exercise`, `eq
 - **WorkoutPlan / DayPlan / DayPlanItem** — reusable weekly plans and ordered muscle-group targets
 - **FloorPlan** — floor metadata and equipment positions
 - **UserBadge / UserLeagueScore** — achievement and leaderboard state
-- **CommunityMessage / DirectMessage** — persisted community and one-to-one chat messages
+- **CommunityMessage / DirectMessage** — persisted community and one-to-one chat messages; shared columns in `ChatMessageBase` (`kind` TEXT/GIF/STICKER, embedded `MessageMedia`, `clientId`, `deletedAt`, `removedByStaff`). Enums on these tables use `EnumStringConverter` subclasses instead of `@Enumerated`, so adding a value never trips a check constraint that ddl-auto=update can't widen; a name the running build doesn't know (from a newer deploy) reads as the converter's null default instead of failing the query. `(sender_username, client_id)` is unique
+- **MessageReaction** — one emoji per member per message (channel + message id, no FK, since messages live in two tables)
+- **ChatMessageReport** — a member's report of a message (reason, note, OPEN/DISMISSED/ACTIONED), `@Version`
 
 ---
 
@@ -125,10 +127,13 @@ Members only ever see their own requests (someone else's id → 404), and the me
 - `/api/social/*` — public profiles, user search, and authenticated profile updates. The current `GET /api/social/users/*` security matcher also permits `/users/search`; narrow it if search should require authentication.
 - `/api/badges/me` — the authenticated user's badges.
 - `/api/league/me` and `/api/league/leaderboard` — league and leaderboard views.
-- `/api/messaging/*` — community history, direct-message history/inbox, and read state.
-- STOMP sends use `/app/chat.community.send` and `/app/chat.dm.send`; delivery uses `/topic/chat.community` and user queues.
+- `GET /api/messaging/community/history?before={id}&limit=50` and `GET /api/messaging/dm/{username}?before=&limit=` — the newest page before `before` (default 50, max 100), oldest first within the page. `GET /api/messaging/dm/conversations` (inbox; `lastMessage` is the text or "GIF" / "Sticker" / "Message deleted" / "Message removed", plus `lastKind`) and `PATCH /api/messaging/dm/{username}/read`.
+- `PUT|DELETE /api/messaging/{community|dm}/messages/{id}/reaction` (`{emoji}`, one of 👍 ❤️ 😂 🔥 💪 😮; one per member), `DELETE /api/messaging/{community|dm}/messages/{id}` (sender only; soft delete, the row stays for moderation), `POST .../{id}/report` (`{reason, note?}`; 400 own message, 409 duplicate or already removed). A DM someone isn't part of is a 404.
+- `GET /api/media/{gifs|stickers}/{trending|search}?q=&page=` — KLIPY proxy for the app's picker (`KlipyClient`); 503 until `KLIPY_API_KEY` is set, 429 when KLIPY rate-limits.
+- STOMP sends use `/app/chat.community.send` and `/app/chat.dm.send` with `SendChatMessageRequest` (`clientId`, `kind`, `content` ≤ 500, `media`; recipient for DMs). GIF/sticker URLs must be https on `klipy.media-hosts`. A retry with a saved `clientId` re-broadcasts instead of saving twice (the unique constraint catches two retries racing). Rejections go to the sender's `/user/queue/errors` as `{clientId, code, message}`, including frames whose JSON doesn't fit the request (`INVALID_MESSAGE`, via `@MessageExceptionHandler`; `clientId` is null when the JSON has none).
+- Every change (send, reaction, delete, staff removal) re-broadcasts the whole `ChatMessageResponse` on `/topic/chat.community` or both people's `/user/queue/messages`; clients replace by id. Hidden messages keep their place with empty content, no media and no reactions.
 
-The checked-out mobile app does not yet consume these social/achievement/messaging APIs. It also calls `POST /api/chat` for an AI chatbot, but this backend has no matching endpoint.
+The app's community chat and DMs (`app/chat/`) use these. The app also calls `POST /api/chat` for an AI chatbot, but this backend has no matching endpoint.
 
 ### Admin Endpoints (ROLE_ADMIN only, `@PreAuthorize`)
 
@@ -163,17 +168,21 @@ The checked-out mobile app does not yet consume these social/achievement/messagi
 | GET | `/api/admin/help-requests/history?limit=50` | Recently closed requests, newest first |
 | PUT | `/api/admin/help-requests/{id}/status` | `{status: ON_THE_WAY \| TOO_BUSY}`; other statuses → 400; closed → 409 |
 | POST | `/api/admin/help-requests/{id}/done` | "Done helping": closes it as RESOLVED by staff |
+| GET | `/api/admin/chat-reports?includeResolved=false` | Reported chat messages grouped by message, open first; shows the original content even if the sender deleted it |
+| GET | `/api/admin/chat-reports/summary` | Counts: openMessages, openReports |
+| PUT | `/api/admin/chat-reports/{community\|dm}/{messageId}/dismiss` | Close the open reports, keep the message; 409 if none open, or if another admin resolved them at the same moment |
+| PUT | `/api/admin/chat-reports/{community\|dm}/{messageId}/remove` | "Removed by staff" for members (broadcast live), reports ACTIONED; 404 if never reported; 409 if already removed, or if another admin resolved the reports at the same moment |
 
 `/api/admin/floor-plans` supports floor-plan CRUD, unassigned-equipment listing, bulk position updates, and removing equipment from a floor. `PUT /api/admin/equipment/{id}/position` updates one equipment position.
 
 Admin-made status changes (the out-of-order endpoint, `PUT /api/admin/equipment/{id}`, and the automatic return to service) go through `MachineStatusService`, which broadcasts to `/topic/machines` (after the same `CvAvailabilityService` pass as the machine endpoints) and logs `EQUIPMENT_OUT_OF_ORDER` / `EQUIPMENT_BACK_IN_SERVICE`.
 
-Role names are stored verbatim (the admin UI assigns `ADMIN`), so `hasRole('ADMIN')` only matches `ROLE_ADMIN`. `AdminUserController`, `AdminEquipmentIssueController` and `AdminHelpRequestController` accept both via `hasAuthority('ADMIN') or hasAuthority('ROLE_ADMIN')`. Clients poll the help request endpoints (every 5 s) rather than use the WebSocket.
+Role names are stored verbatim (the admin UI assigns `ADMIN`), so `hasRole('ADMIN')` only matches `ROLE_ADMIN`. `AdminUserController`, `AdminEquipmentIssueController`, `AdminHelpRequestController` and `AdminChatReportController` accept both via `hasAuthority('ADMIN') or hasAuthority('ROLE_ADMIN')`. Clients poll the help request endpoints (every 5 s) rather than use the WebSocket.
 
 ### WebSocket
 
 - STOMP broker over SockJS at `/ws`; `/topic` and `/queue` are broker prefixes.
-- Machine changes publish to `/topic/machines`, one `MachineDTO` per change (same shape as a `GET /api/machines` entry); community messages publish to `/topic/chat.community`; direct messages use user queues.
+- Machine changes publish to `/topic/machines`, one `MachineDTO` per change (same shape as a `GET /api/machines` entry); community messages publish to `/topic/chat.community`; direct messages use user queues (`/user/queue/messages`), and rejected chat sends go to `/user/queue/errors`.
 - The HTTP handshake is public. A Bearer token on the STOMP `CONNECT` frame is validated by `StompAuthChannelInterceptor` and establishes the messaging principal.
 
 ---
@@ -197,7 +206,9 @@ src/main/java/com/ureclive/urec_live_backend/
 │   ├── AdminHelpRequestController.java     # staff queue
 │   ├── AdminFloorPlanController.java
 │   ├── SocialController.java, BadgeController.java, LeagueController.java
-│   └── ChatMessagingController.java
+│   ├── ChatMessagingController.java     # chat STOMP sends + history, reactions, delete, report
+│   ├── AdminChatReportController.java   # admin Reported Messages queue
+│   └── MediaSearchController.java       # KLIPY GIF/sticker search proxy
 ├── service/
 │   ├── AuthService.java
 │   ├── AdminEquipmentService.java
@@ -212,6 +223,8 @@ src/main/java/com/ureclive/urec_live_backend/
 │   ├── HelpDemoLinks.java          # demo media (placeholders for now)
 │   ├── HelpRequestExpiryJob.java   # @Scheduled: expires idle requests
 │   ├── WorkoutPlanService.java, BadgeService.java, LeagueService.java
+│   ├── ChatMessageService.java, AdminChatReportService.java
+│   ├── KlipyClient.java            # KLIPY API (key stays server-side)
 │   └── CvAvailabilityService.java
 ├── entity/
 │   ├── User.java, Equipment.java, Exercise.java, Role.java
@@ -221,7 +234,9 @@ src/main/java/com/ureclive/urec_live_backend/
 │   ├── HelpRequest.java, HelpRequestStatus.java, HelpRequestClosedBy.java
 │   ├── WorkoutPlan.java, DayPlan.java, DayPlanItem.java, FloorPlan.java
 │   ├── UserBadge.java, UserLeagueScore.java
-│   └── CommunityMessage.java, DirectMessage.java
+│   ├── ChatMessageBase.java, CommunityMessage.java, DirectMessage.java, MessageMedia.java
+│   ├── MessageReaction.java, ChatMessageReport.java, ChatChannel.java, MessageKind.java
+│   └── EnumStringConverter.java    # enum columns without check constraints
 ├── repository/
 │   ├── UserRepository.java, EquipmentRepository.java
 │   ├── ExerciseRepository.java, RoleRepository.java
@@ -261,6 +276,7 @@ src/main/java/com/ureclive/urec_live_backend/
   - Test data outlives each test and is shared across classes, so give a test that changes shared data its own machine/exercise.
 - Suites: `mvn test -Dtest='*EquipmentIssue*,*OutOfOrder*,MachineStatusServiceTest'` (equipment issues / out of order) and `mvn test -Dtest='HelpRequest*,HelpDemoLinksTest,AdminHelpRequestServiceTest'` (help requests). `UrecLiveBackendApplicationTests.contextLoads` still needs the real DB env vars.
 - API smoke tests against a running server: `scripts/smoke-test-equipment-issues.sh` (see `EQUIPMENT_ISSUES_TESTING.md`) and `scripts/smoke-test-help-requests.sh` (see `HELP_REQUESTS_TESTING.md`)
+- Chat: `mvn test -Dtest='ChatMessagingApiIntegrationTest,KlipyClientTest,ChatEntitiesTest'`. The integration test calls the STOMP handlers on the controller and captures what reaches `brokerChannel` (plus one send through the real `clientInboundChannel`); `KlipyClientTest` runs against a local JDK `HttpServer` standing in for KLIPY. Testing guide: `CHAT_MEDIA_TESTING.md`
 - `controller/MachineApiIntegrationTest` covers the machine endpoints as a member of the seeded UREC gym, including the SQL statement count per request (Hibernate statistics, switched on inside the test). Testing guide: `MINOR_FIXES_TESTING.md`
 
 ---
@@ -281,6 +297,8 @@ Connects through the configured PostgreSQL environment values. `DataInitializer`
 ## Configuration
 
 `src/main/resources/application.properties` expects database and JWT values from the environment, binds to `0.0.0.0:8080` by default, and configures 24-hour access tokens plus seven-day refresh tokens. Check `.env.example` for variable names; never document or print values.
+
+Chat GIFs and stickers: `KLIPY_API_KEY` (empty turns the picker off with a 503), `KLIPY_RATING` (default `pg-13`), `KLIPY_MEDIA_HOSTS` (hosts, subdomains included, that sends may use; default `klipy.com`) and `KLIPY_BASE_URL`. If KLIPY serves media from another host, `KlipyClient` logs a warning naming it.
 
 The CV adapter is controlled by `APP_CV_SECONDARY_ENABLED`, `APP_CV_SECONDARY_BASE_URL`, `APP_CV_SECONDARY_CONFIDENCE_THRESHOLD`, and `APP_CV_SECONDARY_CACHE_TTL_MS`.
 
