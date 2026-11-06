@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +61,7 @@ public class ChatMessageService {
     static final int MAX_MEDIA_URL_LENGTH = 1000;
     static final int MAX_MEDIA_DIMENSION = 4096;
     static final int MAX_PROVIDER_ID_LENGTH = 100;
+    static final String MEDIA_IN_USE = "MEDIA_IN_USE";
     private static final Pattern CLIENT_ID = Pattern.compile("[A-Za-z0-9_-]{1," + SendChatMessageRequest.MAX_CLIENT_ID_LENGTH + "}");
 
     private final CommunityMessageRepository communityRepo;
@@ -69,6 +72,8 @@ public class ChatMessageService {
     private final SimpMessagingTemplate messagingTemplate;
     private final KlipyClient klipy;
     private final ActivityLogService activityLogService;
+    private final ChatMediaService media;
+    private final TransactionTemplate transactions;
 
     @Autowired
     public ChatMessageService(
@@ -79,7 +84,9 @@ public class ChatMessageService {
             UserRepository userRepository,
             SimpMessagingTemplate messagingTemplate,
             KlipyClient klipy,
-            ActivityLogService activityLogService) {
+            ActivityLogService activityLogService,
+            ChatMediaService media,
+            TransactionTemplate transactions) {
         this.communityRepo = communityRepo;
         this.dmRepo = dmRepo;
         this.reactionRepo = reactionRepo;
@@ -88,6 +95,8 @@ public class ChatMessageService {
         this.messagingTemplate = messagingTemplate;
         this.klipy = klipy;
         this.activityLogService = activityLogService;
+        this.media = media;
+        this.transactions = transactions;
     }
 
     // ── Sending ────────────────────────────────────────────────────────────
@@ -96,8 +105,7 @@ public class ChatMessageService {
     public ChatMessageResponse sendCommunity(String sender, SendChatMessageRequest request) {
         CommunityMessage message = new CommunityMessage();
         message.setSenderUsername(sender);
-        fill(message, request);
-        return saveOnce(message, communityRepo::save, communityRepo::findFirstBySenderUsernameAndClientId);
+        return saveOnce(message, request, communityRepo::save, communityRepo::findFirstBySenderUsernameAndClientId);
     }
 
     /** Saves a DM and sends it to both people's queues. The recipient must exist and can't be the sender. */
@@ -113,51 +121,83 @@ public class ChatMessageService {
         DirectMessage message = new DirectMessage();
         message.setSenderUsername(sender);
         message.setRecipientUsername(recipient);
-        fill(message, request);
-        return saveOnce(message, dmRepo::save, dmRepo::findFirstBySenderUsernameAndClientId);
+        return saveOnce(message, request, dmRepo::save, dmRepo::findFirstBySenderUsernameAndClientId);
     }
 
     /**
      * Saves and broadcasts a new message, or re-broadcasts the one already saved under its clientId.
-     * Not transactional, so when two copies of a retry race past the lookup, the unique
-     * (sender, clientId) constraint rejects the second insert here and the first is sent instead.
+     * The clientId lookup comes before the other checks, so a retried photo send finds its saved
+     * message instead of failing because the photo is already attached. Not transactional, so when
+     * two copies of a retry race past the lookup, the unique (sender, clientId) constraint rejects the
+     * second insert here and the first is sent instead.
      */
     private <M extends ChatMessageBase> ChatMessageResponse saveOnce(
-            M message, UnaryOperator<M> save, BiFunction<String, String, Optional<M>> findByClientId) {
-        String clientId = message.getClientId();
+            M message, SendChatMessageRequest request,
+            UnaryOperator<M> save, BiFunction<String, String, Optional<M>> findByClientId) {
+        String clientId = validClientId(request.getClientId());
+        message.setClientId(clientId);
         if (clientId != null) {
             Optional<M> existing = findByClientId.apply(message.getSenderUsername(), clientId);
             if (existing.isPresent()) return broadcast(existing.get());
         }
+        fill(message, request);
         try {
-            save.apply(message);
+            if (message.getKind() == MessageKind.IMAGE) saveWithPhoto(message, save);
+            else save.apply(message);
         } catch (DataIntegrityViolationException e) {
             if (clientId == null) throw e;
             return broadcast(findByClientId.apply(message.getSenderUsername(), clientId).orElseThrow(() -> e));
+        } catch (ChatSendException e) {
+            // Another copy of this same send claimed the photo first: send the message it saved
+            if (clientId != null && MEDIA_IN_USE.equals(e.getCode())) {
+                Optional<M> winner = findByClientId.apply(message.getSenderUsername(), clientId);
+                if (winner.isPresent()) return broadcast(winner.get());
+            }
+            throw e;
         }
         afterSend(message);
         return broadcast(message);
     }
 
+    /** Claims the photo and saves the message in one transaction, so a failed save leaves the photo free. */
+    private <M extends ChatMessageBase> void saveWithPhoto(M message, UnaryOperator<M> save) {
+        transactions.executeWithoutResult(tx -> {
+            if (!media.claim(message.getSenderUsername(), message.getMedia().getUploadId())) {
+                throw new ChatSendException(MEDIA_IN_USE, "That photo was already sent");
+            }
+            save.apply(message);
+        });
+    }
+
     /** Validates the request and copies it onto the new message. */
     private void fill(ChatMessageBase message, SendChatMessageRequest request) {
-        message.setClientId(validClientId(request.getClientId()));
         MessageKind kind = request.getKind();
         message.setKind(kind);
-        if (kind.hasMedia()) {
+        if (kind == MessageKind.IMAGE) {
+            // The caption is optional; the photo must be the sender's own and not sent yet
+            message.setContent(validContent(request.getContent(), true));
+            Long mediaId = request.getMedia() == null ? null : request.getMedia().getMediaId();
+            message.setMedia(MessageMedia.photo(media.attachable(message.getSenderUsername(), mediaId)));
+            return;
+        }
+        if (kind.isKlipy()) {
             message.setContent("");
             message.setMedia(validMedia(request.getMedia()));
             return;
         }
-        String content = request.getContent() == null ? "" : request.getContent().trim();
-        if (content.isEmpty()) {
+        message.setContent(validContent(request.getContent(), false));
+    }
+
+    private static String validContent(String raw, boolean optional) {
+        String content = raw == null ? "" : raw.trim();
+        if (content.isEmpty() && !optional) {
             throw new ChatSendException("EMPTY", "Message is empty");
         }
         if (content.length() > SendChatMessageRequest.MAX_CONTENT_LENGTH) {
             throw new ChatSendException("TOO_LONG",
                     "Messages can be at most " + SendChatMessageRequest.MAX_CONTENT_LENGTH + " characters");
         }
-        message.setContent(content);
+        return content;
     }
 
     private static String validClientId(String clientId) {
@@ -271,6 +311,7 @@ public class ChatMessageService {
         return switch (message.getKind()) {
             case GIF -> "GIF";
             case STICKER -> "Sticker";
+            case IMAGE -> "Photo";
             case TEXT -> message.getContent();
         };
     }
@@ -393,10 +434,15 @@ public class ChatMessageService {
         else communityRepo.save((CommunityMessage) message);
     }
 
-    /** Sends the message's current state to everyone who can see it, and returns that state. */
+    /**
+     * Sends the message's current state to everyone who can see it, and returns that state. A photo's
+     * URL goes only to those people: the community topic (members) or the two people in a DM.
+     */
     public ChatMessageResponse broadcast(ChatMessageBase message) {
         ChatMessageResponse response = ChatMessageResponse.from(
-                message, reactionsFor(message.getChannel(), List.of(message.getId())).getOrDefault(message.getId(), Map.of()));
+                message,
+                reactionsFor(message.getChannel(), List.of(message.getId())).getOrDefault(message.getId(), Map.of()),
+                photoUrlsFor(List.of(message)).get(message.getId()));
         if (message instanceof DirectMessage dm) {
             messagingTemplate.convertAndSendToUser(dm.getRecipientUsername(), USER_QUEUE, response);
             messagingTemplate.convertAndSendToUser(dm.getSenderUsername(), USER_QUEUE, response);
@@ -418,9 +464,31 @@ public class ChatMessageService {
     private List<ChatMessageResponse> toResponses(ChatChannel channel, List<? extends ChatMessageBase> messages) {
         Map<Long, Map<String, List<String>>> reactions =
                 reactionsFor(channel, messages.stream().map(ChatMessageBase::getId).toList());
+        Map<Long, String> photoUrls = photoUrlsFor(messages);
         return messages.stream()
-                .map(m -> ChatMessageResponse.from(m, reactions.getOrDefault(m.getId(), Map.of())))
+                .map(m -> ChatMessageResponse.from(m, reactions.getOrDefault(m.getId(), Map.of()), photoUrls.get(m.getId())))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Message id to a fresh URL for its photo, for the visible IMAGE messages among these (one query).
+     * Hidden ones get none: their media is blanked anyway.
+     */
+    private Map<Long, String> photoUrlsFor(Collection<? extends ChatMessageBase> messages) {
+        Map<Long, Long> uploadByMessage = new HashMap<>();
+        for (ChatMessageBase m : messages) {
+            if (m.getKind() == MessageKind.IMAGE && !m.isHidden() && m.getMedia() != null && m.getMedia().getUploadId() != null) {
+                uploadByMessage.put(m.getId(), m.getMedia().getUploadId());
+            }
+        }
+        if (uploadByMessage.isEmpty()) return Map.of();
+        Map<Long, String> byUpload = media.viewUrls(new HashSet<>(uploadByMessage.values()));
+        Map<Long, String> byMessage = new HashMap<>();
+        uploadByMessage.forEach((messageId, uploadId) -> {
+            String url = byUpload.get(uploadId);
+            if (url != null) byMessage.put(messageId, url);
+        });
+        return byMessage;
     }
 
     /** Message id to (emoji to usernames), for a whole page in one query. */
