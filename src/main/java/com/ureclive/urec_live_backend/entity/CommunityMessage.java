@@ -1,32 +1,14 @@
 package com.ureclive.urec_live_backend.entity;
 
 import jakarta.persistence.*;
-import java.time.Instant;
 
+/** The unique (sender, clientId) pair stops a retried send being saved twice; rows without a clientId don't clash. */
 @Entity
-@Table(name = "community_messages")
-public class CommunityMessage {
+@Table(name = "community_messages", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_cm_sender_client", columnNames = {"sender_username", "client_id"})
+})
+public class CommunityMessage extends ChatMessageBase {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name = "sender_username", nullable = false, length = 50)
-    private String senderUsername;
-
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String content;
-
-    @Column(name = "sent_at", nullable = false, updatable = false)
-    private Instant sentAt;
-
-    @PrePersist
-    void onSend() { this.sentAt = Instant.now(); }
-
-    public Long getId() { return id; }
-    public String getSenderUsername() { return senderUsername; }
-    public void setSenderUsername(String senderUsername) { this.senderUsername = senderUsername; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
-    public Instant getSentAt() { return sentAt; }
+    @Override
+    public ChatChannel getChannel() { return ChatChannel.COMMUNITY; }
 }
