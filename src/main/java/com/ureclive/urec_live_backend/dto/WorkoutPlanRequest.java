@@ -45,9 +45,15 @@ public class WorkoutPlanRequest {
         private String muscleGroup;
 
         @NotNull
+        @jakarta.validation.constraints.Min(1)
+        @jakarta.validation.constraints.Max(10)
         private Integer targetCount;
 
         private Integer sortOrder;
+
+        private Long exerciseId;
+        public Long getExerciseId() { return exerciseId; }
+        public void setExerciseId(Long value) { exerciseId = value; }
 
         public DayPlanItemDto() {}
 
