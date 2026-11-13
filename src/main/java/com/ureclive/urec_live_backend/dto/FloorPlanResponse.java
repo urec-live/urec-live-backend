@@ -6,6 +6,12 @@ import java.util.List;
 
 public class FloorPlanResponse {
 
+    private FloorLayout layout;
+    private boolean illustrative;
+    public FloorLayout getLayout() { return layout; }
+    public void setLayout(FloorLayout value) { layout = value; }
+    public boolean isIllustrative() { return illustrative; }
+    public void setIllustrative(boolean value) { illustrative = value; }
     private Long id;
     private String name;
     private String imageUrl;
@@ -18,6 +24,8 @@ public class FloorPlanResponse {
 
     public static FloorPlanResponse from(FloorPlan plan, List<MachineDTO> equipment) {
         FloorPlanResponse resp = new FloorPlanResponse();
+        resp.layout = plan.getLayout();
+        resp.illustrative = plan.isIllustrative();
         resp.id = plan.getId();
         resp.name = plan.getName();
         resp.imageUrl = plan.getImageUrl();

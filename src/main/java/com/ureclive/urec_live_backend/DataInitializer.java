@@ -9,6 +9,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 @Component
+@org.springframework.context.annotation.Profile("!map-demo")
 @org.springframework.core.annotation.Order(0)
 public class DataInitializer implements CommandLineRunner {
 

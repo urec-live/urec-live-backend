@@ -22,8 +22,9 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/admin/floor-plans")
 @CrossOrigin(origins = "*")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAuthority('ADMIN') or hasAuthority('ROLE_ADMIN')")
 public class AdminFloorPlanController {
+    @Autowired private com.ureclive.urec_live_backend.service.FloorLayoutValidator layoutValidator;
     @Autowired private com.ureclive.urec_live_backend.service.UrecAdminScope facility;
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -61,6 +62,20 @@ public class AdminFloorPlanController {
                 .collect(Collectors.toList());
     }
 
+    @PutMapping("/{id}/layout")
+    @org.springframework.transaction.annotation.Transactional
+    public FloorPlanResponse updateLayout(@PathVariable Long id,
+            @RequestBody com.ureclive.urec_live_backend.dto.FloorLayout layout) {
+        FloorPlan plan = floorPlanRepository.findByIdAndActiveTrue(id)
+                .filter(f -> facility.includes(f.getGymId()))
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND));
+        layoutValidator.validate(layout, plan.getWidth(), plan.getHeight());
+        plan.setLayout(layout);
+        floorPlanRepository.save(plan);
+        return FloorPlanResponse.from(plan, equipmentRepository.findAllByDeletedFalseAndFloorPlanId(id)
+                .stream().map(e -> new MachineDTO(e, getPrimaryExerciseName(e))).toList());
+    }
+
     @GetMapping("/unassigned-equipment")
     public List<MachineDTO> getUnassignedEquipment() {
         logger.info(
@@ -94,18 +109,20 @@ public class AdminFloorPlanController {
         plan.setFloorNumber(floorNumber);
         plan.setActive(true);
 
+        layoutValidator.validate(plan.getLayout(), width, height);
         FloorPlan saved = floorPlanRepository.save(plan);
         return FloorPlanResponse.from(saved, List.of());
     }
 
     @PutMapping("/{id}")
+    @org.springframework.transaction.annotation.Transactional
     public FloorPlanResponse update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         logger.info("[PUT /api/admin/floor-plans/{}] Updating floor plan", id);
         FloorPlan plan =
                 floorPlanRepository
                         .findById(id)
                         .filter(f -> facility.includes(f.getGymId()))
-                        .orElseThrow(() -> new RuntimeException("Floor plan not found: " + id));
+                        .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND, "Floor plan not found"));
 
         if (body.containsKey("name")) plan.setName((String) body.get("name"));
         if (body.containsKey("width")) plan.setWidth(((Number) body.get("width")).intValue());
@@ -113,6 +130,11 @@ public class AdminFloorPlanController {
         if (body.containsKey("floorNumber"))
             plan.setFloorNumber(((Number) body.get("floorNumber")).intValue());
 
+        layoutValidator.validate(plan.getLayout(), plan.getWidth(), plan.getHeight());
+        for (Equipment e : equipmentRepository.findAllByDeletedFalseAndFloorPlanId(id)) {
+            if (e.getFloorX() != null && e.getFloorY() != null)
+                layoutValidator.point(e.getFloorX(), e.getFloorY(), plan.getWidth(), plan.getHeight());
+        }
         FloorPlan saved = floorPlanRepository.save(plan);
 
         List<MachineDTO> equipment =
@@ -131,7 +153,7 @@ public class AdminFloorPlanController {
                 floorPlanRepository
                         .findById(id)
                         .filter(f -> facility.includes(f.getGymId()))
-                        .orElseThrow(() -> new RuntimeException("Floor plan not found: " + id));
+                        .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND, "Floor plan not found"));
         plan.setActive(false);
 
         // Unassign equipment from this floor
@@ -145,9 +167,12 @@ public class AdminFloorPlanController {
         floorPlanRepository.save(plan);
     }
 
+    public record EquipmentMapPosition(Long equipmentId, Double floorX, Double floorY, String floorLabel) {}
+
     @PutMapping("/{id}/equipment")
+    @org.springframework.transaction.annotation.Transactional
     public FloorPlanResponse updateEquipmentPositions(
-            @PathVariable Long id, @RequestBody List<Map<String, Object>> positions) {
+            @PathVariable Long id, @RequestBody List<EquipmentMapPosition> positions) {
         logger.info(
                 "[PUT /api/admin/floor-plans/{}/equipment] Bulk updating {} positions",
                 id,
@@ -156,14 +181,15 @@ public class AdminFloorPlanController {
                 floorPlanRepository
                         .findById(id)
                         .filter(f -> facility.includes(f.getGymId()))
-                        .orElseThrow(() -> new RuntimeException("Floor plan not found: " + id));
+                        .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND, "Floor plan not found"));
 
-        for (Map<String, Object> pos : positions) {
-            Long equipmentId = ((Number) pos.get("equipmentId")).longValue();
-            Double floorX = ((Number) pos.get("floorX")).doubleValue();
-            Double floorY = ((Number) pos.get("floorY")).doubleValue();
-            String floorLabel =
-                    pos.containsKey("floorLabel") ? (String) pos.get("floorLabel") : null;
+        layoutValidator.check(positions.size() <= 1000, "At most 1000 positions");
+        for (EquipmentMapPosition pos : positions) {
+            layoutValidator.check(pos != null && pos.equipmentId() != null, "Equipment ID is required");
+            Long equipmentId = pos.equipmentId();
+            Double floorX = pos.floorX();
+            Double floorY = pos.floorY();
+            String floorLabel = pos.floorLabel();
 
             Equipment equipment =
                     equipmentRepository
@@ -171,8 +197,10 @@ public class AdminFloorPlanController {
                             .filter(e -> facility.includes(e.getGymId()))
                             .orElseThrow(
                                     () ->
-                                            new RuntimeException(
-                                                    "Equipment not found: " + equipmentId));
+                                            new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found"));
+            layoutValidator.check(java.util.Objects.equals(equipment.getGymId(), plan.getGymId()) && !equipment.isDeleted() && Boolean.TRUE.equals(plan.getActive()), "Equipment and active floor must belong to the same gym");
+            layoutValidator.point(floorX, floorY, plan.getWidth(), plan.getHeight());
+            layoutValidator.check(floorLabel == null || floorLabel.length() <= 50, "Label is too long");
             equipment.setFloorPlan(plan);
             equipment.setFloorX(floorX);
             equipment.setFloorY(floorY);
@@ -200,7 +228,8 @@ public class AdminFloorPlanController {
                         .findById(equipmentId)
                         .filter(e -> facility.includes(e.getGymId()))
                         .orElseThrow(
-                                () -> new RuntimeException("Equipment not found: " + equipmentId));
+                                () -> new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND, "Equipment not found"));
+        layoutValidator.check(equipment.getFloorPlan() != null && equipment.getFloorPlan().getId().equals(floorId), "Equipment is not on this floor");
         equipment.setFloorPlan(null);
         equipment.setFloorX(null);
         equipment.setFloorY(null);

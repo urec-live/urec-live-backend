@@ -1,0 +1,1643 @@
+[
+  {
+    "name": "Ground",
+    "floorNumber": 0,
+    "width": 1600,
+    "height": 1100,
+    "layout": {
+      "version": 1,
+      "areas": [
+        {
+          "id": "pool",
+          "name": "Indoor pool & deck",
+          "kind": "pool",
+          "shape": "rect",
+          "x": 50,
+          "y": 80,
+          "width": 620,
+          "height": 600
+        },
+        {
+          "id": "changing",
+          "name": "Aquatic changing rooms",
+          "kind": "room",
+          "shape": "rect",
+          "x": 50,
+          "y": 730,
+          "width": 620,
+          "height": 180
+        },
+        {
+          "id": "weights",
+          "name": "Free weights & racks",
+          "kind": "strength",
+          "shape": "rect",
+          "x": 870,
+          "y": 80,
+          "width": 660,
+          "height": 650
+        },
+        {
+          "id": "reception",
+          "name": "Entrance & reception",
+          "kind": "entrance",
+          "shape": "rect",
+          "x": 870,
+          "y": 810,
+          "width": 660,
+          "height": 180
+        },
+        {
+          "id": "stairs",
+          "name": "Stairs",
+          "kind": "stairs",
+          "shape": "rect",
+          "x": 730,
+          "y": 470,
+          "width": 90,
+          "height": 110
+        },
+        {
+          "id": "lift",
+          "name": "Elevator",
+          "kind": "elevator",
+          "shape": "rect",
+          "x": 730,
+          "y": 600,
+          "width": 90,
+          "height": 90
+        },
+        {
+          "id": "wc",
+          "name": "Restrooms",
+          "kind": "amenity",
+          "shape": "rect",
+          "x": 730,
+          "y": 750,
+          "width": 90,
+          "height": 140
+        }
+      ]
+    },
+    "machines": [
+      {
+        "code": "DEMOMAP-0-000",
+        "name": "Flat Bench Press 1",
+        "exercise": "Bench Press",
+        "x": 910,
+        "y": 180,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-001",
+        "name": "Power Rack 1",
+        "exercise": "Barbell Squat",
+        "x": 990,
+        "y": 180,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-002",
+        "name": "Cable Station 1",
+        "exercise": "Cable Fly",
+        "x": 1070,
+        "y": 180,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-003",
+        "name": "Dumbbell Bench 1",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1150,
+        "y": 180,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-0-004",
+        "name": "Flat Bench Press 2",
+        "exercise": "Bench Press",
+        "x": 1230,
+        "y": 180,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-005",
+        "name": "Power Rack 2",
+        "exercise": "Barbell Squat",
+        "x": 1310,
+        "y": 180,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-0-006",
+        "name": "Cable Station 2",
+        "exercise": "Cable Fly",
+        "x": 1390,
+        "y": 180,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-007",
+        "name": "Dumbbell Bench 2",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1470,
+        "y": 180,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-0-008",
+        "name": "Flat Bench Press 3",
+        "exercise": "Bench Press",
+        "x": 910,
+        "y": 250,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-009",
+        "name": "Power Rack 3",
+        "exercise": "Barbell Squat",
+        "x": 990,
+        "y": 250,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-010",
+        "name": "Cable Station 3",
+        "exercise": "Cable Fly",
+        "x": 1070,
+        "y": 250,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-011",
+        "name": "Dumbbell Bench 3",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1150,
+        "y": 250,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-0-012",
+        "name": "Flat Bench Press 4",
+        "exercise": "Bench Press",
+        "x": 1230,
+        "y": 250,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-013",
+        "name": "Power Rack 4",
+        "exercise": "Barbell Squat",
+        "x": 1310,
+        "y": 250,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-0-014",
+        "name": "Cable Station 4",
+        "exercise": "Cable Fly",
+        "x": 1390,
+        "y": 250,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-015",
+        "name": "Dumbbell Bench 4",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1470,
+        "y": 250,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-0-016",
+        "name": "Flat Bench Press 5",
+        "exercise": "Bench Press",
+        "x": 910,
+        "y": 320,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-017",
+        "name": "Power Rack 5",
+        "exercise": "Barbell Squat",
+        "x": 990,
+        "y": 320,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-018",
+        "name": "Cable Station 5",
+        "exercise": "Cable Fly",
+        "x": 1070,
+        "y": 320,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-019",
+        "name": "Dumbbell Bench 5",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1150,
+        "y": 320,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-0-020",
+        "name": "Flat Bench Press 6",
+        "exercise": "Bench Press",
+        "x": 1230,
+        "y": 320,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-021",
+        "name": "Power Rack 6",
+        "exercise": "Barbell Squat",
+        "x": 1310,
+        "y": 320,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-0-022",
+        "name": "Cable Station 6",
+        "exercise": "Cable Fly",
+        "x": 1390,
+        "y": 320,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-023",
+        "name": "Dumbbell Bench 6",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1470,
+        "y": 320,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-0-024",
+        "name": "Flat Bench Press 7",
+        "exercise": "Bench Press",
+        "x": 910,
+        "y": 390,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-025",
+        "name": "Power Rack 7",
+        "exercise": "Barbell Squat",
+        "x": 990,
+        "y": 390,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-026",
+        "name": "Cable Station 7",
+        "exercise": "Cable Fly",
+        "x": 1070,
+        "y": 390,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-027",
+        "name": "Dumbbell Bench 7",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1150,
+        "y": 390,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-0-028",
+        "name": "Flat Bench Press 8",
+        "exercise": "Bench Press",
+        "x": 1230,
+        "y": 390,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-029",
+        "name": "Power Rack 8",
+        "exercise": "Barbell Squat",
+        "x": 1310,
+        "y": 390,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-0-030",
+        "name": "Cable Station 8",
+        "exercise": "Cable Fly",
+        "x": 1390,
+        "y": 390,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-031",
+        "name": "Dumbbell Bench 8",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1470,
+        "y": 390,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-0-032",
+        "name": "Flat Bench Press 9",
+        "exercise": "Bench Press",
+        "x": 910,
+        "y": 460,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-033",
+        "name": "Power Rack 9",
+        "exercise": "Barbell Squat",
+        "x": 990,
+        "y": 460,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-034",
+        "name": "Cable Station 9",
+        "exercise": "Cable Fly",
+        "x": 1070,
+        "y": 460,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-035",
+        "name": "Dumbbell Bench 9",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1150,
+        "y": 460,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-0-036",
+        "name": "Flat Bench Press 10",
+        "exercise": "Bench Press",
+        "x": 1230,
+        "y": 460,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-037",
+        "name": "Power Rack 10",
+        "exercise": "Barbell Squat",
+        "x": 1310,
+        "y": 460,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-0-038",
+        "name": "Cable Station 10",
+        "exercise": "Cable Fly",
+        "x": 1390,
+        "y": 460,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-039",
+        "name": "Dumbbell Bench 10",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1470,
+        "y": 460,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-0-040",
+        "name": "Flat Bench Press 11",
+        "exercise": "Bench Press",
+        "x": 910,
+        "y": 530,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-041",
+        "name": "Power Rack 11",
+        "exercise": "Barbell Squat",
+        "x": 990,
+        "y": 530,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-042",
+        "name": "Cable Station 11",
+        "exercise": "Cable Fly",
+        "x": 1070,
+        "y": 530,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-043",
+        "name": "Dumbbell Bench 11",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1150,
+        "y": 530,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-0-044",
+        "name": "Flat Bench Press 12",
+        "exercise": "Bench Press",
+        "x": 1230,
+        "y": 530,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-045",
+        "name": "Power Rack 12",
+        "exercise": "Barbell Squat",
+        "x": 1310,
+        "y": 530,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-0-046",
+        "name": "Cable Station 12",
+        "exercise": "Cable Fly",
+        "x": 1390,
+        "y": 530,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-047",
+        "name": "Dumbbell Bench 12",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1470,
+        "y": 530,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-0-048",
+        "name": "Flat Bench Press 13",
+        "exercise": "Bench Press",
+        "x": 910,
+        "y": 600,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-049",
+        "name": "Power Rack 13",
+        "exercise": "Barbell Squat",
+        "x": 990,
+        "y": 600,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-050",
+        "name": "Cable Station 13",
+        "exercise": "Cable Fly",
+        "x": 1070,
+        "y": 600,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-051",
+        "name": "Dumbbell Bench 13",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1150,
+        "y": 600,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-0-052",
+        "name": "Flat Bench Press 14",
+        "exercise": "Bench Press",
+        "x": 1230,
+        "y": 600,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-053",
+        "name": "Power Rack 14",
+        "exercise": "Barbell Squat",
+        "x": 1310,
+        "y": 600,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-0-054",
+        "name": "Cable Station 14",
+        "exercise": "Cable Fly",
+        "x": 1390,
+        "y": 600,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-055",
+        "name": "Dumbbell Bench 14",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1470,
+        "y": 600,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-0-056",
+        "name": "Flat Bench Press 15",
+        "exercise": "Bench Press",
+        "x": 910,
+        "y": 670,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-057",
+        "name": "Power Rack 15",
+        "exercise": "Barbell Squat",
+        "x": 990,
+        "y": 670,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-058",
+        "name": "Cable Station 15",
+        "exercise": "Cable Fly",
+        "x": 1070,
+        "y": 670,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-059",
+        "name": "Dumbbell Bench 15",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1150,
+        "y": 670,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-0-060",
+        "name": "Flat Bench Press 16",
+        "exercise": "Bench Press",
+        "x": 1230,
+        "y": 670,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-061",
+        "name": "Power Rack 16",
+        "exercise": "Barbell Squat",
+        "x": 1310,
+        "y": 670,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-0-062",
+        "name": "Cable Station 16",
+        "exercise": "Cable Fly",
+        "x": 1390,
+        "y": 670,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-0-063",
+        "name": "Dumbbell Bench 16",
+        "exercise": "Dumbbell Bench Press",
+        "x": 1470,
+        "y": 670,
+        "status": "Out of Order"
+      }
+    ]
+  },
+  {
+    "name": "Level 2",
+    "floorNumber": 1,
+    "width": 1600,
+    "height": 1100,
+    "layout": {
+      "version": 1,
+      "areas": [
+        {
+          "id": "pool-void",
+          "name": "Open to pool below",
+          "kind": "void",
+          "shape": "rect",
+          "x": 50,
+          "y": 80,
+          "width": 620,
+          "height": 420
+        },
+        {
+          "id": "resistance",
+          "name": "Resistance machines",
+          "kind": "strength",
+          "shape": "rect",
+          "x": 870,
+          "y": 80,
+          "width": 660,
+          "height": 650
+        },
+        {
+          "id": "cycle",
+          "name": "Cycle studio",
+          "kind": "studio",
+          "shape": "rect",
+          "x": 50,
+          "y": 580,
+          "width": 280,
+          "height": 330
+        },
+        {
+          "id": "stretch",
+          "name": "Stretching",
+          "kind": "studio",
+          "shape": "rect",
+          "x": 380,
+          "y": 580,
+          "width": 290,
+          "height": 330
+        },
+        {
+          "id": "cardio",
+          "name": "Cardio overlook",
+          "kind": "cardio",
+          "shape": "rect",
+          "x": 870,
+          "y": 810,
+          "width": 660,
+          "height": 180
+        },
+        {
+          "id": "stairs",
+          "name": "Stairs",
+          "kind": "stairs",
+          "shape": "rect",
+          "x": 730,
+          "y": 470,
+          "width": 90,
+          "height": 110
+        },
+        {
+          "id": "lift",
+          "name": "Elevator",
+          "kind": "elevator",
+          "shape": "rect",
+          "x": 730,
+          "y": 600,
+          "width": 90,
+          "height": 90
+        },
+        {
+          "id": "wc",
+          "name": "Restrooms",
+          "kind": "amenity",
+          "shape": "rect",
+          "x": 730,
+          "y": 750,
+          "width": 90,
+          "height": 140
+        }
+      ]
+    },
+    "machines": [
+      {
+        "code": "DEMOMAP-1-000",
+        "name": "Leg Press 1",
+        "exercise": "Leg Press",
+        "x": 910,
+        "y": 180,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-001",
+        "name": "Lat Pulldown 1",
+        "exercise": "Lat Pulldown",
+        "x": 990,
+        "y": 180,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-002",
+        "name": "Chest Press 1",
+        "exercise": "Chest Press",
+        "x": 1070,
+        "y": 180,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-003",
+        "name": "Seated Row 1",
+        "exercise": "Seated Cable Row",
+        "x": 1150,
+        "y": 180,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-1-004",
+        "name": "Leg Press 2",
+        "exercise": "Leg Press",
+        "x": 1230,
+        "y": 180,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-005",
+        "name": "Lat Pulldown 2",
+        "exercise": "Lat Pulldown",
+        "x": 1310,
+        "y": 180,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-1-006",
+        "name": "Chest Press 2",
+        "exercise": "Chest Press",
+        "x": 1390,
+        "y": 180,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-007",
+        "name": "Seated Row 2",
+        "exercise": "Seated Cable Row",
+        "x": 1470,
+        "y": 180,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-1-008",
+        "name": "Leg Press 3",
+        "exercise": "Leg Press",
+        "x": 910,
+        "y": 250,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-009",
+        "name": "Lat Pulldown 3",
+        "exercise": "Lat Pulldown",
+        "x": 990,
+        "y": 250,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-010",
+        "name": "Chest Press 3",
+        "exercise": "Chest Press",
+        "x": 1070,
+        "y": 250,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-011",
+        "name": "Seated Row 3",
+        "exercise": "Seated Cable Row",
+        "x": 1150,
+        "y": 250,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-1-012",
+        "name": "Leg Press 4",
+        "exercise": "Leg Press",
+        "x": 1230,
+        "y": 250,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-013",
+        "name": "Lat Pulldown 4",
+        "exercise": "Lat Pulldown",
+        "x": 1310,
+        "y": 250,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-1-014",
+        "name": "Chest Press 4",
+        "exercise": "Chest Press",
+        "x": 1390,
+        "y": 250,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-015",
+        "name": "Seated Row 4",
+        "exercise": "Seated Cable Row",
+        "x": 1470,
+        "y": 250,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-1-016",
+        "name": "Leg Press 5",
+        "exercise": "Leg Press",
+        "x": 910,
+        "y": 320,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-017",
+        "name": "Lat Pulldown 5",
+        "exercise": "Lat Pulldown",
+        "x": 990,
+        "y": 320,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-018",
+        "name": "Chest Press 5",
+        "exercise": "Chest Press",
+        "x": 1070,
+        "y": 320,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-019",
+        "name": "Seated Row 5",
+        "exercise": "Seated Cable Row",
+        "x": 1150,
+        "y": 320,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-1-020",
+        "name": "Leg Press 6",
+        "exercise": "Leg Press",
+        "x": 1230,
+        "y": 320,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-021",
+        "name": "Lat Pulldown 6",
+        "exercise": "Lat Pulldown",
+        "x": 1310,
+        "y": 320,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-1-022",
+        "name": "Chest Press 6",
+        "exercise": "Chest Press",
+        "x": 1390,
+        "y": 320,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-023",
+        "name": "Seated Row 6",
+        "exercise": "Seated Cable Row",
+        "x": 1470,
+        "y": 320,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-1-024",
+        "name": "Leg Press 7",
+        "exercise": "Leg Press",
+        "x": 910,
+        "y": 390,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-025",
+        "name": "Lat Pulldown 7",
+        "exercise": "Lat Pulldown",
+        "x": 990,
+        "y": 390,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-026",
+        "name": "Chest Press 7",
+        "exercise": "Chest Press",
+        "x": 1070,
+        "y": 390,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-027",
+        "name": "Seated Row 7",
+        "exercise": "Seated Cable Row",
+        "x": 1150,
+        "y": 390,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-1-028",
+        "name": "Leg Press 8",
+        "exercise": "Leg Press",
+        "x": 1230,
+        "y": 390,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-029",
+        "name": "Lat Pulldown 8",
+        "exercise": "Lat Pulldown",
+        "x": 1310,
+        "y": 390,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-1-030",
+        "name": "Chest Press 8",
+        "exercise": "Chest Press",
+        "x": 1390,
+        "y": 390,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-031",
+        "name": "Seated Row 8",
+        "exercise": "Seated Cable Row",
+        "x": 1470,
+        "y": 390,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-1-032",
+        "name": "Leg Press 9",
+        "exercise": "Leg Press",
+        "x": 910,
+        "y": 460,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-033",
+        "name": "Lat Pulldown 9",
+        "exercise": "Lat Pulldown",
+        "x": 990,
+        "y": 460,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-034",
+        "name": "Chest Press 9",
+        "exercise": "Chest Press",
+        "x": 1070,
+        "y": 460,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-035",
+        "name": "Seated Row 9",
+        "exercise": "Seated Cable Row",
+        "x": 1150,
+        "y": 460,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-1-036",
+        "name": "Leg Press 10",
+        "exercise": "Leg Press",
+        "x": 1230,
+        "y": 460,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-037",
+        "name": "Lat Pulldown 10",
+        "exercise": "Lat Pulldown",
+        "x": 1310,
+        "y": 460,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-1-038",
+        "name": "Chest Press 10",
+        "exercise": "Chest Press",
+        "x": 1390,
+        "y": 460,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-039",
+        "name": "Seated Row 10",
+        "exercise": "Seated Cable Row",
+        "x": 1470,
+        "y": 460,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-1-040",
+        "name": "Leg Press 11",
+        "exercise": "Leg Press",
+        "x": 910,
+        "y": 530,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-041",
+        "name": "Lat Pulldown 11",
+        "exercise": "Lat Pulldown",
+        "x": 990,
+        "y": 530,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-042",
+        "name": "Chest Press 11",
+        "exercise": "Chest Press",
+        "x": 1070,
+        "y": 530,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-043",
+        "name": "Seated Row 11",
+        "exercise": "Seated Cable Row",
+        "x": 1150,
+        "y": 530,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-1-044",
+        "name": "Leg Press 12",
+        "exercise": "Leg Press",
+        "x": 1230,
+        "y": 530,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-045",
+        "name": "Lat Pulldown 12",
+        "exercise": "Lat Pulldown",
+        "x": 1310,
+        "y": 530,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-1-046",
+        "name": "Chest Press 12",
+        "exercise": "Chest Press",
+        "x": 1390,
+        "y": 530,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-047",
+        "name": "Seated Row 12",
+        "exercise": "Seated Cable Row",
+        "x": 1470,
+        "y": 530,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-1-048",
+        "name": "Leg Press 13",
+        "exercise": "Leg Press",
+        "x": 910,
+        "y": 600,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-049",
+        "name": "Lat Pulldown 13",
+        "exercise": "Lat Pulldown",
+        "x": 990,
+        "y": 600,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-050",
+        "name": "Chest Press 13",
+        "exercise": "Chest Press",
+        "x": 1070,
+        "y": 600,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-051",
+        "name": "Seated Row 13",
+        "exercise": "Seated Cable Row",
+        "x": 1150,
+        "y": 600,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-1-052",
+        "name": "Leg Press 14",
+        "exercise": "Leg Press",
+        "x": 1230,
+        "y": 600,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-053",
+        "name": "Lat Pulldown 14",
+        "exercise": "Lat Pulldown",
+        "x": 1310,
+        "y": 600,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-1-054",
+        "name": "Chest Press 14",
+        "exercise": "Chest Press",
+        "x": 1390,
+        "y": 600,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-055",
+        "name": "Seated Row 14",
+        "exercise": "Seated Cable Row",
+        "x": 1470,
+        "y": 600,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-1-056",
+        "name": "Leg Press 15",
+        "exercise": "Leg Press",
+        "x": 910,
+        "y": 670,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-057",
+        "name": "Lat Pulldown 15",
+        "exercise": "Lat Pulldown",
+        "x": 990,
+        "y": 670,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-058",
+        "name": "Chest Press 15",
+        "exercise": "Chest Press",
+        "x": 1070,
+        "y": 670,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-059",
+        "name": "Seated Row 15",
+        "exercise": "Seated Cable Row",
+        "x": 1150,
+        "y": 670,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-1-060",
+        "name": "Leg Press 16",
+        "exercise": "Leg Press",
+        "x": 1230,
+        "y": 670,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-061",
+        "name": "Lat Pulldown 16",
+        "exercise": "Lat Pulldown",
+        "x": 1310,
+        "y": 670,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-1-062",
+        "name": "Chest Press 16",
+        "exercise": "Chest Press",
+        "x": 1390,
+        "y": 670,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-1-063",
+        "name": "Seated Row 16",
+        "exercise": "Seated Cable Row",
+        "x": 1470,
+        "y": 670,
+        "status": "Out of Order"
+      }
+    ]
+  },
+  {
+    "name": "Level 3",
+    "floorNumber": 2,
+    "width": 1600,
+    "height": 1100,
+    "layout": {
+      "version": 1,
+      "areas": [
+        {
+          "id": "court-1",
+          "name": "Court 1",
+          "kind": "court",
+          "shape": "rect",
+          "x": 50,
+          "y": 80,
+          "width": 600,
+          "height": 340
+        },
+        {
+          "id": "court-2",
+          "name": "Court 2",
+          "kind": "court",
+          "shape": "rect",
+          "x": 870,
+          "y": 80,
+          "width": 660,
+          "height": 340
+        },
+        {
+          "id": "court-3",
+          "name": "Court 3",
+          "kind": "court",
+          "shape": "rect",
+          "x": 50,
+          "y": 470,
+          "width": 600,
+          "height": 340
+        },
+        {
+          "id": "court-4",
+          "name": "Court 4",
+          "kind": "court",
+          "shape": "rect",
+          "x": 870,
+          "y": 470,
+          "width": 660,
+          "height": 340
+        },
+        {
+          "id": "studio",
+          "name": "Group fitness studio",
+          "kind": "studio",
+          "shape": "rect",
+          "x": 50,
+          "y": 870,
+          "width": 600,
+          "height": 170
+        },
+        {
+          "id": "lockers",
+          "name": "Lockers & seating",
+          "kind": "room",
+          "shape": "rect",
+          "x": 870,
+          "y": 870,
+          "width": 660,
+          "height": 170
+        },
+        {
+          "id": "stairs",
+          "name": "Stairs",
+          "kind": "stairs",
+          "shape": "rect",
+          "x": 730,
+          "y": 470,
+          "width": 90,
+          "height": 110
+        },
+        {
+          "id": "lift",
+          "name": "Elevator",
+          "kind": "elevator",
+          "shape": "rect",
+          "x": 730,
+          "y": 600,
+          "width": 90,
+          "height": 90
+        },
+        {
+          "id": "wc",
+          "name": "Restrooms",
+          "kind": "amenity",
+          "shape": "rect",
+          "x": 730,
+          "y": 750,
+          "width": 90,
+          "height": 140
+        }
+      ]
+    },
+    "machines": []
+  },
+  {
+    "name": "Level 4",
+    "floorNumber": 3,
+    "width": 1600,
+    "height": 1100,
+    "layout": {
+      "version": 1,
+      "areas": [
+        {
+          "id": "track",
+          "name": "Elevated running track",
+          "kind": "track",
+          "shape": "rect",
+          "x": 50,
+          "y": 80,
+          "width": 1000,
+          "height": 650
+        },
+        {
+          "id": "court-void",
+          "name": "Open to courts below",
+          "kind": "void",
+          "shape": "rect",
+          "x": 140,
+          "y": 170,
+          "width": 820,
+          "height": 470
+        },
+        {
+          "id": "turf",
+          "name": "Functional turf",
+          "kind": "turf",
+          "shape": "rect",
+          "x": 1150,
+          "y": 80,
+          "width": 380,
+          "height": 300
+        },
+        {
+          "id": "mobility",
+          "name": "Core & mobility",
+          "kind": "studio",
+          "shape": "rect",
+          "x": 1150,
+          "y": 440,
+          "width": 380,
+          "height": 290
+        },
+        {
+          "id": "cardio",
+          "name": "Cardio gallery",
+          "kind": "cardio",
+          "shape": "rect",
+          "x": 50,
+          "y": 820,
+          "width": 1480,
+          "height": 220
+        },
+        {
+          "id": "stairs",
+          "name": "Stairs",
+          "kind": "stairs",
+          "shape": "rect",
+          "x": 1060,
+          "y": 470,
+          "width": 80,
+          "height": 110
+        },
+        {
+          "id": "lift",
+          "name": "Elevator",
+          "kind": "elevator",
+          "shape": "rect",
+          "x": 1060,
+          "y": 600,
+          "width": 80,
+          "height": 90
+        }
+      ]
+    },
+    "machines": [
+      {
+        "code": "DEMOMAP-3-000",
+        "name": "Treadmill 1",
+        "exercise": "Running",
+        "x": 100,
+        "y": 890,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-001",
+        "name": "Elliptical 1",
+        "exercise": "Elliptical",
+        "x": 190,
+        "y": 890,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-002",
+        "name": "Stationary Bike 1",
+        "exercise": "Cycling",
+        "x": 280,
+        "y": 890,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-003",
+        "name": "Rowing Ergometer 1",
+        "exercise": "Rowing",
+        "x": 370,
+        "y": 890,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-3-004",
+        "name": "Treadmill 2",
+        "exercise": "Running",
+        "x": 460,
+        "y": 890,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-005",
+        "name": "Elliptical 2",
+        "exercise": "Elliptical",
+        "x": 550,
+        "y": 890,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-3-006",
+        "name": "Stationary Bike 2",
+        "exercise": "Cycling",
+        "x": 640,
+        "y": 890,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-007",
+        "name": "Rowing Ergometer 2",
+        "exercise": "Rowing",
+        "x": 730,
+        "y": 890,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-3-008",
+        "name": "Treadmill 3",
+        "exercise": "Running",
+        "x": 820,
+        "y": 890,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-009",
+        "name": "Elliptical 3",
+        "exercise": "Elliptical",
+        "x": 910,
+        "y": 890,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-010",
+        "name": "Stationary Bike 3",
+        "exercise": "Cycling",
+        "x": 1000,
+        "y": 890,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-011",
+        "name": "Rowing Ergometer 3",
+        "exercise": "Rowing",
+        "x": 1090,
+        "y": 890,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-3-012",
+        "name": "Treadmill 4",
+        "exercise": "Running",
+        "x": 1180,
+        "y": 890,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-013",
+        "name": "Elliptical 4",
+        "exercise": "Elliptical",
+        "x": 1270,
+        "y": 890,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-3-014",
+        "name": "Stationary Bike 4",
+        "exercise": "Cycling",
+        "x": 1360,
+        "y": 890,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-015",
+        "name": "Rowing Ergometer 4",
+        "exercise": "Rowing",
+        "x": 1450,
+        "y": 890,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-3-016",
+        "name": "Treadmill 5",
+        "exercise": "Running",
+        "x": 100,
+        "y": 970,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-017",
+        "name": "Elliptical 5",
+        "exercise": "Elliptical",
+        "x": 190,
+        "y": 970,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-018",
+        "name": "Stationary Bike 5",
+        "exercise": "Cycling",
+        "x": 280,
+        "y": 970,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-019",
+        "name": "Rowing Ergometer 5",
+        "exercise": "Rowing",
+        "x": 370,
+        "y": 970,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-3-020",
+        "name": "Treadmill 6",
+        "exercise": "Running",
+        "x": 460,
+        "y": 970,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-021",
+        "name": "Elliptical 6",
+        "exercise": "Elliptical",
+        "x": 550,
+        "y": 970,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-3-022",
+        "name": "Stationary Bike 6",
+        "exercise": "Cycling",
+        "x": 640,
+        "y": 970,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-023",
+        "name": "Rowing Ergometer 6",
+        "exercise": "Rowing",
+        "x": 730,
+        "y": 970,
+        "status": "Out of Order"
+      },
+      {
+        "code": "DEMOMAP-3-024",
+        "name": "Treadmill 7",
+        "exercise": "Running",
+        "x": 820,
+        "y": 970,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-025",
+        "name": "Elliptical 7",
+        "exercise": "Elliptical",
+        "x": 910,
+        "y": 970,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-026",
+        "name": "Stationary Bike 7",
+        "exercise": "Cycling",
+        "x": 1000,
+        "y": 970,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-027",
+        "name": "Rowing Ergometer 7",
+        "exercise": "Rowing",
+        "x": 1090,
+        "y": 970,
+        "status": "In Use"
+      },
+      {
+        "code": "DEMOMAP-3-028",
+        "name": "Treadmill 8",
+        "exercise": "Running",
+        "x": 1180,
+        "y": 970,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-029",
+        "name": "Elliptical 8",
+        "exercise": "Elliptical",
+        "x": 1270,
+        "y": 970,
+        "status": "Reserved"
+      },
+      {
+        "code": "DEMOMAP-3-030",
+        "name": "Stationary Bike 8",
+        "exercise": "Cycling",
+        "x": 1360,
+        "y": 970,
+        "status": "Available"
+      },
+      {
+        "code": "DEMOMAP-3-031",
+        "name": "Rowing Ergometer 8",
+        "exercise": "Rowing",
+        "x": 1450,
+        "y": 970,
+        "status": "Out of Order"
+      }
+    ]
+  }
+]
