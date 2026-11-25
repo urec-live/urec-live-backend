@@ -63,7 +63,7 @@ All three should finish with zero failures. Do not rely on historical test count
   - Idle requests expire, after which the member can call staff again. A staff response keeps a request from expiring.
 - **Mutation-checked:** temporarily breaking the placeholder logic makes these tests fail. The breaks tried were: flagging a real GIF as a placeholder, ignoring a real GIF, ignoring the video setting, dropping the placeholder flag, and not treating a blank setting as off.
 
-> A plain `mvn test` also runs the existing `UrecLiveBackendApplicationTests.contextLoads`. That test does not activate the H2 test profile, so it needs the normal database/JWT environment. Load a development `.env` as described in `TEAM_WORKFLOW.md`, then run the full suite.
+> A plain `mvn test` also runs the existing `UrecLiveBackendApplicationTests.contextLoads`. That test does not activate the H2 test profile, so it needs the normal database/JWT environment. Load a development `.env` as described in `docs/TEAM_WORKFLOW.md`, then run the full suite.
 
 ---
 
@@ -79,7 +79,7 @@ This script runs 33 checks over real HTTP against a **running** backend:
 - 409s on closed requests, and the Recently closed list
 
 ```bash
-# Terminal 1: load a development .env as described in TEAM_WORKFLOW.md, then start the backend
+# Terminal 1: load a development .env as described in docs/TEAM_WORKFLOW.md, then start the backend
 
 # Terminal 2, from backend/ (supply development test-account credentials locally)
 MEMBER_USER=urecuser MEMBER_PASS='<password>' \
