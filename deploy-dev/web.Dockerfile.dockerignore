@@ -1,0 +1,17 @@
+**
+!urec-live-backend/
+!urec-live-backend/deploy-dev/
+!urec-live-backend/deploy-dev/*.conf
+!urec-live-backend/deploy-dev/*.ts
+!urec-live-app/
+!urec-live-app/**
+!urec-live-admin/
+!urec-live-admin/**
+**/.git
+**/.env
+**/.env.*
+**/node_modules
+**/dist
+**/.expo
+urec-live-app/ios
+urec-live-app/android
