@@ -6,10 +6,17 @@ public enum MessageKind {
     /** An animated GIF picked from KLIPY. */
     GIF,
     /** A KLIPY sticker; shown large, without a bubble. */
-    STICKER;
+    STICKER,
+    /** A photo the sender uploaded (ChatMedia), with an optional caption in the content. */
+    IMAGE;
 
-    /** GIFs and stickers carry media and no text. */
+    /** Everything but TEXT carries media. */
     public boolean hasMedia() {
         return this != TEXT;
+    }
+
+    /** GIFs and stickers: media from KLIPY, and no text. */
+    public boolean isKlipy() {
+        return this == GIF || this == STICKER;
     }
 }

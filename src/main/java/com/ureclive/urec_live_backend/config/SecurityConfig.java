@@ -94,6 +94,14 @@ public class SecurityConfig {
                                                 AntPathRequestMatcher.antMatcher(
                                                         HttpMethod.GET, "/api/social/users/*"))
                                         .permitAll()
+                                        // Chat photos (media.storage=local): the URL's signature
+                                        // is the permission, like a presigned R2 URL, since image
+                                        // loaders don't send the sign-in header
+                                        .requestMatchers(
+                                                AntPathRequestMatcher.antMatcher(
+                                                        HttpMethod.GET,
+                                                        "/api/messaging/media/*/raw"))
+                                        .permitAll()
                                         .anyRequest()
                                         .authenticated());
 

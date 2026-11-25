@@ -17,21 +17,24 @@ public class SendChatMessageRequest {
     /** DMs only. */
     private String recipient;
 
-    /** Required for TEXT; ignored for GIF and STICKER. */
+    /** Required for TEXT; an optional caption for IMAGE; ignored for GIF and STICKER. */
     private String content;
 
     /** Defaults to TEXT, so older apps that send only {content} keep working. */
     private MessageKind kind;
 
-    /** Required for GIF and STICKER. */
+    /** Required for GIF, STICKER and IMAGE. */
     private MediaPayload media;
 
+    /** GIF and STICKER send the KLIPY item; IMAGE sends only the mediaId of an uploaded photo. */
     public static class MediaPayload {
         private String url;
         private String previewUrl;
         private Integer width;
         private Integer height;
         private String providerId;
+        /** From POST /api/messaging/media. */
+        private Long mediaId;
 
         public MediaPayload() {}
 
@@ -53,6 +56,8 @@ public class SendChatMessageRequest {
         public void setHeight(Integer height) { this.height = height; }
         public String getProviderId() { return providerId; }
         public void setProviderId(String providerId) { this.providerId = providerId; }
+        public Long getMediaId() { return mediaId; }
+        public void setMediaId(Long mediaId) { this.mediaId = mediaId; }
     }
 
     public String getClientId() { return clientId; }
