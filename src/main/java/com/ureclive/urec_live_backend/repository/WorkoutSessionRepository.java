@@ -15,6 +15,10 @@ import java.util.List;
 
 public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, Long> {
 
+    @Query("SELECT ws.endedAt FROM WorkoutSession ws WHERE ws.user.id = :userId AND ws.endedAt BETWEEN :start AND :now")
+    List<Instant> findCompletedTimes(@Param("userId") long userId, @Param("start") Instant start,
+                                     @Param("now") Instant now);
+
     java.util.Optional<WorkoutSession> findByUserAndClientSessionId(
             User user, String clientSessionId);
 
