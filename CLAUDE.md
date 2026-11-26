@@ -1,6 +1,6 @@
 ## Shared team workflow
 
-Read `TEAM_WORKFLOW.md` before making changes. It defines the shared setup, task ownership, verification, and handoff rules for Codex and Claude Code. Verify architecture notes against source and stay within the current task. Work priorities come from current task instructions.
+Read `docs/TEAM_WORKFLOW.md` before making changes. It defines the shared setup, task ownership, verification, and handoff rules for Codex and Claude Code. Verify architecture notes against source and stay within the current task. Work priorities come from current task instructions.
 
 # CLAUDE.md — UREC Live Backend
 
@@ -35,7 +35,7 @@ UREC Live is a cross-platform gym management and fitness tracking platform targe
 
 ### Database Schema
 
-Core tables include `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exercise`, `workout_sessions`, `workout_sets`, `workout_plans`, `day_plans`, `day_plan_items`, `floor_plans`, `activity_log`, `equipment_issue_reports`, `help_requests`, `user_badges`, `user_league_scores`, `community_messages`, `direct_messages`, `chat_message_reactions`, and `chat_message_reports`.
+Core tables include `users`, `roles`, `user_roles`, `equipment`, `exercise`, `equipment_exercise`, `workout_sessions`, `workout_sets`, `workout_plans`, `day_plans`, `day_plan_items`, `floor_plans`, `activity_log`, `equipment_issue_reports`, `help_requests`, `user_badges`, `user_league_scores`, `community_messages`, `direct_messages`, `chat_message_reactions`, `chat_message_reports`, and `chat_media`.
 
 - Schema auto-managed via `spring.jpa.hibernate.ddl-auto=update`
 - `DataInitializer` seeds 40+ exercises across all muscle groups on first startup
@@ -55,9 +55,10 @@ Core tables include `users`, `roles`, `user_roles`, `equipment`, `exercise`, `eq
 - **WorkoutPlan / DayPlan / DayPlanItem** — reusable weekly plans and ordered muscle-group targets
 - **FloorPlan** — floor metadata and equipment positions
 - **UserBadge / UserLeagueScore** — achievement and leaderboard state
-- **CommunityMessage / DirectMessage** — persisted community and one-to-one chat messages; shared columns in `ChatMessageBase` (`kind` TEXT/GIF/STICKER, embedded `MessageMedia`, `clientId`, `deletedAt`, `removedByStaff`). Enums on these tables use `EnumStringConverter` subclasses instead of `@Enumerated`, so adding a value never trips a check constraint that ddl-auto=update can't widen; a name the running build doesn't know (from a newer deploy) reads as the converter's null default instead of failing the query. `(sender_username, client_id)` is unique
+- **CommunityMessage / DirectMessage** — persisted community and one-to-one chat messages; shared columns in `ChatMessageBase` (`kind` TEXT/GIF/STICKER/IMAGE, embedded `MessageMedia` (KLIPY URLs, or `media_upload_id` for a photo), `clientId`, `deletedAt`, `removedByStaff`). Enums on these tables use `EnumStringConverter` subclasses instead of `@Enumerated`, so adding a value never trips a check constraint that ddl-auto=update can't widen; a name the running build doesn't know (from a newer deploy) reads as the converter's null default instead of failing the query. `(sender_username, client_id)` is unique
 - **MessageReaction** — one emoji per member per message (channel + message id, no FK, since messages live in two tables)
 - **ChatMessageReport** — a member's report of a message (reason, note, OPEN/DISMISSED/ACTIONED), `@Version`
+- **ChatMedia** — an uploaded chat photo (uploader, `storageKey` in `MediaStorage`, size, `attached`). A send claims it with one conditional update (`markAttached`) in the transaction that saves the message, so it goes on at most one message. Kept after the message is deleted, for moderation
 
 ---
 
@@ -127,10 +128,12 @@ Members only ever see their own requests (someone else's id → 404), and the me
 - `/api/social/*` — public profiles, user search, and authenticated profile updates. The current `GET /api/social/users/*` security matcher also permits `/users/search`; narrow it if search should require authentication.
 - `/api/badges/me` — the authenticated user's badges.
 - `/api/league/me` and `/api/league/leaderboard` — league and leaderboard views.
-- `GET /api/messaging/community/history?before={id}&limit=50` and `GET /api/messaging/dm/{username}?before=&limit=` — the newest page before `before` (default 50, max 100), oldest first within the page. `GET /api/messaging/dm/conversations` (inbox; `lastMessage` is the text or "GIF" / "Sticker" / "Message deleted" / "Message removed", plus `lastKind`) and `PATCH /api/messaging/dm/{username}/read`.
+- `GET /api/messaging/community/history?before={id}&limit=50` and `GET /api/messaging/dm/{username}?before=&limit=` — the newest page before `before` (default 50, max 100), oldest first within the page. `GET /api/messaging/dm/conversations` (inbox; `lastMessage` is the text or "GIF" / "Sticker" / "Photo" / "Message deleted" / "Message removed", plus `lastKind`) and `PATCH /api/messaging/dm/{username}/read`.
 - `PUT|DELETE /api/messaging/{community|dm}/messages/{id}/reaction` (`{emoji}`, one of 👍 ❤️ 😂 🔥 💪 😮; one per member), `DELETE /api/messaging/{community|dm}/messages/{id}` (sender only; soft delete, the row stays for moderation), `POST .../{id}/report` (`{reason, note?}`; 400 own message, 409 duplicate or already removed). A DM someone isn't part of is a 404.
+- `POST /api/messaging/media` (multipart `file`) — a chat photo: JPEG only (415), at most 5 MB (413), unreadable 400, at most 20 unsent per member per hour (429). `ChatImageProcessor` re-encodes it with ImageIO (no EXIF/GPS; EXIF orientation applied; long edge ≤ 2048). Returns `{mediaId, width, height}`. `GET /api/messaging/media/{id}/raw?exp=&sig=` serves it in local storage mode: public, HMAC-signed and expiring, like a presigned R2 URL.
+- Photo URLs are made per response (`ChatMediaService.viewUrls`, one query per page) and expire (`media.url-ttl-minutes`, default 120), so the app caches by `media.mediaId`. Hidden photos get none. The admin queue gets one even for deleted photos, made absolute for the dashboard's origin.
 - `GET /api/media/{gifs|stickers}/{trending|search}?q=&page=` — KLIPY proxy for the app's picker (`KlipyClient`); 503 until `KLIPY_API_KEY` is set, 429 when KLIPY rate-limits.
-- STOMP sends use `/app/chat.community.send` and `/app/chat.dm.send` with `SendChatMessageRequest` (`clientId`, `kind`, `content` ≤ 500, `media`; recipient for DMs). GIF/sticker URLs must be https on `klipy.media-hosts`. A retry with a saved `clientId` re-broadcasts instead of saving twice (the unique constraint catches two retries racing). Rejections go to the sender's `/user/queue/errors` as `{clientId, code, message}`, including frames whose JSON doesn't fit the request (`INVALID_MESSAGE`, via `@MessageExceptionHandler`; `clientId` is null when the JSON has none).
+- STOMP sends use `/app/chat.community.send` and `/app/chat.dm.send` with `SendChatMessageRequest` (`clientId`, `kind`, `content` ≤ 500, `media`; recipient for DMs). GIF/sticker URLs must be https on `klipy.media-hosts`. IMAGE sends carry `media.mediaId` (the sender's own, unsent upload; `INVALID_MEDIA` / `MEDIA_IN_USE`) and an optional caption in `content`. The `clientId` lookup runs before validation, so a retried photo send re-broadcasts instead of failing on the attached photo. A retry with a saved `clientId` re-broadcasts instead of saving twice (the unique constraint catches two retries racing). Rejections go to the sender's `/user/queue/errors` as `{clientId, code, message}`, including frames whose JSON doesn't fit the request (`INVALID_MESSAGE`, via `@MessageExceptionHandler`; `clientId` is null when the JSON has none).
 - Every change (send, reaction, delete, staff removal) re-broadcasts the whole `ChatMessageResponse` on `/topic/chat.community` or both people's `/user/queue/messages`; clients replace by id. Hidden messages keep their place with empty content, no media and no reactions.
 
 The app's community chat and DMs (`app/chat/`) use these. The app also calls `POST /api/chat` for an AI chatbot, but this backend has no matching endpoint.
@@ -277,6 +280,7 @@ src/main/java/com/ureclive/urec_live_backend/
 - Suites: `mvn test -Dtest='*EquipmentIssue*,*OutOfOrder*,MachineStatusServiceTest'` (equipment issues / out of order) and `mvn test -Dtest='HelpRequest*,HelpDemoLinksTest,AdminHelpRequestServiceTest'` (help requests). `UrecLiveBackendApplicationTests.contextLoads` still needs the real DB env vars.
 - API smoke tests against a running server: `scripts/smoke-test-equipment-issues.sh` (see `EQUIPMENT_ISSUES_TESTING.md`) and `scripts/smoke-test-help-requests.sh` (see `HELP_REQUESTS_TESTING.md`)
 - Chat: `mvn test -Dtest='ChatMessagingApiIntegrationTest,KlipyClientTest,ChatEntitiesTest'`. The integration test calls the STOMP handlers on the controller and captures what reaches `brokerChannel` (plus one send through the real `clientInboundChannel`); `KlipyClientTest` runs against a local JDK `HttpServer` standing in for KLIPY. Testing guide: `CHAT_MEDIA_TESTING.md`
+- Chat photos: `mvn test -Dtest='ChatPhotosApiIntegrationTest,ChatImageProcessorTest,ChatMediaServiceTest,ChatPhotoSendTest,MediaStorageTest'`. The test profile uses local storage in a temp folder; `ChatPhotoFixtures` builds JPEGs with EXIF orientation and GPS blocks. Testing guide: `CHAT_PHOTOS_TESTING.md`
 - `controller/MachineApiIntegrationTest` covers the machine endpoints as a member of the seeded UREC gym, including the SQL statement count per request (Hibernate statistics, switched on inside the test). Testing guide: `MINOR_FIXES_TESTING.md`
 
 ---
@@ -297,6 +301,8 @@ Connects through the configured PostgreSQL environment values. `DataInitializer`
 ## Configuration
 
 `src/main/resources/application.properties` expects database and JWT values from the environment, binds to `0.0.0.0:8080` by default, and configures 24-hour access tokens plus seven-day refresh tokens. Check `.env.example` for variable names; never document or print values.
+
+Chat photos: `MEDIA_STORAGE` (`local`, the default, keeps them in `MEDIA_LOCAL_DIR`, default `~/.urec-live/chat-media`; `s3` uses a private Cloudflare R2 bucket and needs `MEDIA_S3_ENDPOINT`, `MEDIA_S3_BUCKET`, `MEDIA_S3_ACCESS_KEY` and `MEDIA_S3_SECRET_KEY`, or startup fails naming the missing ones), `MEDIA_URL_TTL_MINUTES` (default 120) and `MEDIA_MAX_PENDING_UPLOADS` (default 20). Production should use `s3` unless `MEDIA_LOCAL_DIR` is on a disk that survives redeploys (most container hosts wipe it on every deploy). The S3 client uses the SDK's `url-connection-client`, because its default Apache 5 client needs a newer httpclient5 than Spring Boot 3.3 manages.
 
 Chat GIFs and stickers: `KLIPY_API_KEY` (empty turns the picker off with a 503), `KLIPY_RATING` (default `pg-13`), `KLIPY_MEDIA_HOSTS` (hosts, subdomains included, that sends may use; default `klipy.com`) and `KLIPY_BASE_URL`. If KLIPY serves media from another host, `KlipyClient` logs a warning naming it.
 

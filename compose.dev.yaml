@@ -1,0 +1,59 @@
+name: urec-live-dev
+
+services:
+  db:
+    image: postgres:17-alpine
+    networks: [data]
+    environment:
+      POSTGRES_DB: urec
+      POSTGRES_USER: urec
+      POSTGRES_PASSWORD: ${UREC_DEV_DB_PASSWORD:?Set UREC_DEV_DB_PASSWORD in .env.dev}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U urec -d urec"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  backend:
+    build: .
+    ports:
+      - "127.0.0.1:11080:8080"
+    networks: [default, data]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/urec
+      SPRING_DATASOURCE_USERNAME: urec
+      SPRING_DATASOURCE_PASSWORD: ${UREC_DEV_DB_PASSWORD:?Set UREC_DEV_DB_PASSWORD in .env.dev}
+      JWT_SECRET: ${UREC_DEV_JWT_SECRET:?Set UREC_DEV_JWT_SECRET in .env.dev}
+      GOOGLE_CLIENT_ID: ${UREC_DEV_GOOGLE_CLIENT_ID:-}
+
+  app:
+    build:
+      context: ..
+      dockerfile: urec-live-backend/deploy-dev/web.Dockerfile
+      target: app
+      args:
+        EXPO_PUBLIC_GOOGLE_CLIENT_ID: ${UREC_DEV_GOOGLE_CLIENT_ID:-}
+    depends_on: [backend]
+    ports:
+      - "127.0.0.1:11081:80"
+
+  admin:
+    build:
+      context: ..
+      dockerfile: urec-live-backend/deploy-dev/web.Dockerfile
+      target: admin
+    depends_on: [backend]
+    ports:
+      - "127.0.0.1:11082:80"
+
+volumes:
+  postgres-data:
+
+networks:
+  data:
+    internal: true

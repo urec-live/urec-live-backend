@@ -8,6 +8,7 @@ import com.ureclive.urec_live_backend.entity.ChatChannel;
 import com.ureclive.urec_live_backend.entity.ChatMessageBase;
 import com.ureclive.urec_live_backend.entity.ChatMessageReport;
 import com.ureclive.urec_live_backend.entity.DirectMessage;
+import com.ureclive.urec_live_backend.entity.MessageKind;
 import com.ureclive.urec_live_backend.entity.ReportStatus;
 import com.ureclive.urec_live_backend.repository.ChatMessageReportRepository;
 
@@ -35,6 +36,7 @@ public class AdminChatReportService {
     private final ChatMessageReportRepository reportRepo;
     private final ChatMessageService chat;
     private final ActivityLogService activityLogService;
+    private final ChatMediaService media;
 
     private record MessageKey(ChatChannel channel, Long messageId) {}
 
@@ -42,10 +44,12 @@ public class AdminChatReportService {
     public AdminChatReportService(
             ChatMessageReportRepository reportRepo,
             ChatMessageService chat,
-            ActivityLogService activityLogService) {
+            ActivityLogService activityLogService,
+            ChatMediaService media) {
         this.reportRepo = reportRepo;
         this.chat = chat;
         this.activityLogService = activityLogService;
+        this.media = media;
     }
 
     /**
@@ -69,10 +73,20 @@ public class AdminChatReportService {
         Map<ChatChannel, Map<Long, ChatMessageBase>> messages = new EnumMap<>(ChatChannel.class);
         idsByChannel.forEach((channel, ids) -> messages.put(channel, chat.findMessages(channel, ids)));
 
+        // Reported photos, in one query, including ones the sender deleted or staff removed
+        Set<Long> uploadIds = new LinkedHashSet<>();
+        messages.values().forEach(byId -> byId.values().forEach(m -> {
+            Long uploadId = uploadIdOf(m);
+            if (uploadId != null) uploadIds.add(uploadId);
+        }));
+        Map<Long, String> photoUrls = uploadIds.isEmpty() ? Map.of() : media.viewUrls(uploadIds);
+
         return byMessage.entrySet().stream()
-                .map(e -> toGroup(e.getKey(),
-                        messages.getOrDefault(e.getKey().channel(), Map.of()).get(e.getKey().messageId()),
-                        e.getValue()))
+                .map(e -> {
+                    ChatMessageBase message = messages.getOrDefault(e.getKey().channel(), Map.of()).get(e.getKey().messageId());
+                    Long uploadId = uploadIdOf(message);
+                    return toGroup(e.getKey(), message, e.getValue(), uploadId == null ? null : photoUrls.get(uploadId));
+                })
                 .sorted(Comparator.comparing((ChatReportGroupResponse g) -> g.openCount == 0)
                         .thenComparing(g -> g.latestReportedAt, Comparator.reverseOrder()))
                 .collect(Collectors.toList());
@@ -100,7 +114,7 @@ public class AdminChatReportService {
                 "Dismissed " + closed + (closed == 1 ? " report" : " reports") + " on a " + ChatMessageService.describe(channel)
                         + (message == null ? "" : " from " + message.getSenderUsername()),
                 null);
-        return toGroup(new MessageKey(channel, messageId), message, reports);
+        return toGroup(new MessageKey(channel, messageId), message, reports, photoUrlOf(message));
     }
 
     /**
@@ -128,7 +142,17 @@ public class AdminChatReportService {
 
         activityLogService.log("CHAT_MESSAGE_REMOVED", staffUsername,
                 "Removed a " + ChatMessageService.describe(channel) + " from " + message.getSenderUsername(), null);
-        return toGroup(new MessageKey(channel, messageId), message, reports);
+        return toGroup(new MessageKey(channel, messageId), message, reports, photoUrlOf(message));
+    }
+
+    private static Long uploadIdOf(ChatMessageBase message) {
+        if (message == null || message.getKind() != MessageKind.IMAGE || message.getMedia() == null) return null;
+        return message.getMedia().getUploadId();
+    }
+
+    private String photoUrlOf(ChatMessageBase message) {
+        Long uploadId = uploadIdOf(message);
+        return uploadId == null ? null : media.viewUrl(uploadId).orElse(null);
     }
 
     /** Only reported messages are moderated here; anything else is a 404. */
@@ -165,7 +189,9 @@ public class AdminChatReportService {
         return closed;
     }
 
-    private static ChatReportGroupResponse toGroup(MessageKey key, ChatMessageBase message, List<ChatMessageReport> reports) {
+    /** @param photoUrl for a reported photo, its expiring URL (made absolute: the dashboard runs on another origin) */
+    private static ChatReportGroupResponse toGroup(
+            MessageKey key, ChatMessageBase message, List<ChatMessageReport> reports, String photoUrl) {
         ChatReportGroupResponse g = new ChatReportGroupResponse();
         g.channel = key.channel().name();
         g.messageId = key.messageId();
@@ -176,7 +202,7 @@ public class AdminChatReportService {
             // Staff see what was reported even if the sender deleted it since
             g.content = message.getContent();
             g.kind = message.getKind().name();
-            g.media = ChatMessageResponse.Media.from(message.getMedia());
+            g.media = ChatMessageResponse.Media.of(message, ChatMediaService.absoluteForCurrentRequest(photoUrl));
             g.sentAt = message.getSentAt().toString();
             g.deletedBySender = message.getDeletedAt() != null;
             g.removedByStaff = message.isRemovedByStaff();
