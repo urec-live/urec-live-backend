@@ -10,6 +10,11 @@ import java.util.Set;
 @Entity
 @Table(name = "exercise")
 public class Exercise {
+    @Column(length = 500)
+    private String secondaryMuscles;
+    public String getSecondaryMuscles() { return secondaryMuscles; }
+    public void setSecondaryMuscles(String value) { secondaryMuscles = value; }
+
     private String equipmentType = "OTHER";
 
     public String getEquipmentType() {

@@ -23,6 +23,17 @@ public class DayPlanItem {
     @Column(nullable = false)
     private Integer sortOrder = 0;
 
+
+    private Long exerciseId;
+    private String exerciseName;
+    private String equipmentType;
+    public Long getExerciseId() { return exerciseId; }
+    public void setExerciseId(Long value) { exerciseId = value; }
+    public String getExerciseName() { return exerciseName; }
+    public void setExerciseName(String value) { exerciseName = value; }
+    public String getEquipmentType() { return equipmentType; }
+    public void setEquipmentType(String value) { equipmentType = value; }
+
     public DayPlanItem() {}
 
     public Long getId() { return id; }

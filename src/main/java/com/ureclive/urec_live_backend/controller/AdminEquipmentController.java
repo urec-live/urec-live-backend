@@ -38,6 +38,8 @@ import jakarta.validation.Valid;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminEquipmentController {
 
+    @Autowired private com.ureclive.urec_live_backend.service.UrecAdminScope facility;
+    @Autowired private com.ureclive.urec_live_backend.service.FloorLayoutValidator layoutValidator;
     private static final Logger logger = LoggerFactory.getLogger(AdminEquipmentController.class);
 
     private final AdminEquipmentService adminEquipmentService;
@@ -96,12 +98,14 @@ public class AdminEquipmentController {
     }
 
     /** PUT /api/admin/equipment/{id}/position — set floor map coordinates */
+    @org.springframework.transaction.annotation.Transactional
     @PutMapping("/{id}/position")
     public Map<String, Object> updatePosition(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         logger.info("[PUT /api/admin/equipment/{}/position] Updating floor position", id);
         Equipment equipment = equipmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Equipment not found: " + id));
 
+        facility.require(equipment.getGymId());
         if (body.containsKey("floorX")) {
             equipment.setFloorX(((Number) body.get("floorX")).doubleValue());
         }
@@ -116,10 +120,17 @@ public class AdminEquipmentController {
             if (fpId != null) {
                 FloorPlan plan = floorPlanRepository.findById(((Number) fpId).longValue())
                         .orElseThrow(() -> new RuntimeException("Floor plan not found"));
+                facility.require(plan.getGymId());
+                layoutValidator.check(java.util.Objects.equals(plan.getGymId(), equipment.getGymId()) && Boolean.TRUE.equals(plan.getActive()), "Equipment and active floor must belong to the same gym");
                 equipment.setFloorPlan(plan);
             } else {
                 equipment.setFloorPlan(null);
             }
+        }
+        if (equipment.getFloorPlan() != null) {
+            layoutValidator.point(equipment.getFloorX(), equipment.getFloorY(), equipment.getFloorPlan().getWidth(), equipment.getFloorPlan().getHeight());
+        } else {
+            equipment.setFloorX(null); equipment.setFloorY(null);
         }
         equipmentRepository.save(equipment);
 

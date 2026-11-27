@@ -73,6 +73,10 @@ public class CatalogInitializer implements ApplicationRunner {
                     }
                 }
                 var e = existing.orElseGet(() -> new Exercise(c[0], c[1], null));
+                if (c.length > 7 && !c[7].isBlank() && e.getSecondaryMuscles() == null && e.getOwnerId() == null) {
+                    e.setSecondaryMuscles(c[7]);
+                    exercises.save(e);
+                }
                 if (e.getInstructions() == null) {
                     e.setEquipmentType(c[2]);
                     e.setTrainingType(c[3]);

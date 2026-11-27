@@ -1,5 +1,5 @@
-name	muscleGroup	equipmentType	trainingType	loggingMode	instructions	aliases
-Bench Press	Chest	BARBELL	STRENGTH	WEIGHT_REPS	Press the load upward with wrists stacked over elbows; lower with control.	
+name	muscleGroup	equipmentType	trainingType	loggingMode	instructions	aliases	secondaryMuscles
+Bench Press	Chest	BARBELL	STRENGTH	WEIGHT_REPS	Press the load upward with wrists stacked over elbows; lower with control.		Triceps,Shoulders
 Incline Bench Press	Chest	BARBELL	STRENGTH	WEIGHT_REPS	Press the load upward with wrists stacked over elbows; lower with control.	Incline Press
 Decline Bench Press	Chest	BARBELL	STRENGTH	WEIGHT_REPS	Press the load upward with wrists stacked over elbows; lower with control.	Decline Press
 Close Grip Bench Press	Chest	BARBELL	STRENGTH	WEIGHT_REPS	Press the load upward with wrists stacked over elbows; lower with control.	Close Grip Bench
@@ -37,7 +37,7 @@ Chest Supported Dumbbell Row	Back	DUMBBELL	STRENGTH	WEIGHT_REPS	Support the trun
 Incline Dumbbell Row	Back	DUMBBELL	STRENGTH	WEIGHT_REPS	Support the trunk as needed; pull the elbow toward the hip and lower with control.	
 Dumbbell Pullover	Back	DUMBBELL	STRENGTH	WEIGHT_REPS	Lie supported on a bench; lower the dumbbell behind the head only within a comfortable shoulder range and return above the chest.	
 Renegade Row	Back	DUMBBELL	STRENGTH	WEIGHT_REPS	Support the trunk as needed; pull the elbow toward the hip and lower with control.	
-Seated Cable Row	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.	
+Seated Cable Row	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.		Biceps
 Wide Grip Cable Row	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.	
 Single Arm Cable Row	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.	
 Straight Arm Pulldown	Back	CABLE	STRENGTH	WEIGHT_REPS	Set a stable torso; pull the handle toward your body and return without swinging.	

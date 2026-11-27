@@ -7,6 +7,20 @@ import java.time.Instant;
 @Entity
 @Table(name = "floor_plans")
 public class FloorPlan {
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private com.ureclive.urec_live_backend.dto.FloorLayout layout;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean illustrative = false;
+
+    public com.ureclive.urec_live_backend.dto.FloorLayout getLayout() {
+        return layout == null ? com.ureclive.urec_live_backend.dto.FloorLayout.empty() : layout;
+    }
+    public void setLayout(com.ureclive.urec_live_backend.dto.FloorLayout value) { layout = value; }
+    public boolean isIllustrative() { return illustrative; }
+    public void setIllustrative(boolean value) { illustrative = value; }
+
     private Long gymId;
 
     public Long getGymId() {

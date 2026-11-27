@@ -25,6 +25,7 @@ public class ExerciseCatalogService {
             Long id,
             String name,
             String muscleGroup,
+            List<String> secondaryMuscles,
             String equipmentType,
             String trainingType,
             String loggingMode,
@@ -36,6 +37,8 @@ public class ExerciseCatalogService {
                     e.getId(),
                     e.getName(),
                     e.getMuscleGroup(),
+                    e.getSecondaryMuscles() == null || e.getSecondaryMuscles().isBlank()
+                            ? List.of() : Arrays.stream(e.getSecondaryMuscles().split(",")).map(String::trim).filter(s -> !s.isBlank()).toList(),
                     e.getEquipmentType(),
                     e.getTrainingType(),
                     e.getLoggingMode(),

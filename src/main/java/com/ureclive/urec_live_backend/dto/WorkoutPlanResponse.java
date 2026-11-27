@@ -48,6 +48,17 @@ public class WorkoutPlanResponse {
         private Integer targetCount;
         private Integer sortOrder;
 
+
+        private Long exerciseId;
+        private String exerciseName;
+        private String equipmentType;
+        public Long getExerciseId() { return exerciseId; }
+        public void setExerciseId(Long value) { exerciseId = value; }
+        public String getExerciseName() { return exerciseName; }
+        public void setExerciseName(String value) { exerciseName = value; }
+        public String getEquipmentType() { return equipmentType; }
+        public void setEquipmentType(String value) { equipmentType = value; }
+
         public DayPlanItemDto() {}
 
         public Long getId() { return id; }
@@ -83,6 +94,9 @@ public class WorkoutPlanResponse {
                     dayDto.items = dp.getItems().stream().map(item -> {
                         DayPlanItemDto itemDto = new DayPlanItemDto();
                         itemDto.id = item.getId();
+                        itemDto.exerciseId = item.getExerciseId();
+                        itemDto.exerciseName = item.getExerciseName();
+                        itemDto.equipmentType = item.getEquipmentType();
                         itemDto.muscleGroup = item.getMuscleGroup();
                         itemDto.targetCount = item.getTargetCount();
                         itemDto.sortOrder = item.getSortOrder();

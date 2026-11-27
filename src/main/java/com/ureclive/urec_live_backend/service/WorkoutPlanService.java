@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,14 +32,16 @@ public class WorkoutPlanService {
     private final WorkoutPlanRepository planRepository;
     private final WorkoutSessionRepository sessionRepository;
     private final UserRepository userRepository;
+    private final ExerciseCatalogService catalog;
 
     @Autowired
     public WorkoutPlanService(WorkoutPlanRepository planRepository,
                               WorkoutSessionRepository sessionRepository,
-                              UserRepository userRepository) {
+                              UserRepository userRepository, ExerciseCatalogService catalog) {
         this.planRepository = planRepository;
         this.sessionRepository = sessionRepository;
         this.userRepository = userRepository;
+        this.catalog = catalog;
     }
 
     @Transactional
@@ -71,6 +73,13 @@ public class WorkoutPlanService {
                         DayPlanItem item = new DayPlanItem();
                         item.setDayPlan(dayPlan);
                         item.setMuscleGroup(itemDto.getMuscleGroup());
+                        if (itemDto.getExerciseId() != null) {
+                            var exercise = catalog.get(itemDto.getExerciseId());
+                            item.setExerciseId(exercise.id());
+                            item.setExerciseName(exercise.name());
+                            item.setEquipmentType(exercise.equipmentType());
+                            item.setMuscleGroup(exercise.muscleGroup());
+                        }
                         item.setTargetCount(itemDto.getTargetCount());
                         item.setSortOrder(itemDto.getSortOrder() != null ? itemDto.getSortOrder() : sortIdx);
                         dayPlan.getItems().add(item);
@@ -128,6 +137,13 @@ public class WorkoutPlanService {
                         DayPlanItem item = new DayPlanItem();
                         item.setDayPlan(dayPlan);
                         item.setMuscleGroup(itemDto.getMuscleGroup());
+                        if (itemDto.getExerciseId() != null) {
+                            var exercise = catalog.get(itemDto.getExerciseId());
+                            item.setExerciseId(exercise.id());
+                            item.setExerciseName(exercise.name());
+                            item.setEquipmentType(exercise.equipmentType());
+                            item.setMuscleGroup(exercise.muscleGroup());
+                        }
                         item.setTargetCount(itemDto.getTargetCount());
                         item.setSortOrder(itemDto.getSortOrder() != null ? itemDto.getSortOrder() : sortIdx);
                         dayPlan.getItems().add(item);
@@ -191,6 +207,9 @@ public class WorkoutPlanService {
                 DayPlanItem item = new DayPlanItem();
                 item.setDayPlan(dayPlan);
                 item.setMuscleGroup(srcItem.getMuscleGroup());
+                item.setExerciseId(srcItem.getExerciseId());
+                item.setExerciseName(srcItem.getExerciseName());
+                item.setEquipmentType(srcItem.getEquipmentType());
                 item.setTargetCount(srcItem.getTargetCount());
                 item.setSortOrder(srcItem.getSortOrder());
                 dayPlan.getItems().add(item);
@@ -224,7 +243,9 @@ public class WorkoutPlanService {
         }
 
         WorkoutPlan plan = optPlan.get();
-        int todayDow = LocalDate.now().getDayOfWeek().getValue(); // 1=Monday, 7=Sunday (ISO)
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDate today = LocalDate.now(zone);
+        int todayDow = today.getDayOfWeek().getValue(); // 1=Monday, 7=Sunday (ISO)
 
         // Find day plan for today
         DayPlan todayDayPlan = plan.getDayPlans().stream()
@@ -238,12 +259,13 @@ public class WorkoutPlanService {
         }
 
         // Get today's completed sessions to calculate completion
-        LocalDate today = LocalDate.now();
-        Instant startOfDay = today.atStartOfDay(ZoneOffset.UTC).toInstant();
-        Instant endOfDay = today.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant startOfDay = today.atStartOfDay(zone).toInstant();
+        Instant endOfDay = today.plusDays(1).atStartOfDay(zone).toInstant();
 
         List<WorkoutSession> todaySessions = sessionRepository.findByUserAndStartedAtBetween(
                 user, startOfDay, endOfDay);
+
+        todaySessions = todaySessions.stream().filter(s -> s.getEndedAt() != null).toList();
 
         // Count completed exercises per muscle group
         Map<String, Long> completedByMuscle = todaySessions.stream()
@@ -262,11 +284,20 @@ public class WorkoutPlanService {
         List<TodayPlanResponse.TodayGoalItem> items = new ArrayList<>();
         for (DayPlanItem planItem : todayDayPlan.getItems()) {
             int completed = completedByMuscle.getOrDefault(planItem.getMuscleGroup(), 0L).intValue();
-            items.add(new TodayPlanResponse.TodayGoalItem(
+            if (planItem.getExerciseId() != null) {
+                completed = (int) todaySessions.stream()
+                        .filter(s -> s.getExercise() != null
+                                && planItem.getExerciseId().equals(s.getExercise().getId())).count();
+            }
+            var goal = new TodayPlanResponse.TodayGoalItem(
                     planItem.getMuscleGroup(),
                     planItem.getTargetCount(),
                     completed
-            ));
+            );
+            goal.setExerciseId(planItem.getExerciseId());
+            goal.setExerciseName(planItem.getExerciseName());
+            goal.setEquipmentType(planItem.getEquipmentType());
+            items.add(goal);
         }
 
         response.setItems(items);
